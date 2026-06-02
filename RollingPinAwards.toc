@@ -20,6 +20,7 @@ Constants.lua
 Defaults.lua
 GuildContext.lua
 Utils.lua
+Time.lua
 Database.lua
 RosterPermissions.lua
 Permissions.lua

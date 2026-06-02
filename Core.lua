@@ -67,6 +67,7 @@ local Nominations = RPA.Nominations or {}
 local Permissions = RPA.Permissions or {}
 local RosterPermissions = RPA.RosterPermissions or {}
 local Sync = RPA.Sync or {}
+local Time = RPA.Time or {}
 local Tooltip = RPA.Tooltip or {}
 local Bridge = RPA.UIBridge or {}
 local Utils = RPA.Utils
@@ -82,6 +83,7 @@ RPA.MainFrame = MainFrame
 RPA.Permissions = Permissions
 RPA.RosterPermissions = RosterPermissions
 RPA.Sync = Sync
+RPA.Time = Time
 RPA.Tooltip = Tooltip
 RPA.UIBridge = Bridge
 

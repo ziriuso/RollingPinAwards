@@ -414,6 +414,10 @@ function wow.reset(seed)
     return state.realmName
   end
 
+  _G.GetServerTime = function()
+    return seed.serverTime or 1717336800
+  end
+
   _G.UnitName = function()
     return state.playerName
   end

@@ -127,6 +127,28 @@ return {
     harness.assert_equal(1, #addon.awards:GetPublicHistory())
   end,
 
+  ["authorized officer can create a direct award without os"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      serverTime = 1717336800,
+    })
+    _G.os = nil
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    local award = addon.awards:CreateDirectAward(
+      "Moonrustle-Stormrage",
+      "Baiting Fae"
+    )
+
+    harness.assert_true(award ~= nil)
+    harness.assert_equal(1717336800, award.createdAt)
+  end,
+
   ["officer without addon permission cannot approve or directly award"] = function()
     wow.reset({
       guildName = "Raid Bakery",

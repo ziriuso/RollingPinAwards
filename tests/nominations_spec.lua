@@ -22,6 +22,26 @@ return {
     harness.assert_true(nomination.nominationId ~= nil)
   end,
 
+  ["guild member can create a pending nomination without os"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Bakerone",
+      serverTime = 1717336800,
+    })
+    _G.os = nil
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    local nomination = addon.nominations:Create(
+      "Burny-Stormrage",
+      "Pulled the boss while fishing"
+    )
+
+    harness.assert_true(nomination ~= nil)
+    harness.assert_equal(1717336800, nomination.createdAt)
+  end,
+
   ["guild member can cast one locked vote on a pending nomination"] = function()
     wow.reset({
       guildName = "Raid Bakery",

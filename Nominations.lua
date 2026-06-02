@@ -12,8 +12,12 @@ local function isMissingString(value)
   return type(value) ~= "string" or value == ""
 end
 
-local function currentTimestamp()
-  return os.time()
+local function currentTimestamp(addon)
+  if addon and addon.Time and type(addon.Time.Now) == "function" then
+    return addon.Time:Now()
+  end
+
+  return 0
 end
 
 function Nominations:New(addon)
@@ -46,7 +50,7 @@ function Nominations:RefreshVoteSummary(nomination)
   nomination.downvoteCount = downvoteCount
   nomination.moderationFlagged =
     downvoteCount >= Constants.MODERATION_DOWNVOTE_THRESHOLD
-  nomination.lastModifiedAt = currentTimestamp()
+  nomination.lastModifiedAt = currentTimestamp(self.addon)
   nomination.lastModifiedBy = self.addon:GetCurrentPlayerFullName()
 
   self.addon.db:UpsertNomination(nomination.guildKey, nomination)
@@ -64,7 +68,7 @@ function Nominations:Create(nominee, reason)
     return nil, "missing guild context"
   end
 
-  local now = currentTimestamp()
+  local now = currentTimestamp(self.addon)
   local nominationId = self.addon.db:NextNominationId(guild.guildKey)
   local nomination = {
     nominationId = nominationId,
@@ -114,7 +118,7 @@ function Nominations:CastVote(nominationId, voteType)
     nominationId = nominationId,
     voter = voter,
     voteType = voteType,
-    createdAt = currentTimestamp(),
+    createdAt = currentTimestamp(self.addon),
   })
 
   self:RefreshVoteSummary(nomination)
@@ -141,7 +145,7 @@ function Nominations:Approve(nominationId)
     return nil, "nomination closed"
   end
 
-  local now = currentTimestamp()
+  local now = currentTimestamp(self.addon)
   nomination.status = "approved"
   nomination.resolvedBy = self.addon:GetCurrentPlayerFullName()
   nomination.resolvedAt = now
@@ -174,7 +178,7 @@ function Nominations:Reject(nominationId)
     return false, "nomination closed"
   end
 
-  local now = currentTimestamp()
+  local now = currentTimestamp(self.addon)
   nomination.status = "rejected"
   nomination.resolvedBy = self.addon:GetCurrentPlayerFullName()
   nomination.resolvedAt = now

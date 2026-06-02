@@ -12,8 +12,12 @@ local function isMissingString(value)
   return type(value) ~= "string" or value == ""
 end
 
-local function currentTimestamp()
-  return os.time()
+local function currentTimestamp(addon)
+  if addon and addon.Time and type(addon.Time.Now) == "function" then
+    return addon.Time:Now()
+  end
+
+  return 0
 end
 
 function Awards:New(addon)
@@ -33,7 +37,7 @@ function Awards:BuildAward(recipient, reason, source, nominationId)
   end
 
   local awardId = self.addon.db:NextAwardId(guild.guildKey)
-  local now = currentTimestamp()
+  local now = currentTimestamp(self.addon)
 
   return {
     awardId = awardId,
