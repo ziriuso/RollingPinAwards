@@ -1,6 +1,32 @@
 local state = {}
 local wow = {}
 
+local function copyTable(input)
+  local output = {}
+
+  for key, value in pairs(input or {}) do
+    output[key] = type(value) == "table" and copyTable(value) or value
+  end
+
+  return output
+end
+
+local function applyDefaults(target, defaults)
+  if type(target) ~= "table" then
+    target = {}
+  end
+
+  for key, value in pairs(defaults or {}) do
+    if type(value) == "table" then
+      target[key] = applyDefaults(target[key], value)
+    elseif target[key] == nil then
+      target[key] = value
+    end
+  end
+
+  return target
+end
+
 local function buildAceLibStub()
   local libraries = {}
 
@@ -60,6 +86,27 @@ local function buildAceLibStub()
       function target:Deserialize(payload)
         return true, payload
       end
+    end,
+  }
+
+  libraries["AceDB-3.0"] = {
+    New = function(_, name, defaults)
+      local root = _G[name]
+      if type(root) ~= "table" then
+        root = {}
+        _G[name] = root
+      end
+
+      root.profileKeys = root.profileKeys or {}
+      root.profiles = root.profiles or {}
+
+      local profileKey = "Default"
+      root.profileKeys["Stormrage - Ziri"] = root.profileKeys["Stormrage - Ziri"] or profileKey
+      root.profiles[profileKey] = applyDefaults(root.profiles[profileKey], copyTable(defaults.profile or {}))
+
+      return {
+        profile = root.profiles[profileKey],
+      }
     end,
   }
 

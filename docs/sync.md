@@ -16,6 +16,11 @@ Rolling Pin Awards keeps all synced data scoped to the active guild dataset.
 - `Core.lua` owns comm registration and inbound dispatch.
 - `Sync.lua` owns envelope construction, outbound broadcast, and payload-type routing.
 
+## Persistence Notes
+
+- When `AceDB-3.0` is available, Rolling Pin Awards uses the active Ace profile as the storage backing for the domain database.
+- Without AceDB, the addon falls back to the plain `RollingPinAwardsDB.profile` table path already covered by the Lua-only tests.
+
 ## Current Service Surface
 
 `Sync.lua` currently provides conservative acceptance helpers for:

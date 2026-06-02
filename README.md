@@ -4,7 +4,7 @@ Rolling Pin Awards is a guild-only World of Warcraft addon for managing nominati
 
 ## MVP Scope
 
-- Ace3-aware addon lifecycle using `AceAddon-3.0`, `AceConsole-3.0`, `AceComm-3.0`, and `AceSerializer-3.0` when available
+- Ace3-aware addon lifecycle using `AceAddon-3.0`, `AceConsole-3.0`, `AceComm-3.0`, `AceSerializer-3.0`, and `AceDB-3.0` when available
 - Guild-scoped datasets for the player's current guild only
 - GM-managed officer permission roster
 - Public pending nominations with advisory upvotes
@@ -27,6 +27,7 @@ Current command support:
 ## Runtime Notes
 
 - The addon now prefers an Ace3-backed runtime when `LibStub` and the Ace3 libraries are available in-game.
+- When `AceDB-3.0` is available, the domain database is backed by the active Ace profile instead of the plain SavedVariables fallback table.
 - The current repository keeps the addon code Ace3-compatible without vendoring the libraries directly.
 - The TOC continues to advertise `Ace3` as an optional dependency.
 

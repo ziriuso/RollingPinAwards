@@ -29,6 +29,15 @@ local function createAddonObject()
   return addon
 end
 
+local function getOptionalLibrary(libraryName)
+  local libStub = rawget(_G, "LibStub")
+  if type(libStub) ~= "function" then
+    return nil
+  end
+
+  return libStub(libraryName, true)
+end
+
 local RPA = createAddonObject()
 _G.RollingPinAwards = RPA
 
@@ -86,9 +95,19 @@ function RPA:OnInitialize()
     self.activeGuildContext = self.GuildContext:Build()
   end
 
-  local storage = _G.RollingPinAwardsDB
-  storage = Utils.ApplyDefaults(storage, self.defaults)
-  _G.RollingPinAwardsDB = storage
+  local aceDbLibrary = getOptionalLibrary("AceDB-3.0")
+  local storage
+  if aceDbLibrary and type(aceDbLibrary.New) == "function" then
+    self.aceDb = aceDbLibrary:New("RollingPinAwardsDB", self.defaults, true)
+    storage = {
+      profile = self.aceDb.profile,
+    }
+  else
+    self.aceDb = nil
+    storage = _G.RollingPinAwardsDB
+    storage = Utils.ApplyDefaults(storage, self.defaults)
+    _G.RollingPinAwardsDB = storage
+  end
 
   self.db = Database:New(storage)
 
