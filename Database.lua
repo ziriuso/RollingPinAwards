@@ -8,6 +8,19 @@ local function isMissingString(value)
   return type(value) ~= "string" or value == ""
 end
 
+local function seedNextSequence(recordsById, prefix)
+  local maxSequence = 0
+
+  for objectId in pairs(recordsById or {}) do
+    local sequence = tonumber(string.match(objectId, "^" .. prefix .. ":(%d+)$"))
+    if sequence and sequence > maxSequence then
+      maxSequence = sequence
+    end
+  end
+
+  return maxSequence
+end
+
 local function ensureGuildDatasetShape(dataset, guildKey)
   dataset.guildKey = dataset.guildKey or guildKey
   dataset.awards = type(dataset.awards) == "table" and dataset.awards or {}
@@ -16,6 +29,13 @@ local function ensureGuildDatasetShape(dataset, guildKey)
   dataset.nominationsById = type(dataset.nominationsById) == "table" and dataset.nominationsById or {}
   dataset.permissionRoster = type(dataset.permissionRoster) == "table" and dataset.permissionRoster or {}
   dataset.votesByNomination = type(dataset.votesByNomination) == "table" and dataset.votesByNomination or {}
+  dataset.meta = type(dataset.meta) == "table" and dataset.meta or {}
+  dataset.meta.nextNominationSequence = type(dataset.meta.nextNominationSequence) == "number"
+      and dataset.meta.nextNominationSequence
+    or seedNextSequence(dataset.nominationsById, "nom")
+  dataset.meta.nextAwardSequence = type(dataset.meta.nextAwardSequence) == "number"
+      and dataset.meta.nextAwardSequence
+    or seedNextSequence(dataset.awardsById, "award")
 
   return dataset
 end
@@ -122,6 +142,74 @@ function Database:GetPermissionRosterEntry(guildKey, playerFullName)
   end
 
   return dataset.permissionRoster[playerFullName], nil
+end
+
+function Database:NextNominationId(guildKey)
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return nil, err
+  end
+
+  dataset.meta.nextNominationSequence = dataset.meta.nextNominationSequence + 1
+
+  return ("nom:%d"):format(dataset.meta.nextNominationSequence), nil
+end
+
+function Database:StoreVote(guildKey, nominationId, vote)
+  if isMissingString(nominationId) then
+    return nil, "missing nominationId"
+  end
+
+  if type(vote) ~= "table" or isMissingString(vote.voter) then
+    return nil, "missing voter"
+  end
+
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return nil, err
+  end
+
+  dataset.votesByNomination[nominationId] = dataset.votesByNomination[nominationId] or {}
+  dataset.votesByNomination[nominationId][vote.voter] = vote
+
+  return vote
+end
+
+function Database:GetVote(guildKey, nominationId, voter)
+  if isMissingString(nominationId) then
+    return nil, "missing nominationId"
+  end
+
+  if isMissingString(voter) then
+    return nil, "missing voter"
+  end
+
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return nil, err
+  end
+
+  local ledger = dataset.votesByNomination[nominationId]
+  if type(ledger) ~= "table" then
+    return nil, nil
+  end
+
+  return ledger[voter], nil
+end
+
+function Database:GetVotesForNomination(guildKey, nominationId)
+  if isMissingString(nominationId) then
+    return nil, "missing nominationId"
+  end
+
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return nil, err
+  end
+
+  dataset.votesByNomination[nominationId] = dataset.votesByNomination[nominationId] or {}
+
+  return dataset.votesByNomination[nominationId], nil
 end
 
 return RPA.Database

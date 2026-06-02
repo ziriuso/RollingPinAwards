@@ -5,6 +5,7 @@ RPA.Constants = {
   ADDON_NAME = "RollingPinAwards",
   DISPLAY_AWARD_NAME = "The Burnt Rolling Pin",
   SLASH_COMMAND = "/rpa",
+  MODERATION_DOWNVOTE_THRESHOLD = 3,
   PROTOCOL_VERSION = 1,
 }
 

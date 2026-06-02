@@ -19,6 +19,7 @@ local Defaults = RPA.Defaults or {
 }
 local GuildContext = RPA.GuildContext or {}
 local Database = RPA.Database
+local Nominations = RPA.Nominations or {}
 local Permissions = RPA.Permissions or {}
 local RosterPermissions = RPA.RosterPermissions or {}
 local Utils = RPA.Utils
@@ -26,6 +27,7 @@ local Utils = RPA.Utils
 RPA.Constants = Constants
 RPA.Defaults = Defaults
 RPA.GuildContext = GuildContext
+RPA.Nominations = Nominations
 RPA.Permissions = Permissions
 RPA.RosterPermissions = RosterPermissions
 
@@ -55,6 +57,12 @@ function RPA:OnInitialize()
     self.permissions = Permissions:New(self, self.rosterPermissions)
   else
     self.permissions = nil
+  end
+
+  if type(Nominations.New) == "function" then
+    self.nominations = Nominations:New(self)
+  else
+    self.nominations = nil
   end
 end
 
