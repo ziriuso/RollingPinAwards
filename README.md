@@ -1,0 +1,33 @@
+# Rolling Pin Awards
+
+Rolling Pin Awards is a guild-only World of Warcraft addon for managing nominations, advisory voting, moderation, and awards for `The Burnt Rolling Pin`.
+
+## MVP Scope
+
+- Guild-scoped datasets for the player's current guild only
+- GM-managed officer permission roster
+- Public pending nominations with advisory upvotes
+- Hidden downvote moderation signal for authorized officer/admin views
+- Direct awards and nomination approval/rejection for authorized users
+- Custom Lua UI shell with reusable tab and component modules
+- Conservative guild-scoped sync validation helpers
+
+## Slash Command
+
+- `/rpa`
+
+Current command support:
+
+- `/rpa`
+- `/rpa show`
+- `/rpa toggle`
+- `/rpa nominate Name-Realm "Reason"`
+
+## Testing
+
+See [docs/testing.md](docs/testing.md).
+
+## Core Docs
+
+- [Permissions](docs/permissions.md)
+- [Sync](docs/sync.md)

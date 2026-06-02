@@ -16,6 +16,9 @@ Permissions.lua
 Awards.lua
 Nominations.lua
 Commands.lua
+Sync.lua
+Announcements.lua
+Tooltip.lua
 Core.lua
 UI\Bridge.lua
 UI\Styles.lua

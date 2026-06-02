@@ -45,11 +45,26 @@ function MainFrame:New(deps)
       width = Styles.Window.width,
       height = Styles.Window.height,
     }),
+    tabButtons = {},
   }
 
   self.__index = self
 
   return setmetatable(obj, self)
+end
+
+function MainFrame:EnsureRendered()
+  if self.rendered then
+    return self.frame
+  end
+
+  for index, tab in ipairs(self.tabs) do
+    self.tabButtons[index] = Components.CreateTabButton(self.frame, tab, index)
+  end
+
+  self.rendered = true
+
+  return self.frame
 end
 
 function MainFrame:GetActiveTab()
@@ -83,7 +98,8 @@ function MainFrame:SelectTab(tabId)
 end
 
 function MainFrame:Toggle()
-  self.frame.visible = not self.frame.visible
+  self:EnsureRendered()
+  Components.SetVisible(self.frame, not self.frame.visible)
 
   return self.frame.visible
 end
