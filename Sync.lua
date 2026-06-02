@@ -24,6 +24,68 @@ function Sync:IsActiveGuildPayload(guildKey)
   return guild ~= nil and guild.guildKey == guildKey
 end
 
+function Sync:BuildEnvelope(payloadType, payload)
+  if isMissingString(payloadType) or type(payload) ~= "table" then
+    return nil, "missing payload"
+  end
+
+  return {
+    protocolVersion = self.addon.Constants.PROTOCOL_VERSION,
+    payloadType = payloadType,
+    payload = payload,
+  }, nil
+end
+
+function Sync:Broadcast(payloadType, payload, distribution, target, priority)
+  if type(self.addon.SendCommMessage) ~= "function" or type(self.addon.Serialize) ~= "function" then
+    return false, "comm unavailable"
+  end
+
+  local envelope, err = self:BuildEnvelope(payloadType, payload)
+  if not envelope then
+    return false, err
+  end
+
+  local serialized = self.addon:Serialize(envelope)
+  self.addon:SendCommMessage(
+    self.addon.Constants.COMM_PREFIX,
+    serialized,
+    distribution or "GUILD",
+    target,
+    priority or "NORMAL"
+  )
+
+  return true
+end
+
+function Sync:DispatchEnvelope(envelope, distribution, sender)
+  if type(envelope) ~= "table" or isMissingString(envelope.payloadType) then
+    return false, "missing envelope"
+  end
+
+  local payload = type(envelope.payload) == "table" and envelope.payload or {}
+  payload.sender = payload.sender or sender
+  payload.distribution = payload.distribution or distribution
+
+  if envelope.payloadType == "award" then
+    return self:AcceptAward(payload)
+  end
+
+  if envelope.payloadType == "nomination" then
+    return self:AcceptNomination(payload)
+  end
+
+  if envelope.payloadType == "vote" then
+    return self:AcceptNominationVote(payload)
+  end
+
+  if envelope.payloadType == "permission_roster" then
+    return self:AcceptPermissionRosterEntry(payload)
+  end
+
+  return false, "unknown payloadType"
+end
+
 function Sync:AcceptAward(award)
   if type(award) ~= "table" or isMissingString(award.awardId) then
     return false, "missing award"

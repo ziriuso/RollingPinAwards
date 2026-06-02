@@ -1,4 +1,35 @@
-local RPA = _G.RollingPinAwards or {}
+local function createAddonObject()
+  local existing = _G.RollingPinAwards or {}
+  local libStub = rawget(_G, "LibStub")
+
+  if type(libStub) ~= "function" then
+    existing.__rpaUsesAce3 = false
+
+    return existing
+  end
+
+  local aceAddon = libStub("AceAddon-3.0", true)
+  if not aceAddon or type(aceAddon.NewAddon) ~= "function" then
+    existing.__rpaUsesAce3 = false
+
+    return existing
+  end
+
+  local addon = aceAddon:NewAddon(
+    existing,
+    "RollingPinAwards",
+    "AceEvent-3.0",
+    "AceConsole-3.0",
+    "AceComm-3.0",
+    "AceSerializer-3.0"
+  )
+
+  addon.__rpaUsesAce3 = true
+
+  return addon
+end
+
+local RPA = createAddonObject()
 _G.RollingPinAwards = RPA
 
 local Constants = RPA.Constants or {
@@ -124,12 +155,38 @@ function RPA:OnInitialize()
     self.tooltip = nil
   end
 
-  if self.commands then
+  if self.commands and type(self.RegisterChatCommand) == "function" then
+    self:RegisterChatCommand("rpa", "HandleChatCommand")
+  elseif self.commands then
     _G.SLASH_ROLLINGPINAWARDS1 = self.SLASH_COMMAND
     _G.SlashCmdList.ROLLINGPINAWARDS = function(message)
       return self.commands:Handle(message or "")
     end
   end
+end
+
+function RPA:OnEnable()
+  if self.sync and type(self.RegisterComm) == "function" then
+    self:RegisterComm(self.Constants.COMM_PREFIX)
+  end
+end
+
+function RPA:OnCommReceived(prefix, message, distribution, sender)
+  if prefix ~= self.Constants.COMM_PREFIX or not self.sync then
+    return false
+  end
+
+  local envelope = message
+  if type(self.Deserialize) == "function" then
+    local ok, decoded = self:Deserialize(message)
+    if not ok then
+      return false
+    end
+
+    envelope = decoded
+  end
+
+  return self.sync:DispatchEnvelope(envelope, distribution, sender)
 end
 
 function RPA:GetActiveGuildContext()
@@ -141,6 +198,14 @@ function RPA:GetCurrentPlayerFullName()
   local realmName = GetRealmName()
 
   return ("%s-%s"):format(playerName, realmName)
+end
+
+function RPA:HandleChatCommand(message)
+  if not self.commands then
+    return nil
+  end
+
+  return self.commands:Handle(message or "")
 end
 
 return RPA

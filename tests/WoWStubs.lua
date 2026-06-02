@@ -1,6 +1,104 @@
 local state = {}
 local wow = {}
 
+local function buildAceLibStub()
+  local libraries = {}
+
+  libraries["AceConsole-3.0"] = {
+    Embed = function(_, target)
+      function target:RegisterChatCommand(command, handler)
+        self.__aceConsoleCommands = self.__aceConsoleCommands or {}
+        self.__aceConsoleCommands[command] = handler
+      end
+
+      function target:GetArgs(input, numArgs, startPos)
+        local parts = {}
+        local cursor = startPos or 1
+        local source = input or ""
+
+        while #parts < (numArgs or 1) do
+          local piece = source:match("^%s*(%S+)%s*()", cursor)
+          local value, nextCursor = source:match("()%s*(%S+)%s*()", cursor)
+          if not nextCursor then
+            break
+          end
+          parts[#parts + 1] = source:sub(value, nextCursor - 1):match("^%s*(.-)%s*$")
+          cursor = nextCursor
+        end
+
+        parts[#parts + 1] = cursor
+
+        return unpack(parts)
+      end
+    end,
+  }
+
+  libraries["AceComm-3.0"] = {
+    Embed = function(_, target)
+      function target:RegisterComm(prefix)
+        self.__aceCommPrefix = prefix
+      end
+
+      function target:SendCommMessage(prefix, message, distribution, targetPlayer, priority)
+        self.__lastCommMessage = {
+          prefix = prefix,
+          message = message,
+          distribution = distribution,
+          target = targetPlayer,
+          priority = priority,
+        }
+      end
+    end,
+  }
+
+  libraries["AceSerializer-3.0"] = {
+    Embed = function(_, target)
+      function target:Serialize(payload)
+        return payload
+      end
+
+      function target:Deserialize(payload)
+        return true, payload
+      end
+    end,
+  }
+
+  libraries["AceEvent-3.0"] = {
+    Embed = function(_, target)
+      function target:RegisterEvent(eventName, handlerName)
+        self.__aceEvents = self.__aceEvents or {}
+        self.__aceEvents[eventName] = handlerName or eventName
+      end
+    end,
+  }
+
+  libraries["AceAddon-3.0"] = {
+    NewAddon = function(_, object, name, ...)
+      local addon = object or {}
+      addon.name = name
+
+      for index = 1, select("#", ...) do
+        local libName = select(index, ...)
+        local library = libraries[libName]
+        if library and type(library.Embed) == "function" then
+          library:Embed(addon)
+        end
+      end
+
+      return addon
+    end,
+  }
+
+  return function(libraryName, silent)
+    local library = libraries[libraryName]
+    if library or silent then
+      return library
+    end
+
+    error("missing library: " .. tostring(libraryName))
+  end
+end
+
 local function loadAddonFromToc(path)
   for line in io.lines(path or "RollingPinAwards.toc") do
     local entry = line:match("^%s*(.-)%s*$")
@@ -24,6 +122,7 @@ function wow.reset(seed)
     realmName = seed.realmName or "Stormrage",
     playerName = seed.playerName or "Ziri",
     savedVariables = seed.savedVariables,
+    ace3 = seed.ace3,
   }
 
   _G.__RPA_TEST_STATE = state
@@ -75,6 +174,7 @@ function wow.reset(seed)
 
   _G.SlashCmdList = {}
   _G.SLASH_ROLLINGPINAWARDS1 = nil
+  _G.LibStub = state.ace3 and buildAceLibStub() or nil
   _G.RollingPinAwards = nil
   _G.RollingPinAwardsDB = state.savedVariables
 end

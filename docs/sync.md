@@ -9,6 +9,13 @@ Rolling Pin Awards keeps all synced data scoped to the active guild dataset.
 - Duplicate votes from the same voter on the same nomination are ignored.
 - Votes are accepted only while the nomination remains `pending`.
 
+## Transport Notes
+
+- Comm payloads use the addon prefix `RPAAwardsSync`.
+- When Ace3 is available, sync envelopes flow through `AceComm-3.0` and `AceSerializer-3.0`.
+- `Core.lua` owns comm registration and inbound dispatch.
+- `Sync.lua` owns envelope construction, outbound broadcast, and payload-type routing.
+
 ## Current Service Surface
 
 `Sync.lua` currently provides conservative acceptance helpers for:

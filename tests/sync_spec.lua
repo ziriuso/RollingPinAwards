@@ -90,4 +90,52 @@ return {
     harness.assert_true(accepted)
     harness.assert_equal(1, #addon.awards:GetPublicHistory())
   end,
+
+  ["sync broadcasts envelopes through ace comm when available"] = function()
+    wow.reset({
+      ace3 = true,
+      guildName = "Raid Bakery",
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon:OnEnable()
+
+    local ok = addon.sync:Broadcast("nomination", {
+      guildKey = addon:GetActiveGuildContext().guildKey,
+      nominationId = "nom:42",
+    }, "GUILD")
+
+    harness.assert_true(ok)
+    harness.assert_equal(addon.Constants.COMM_PREFIX, addon.__lastCommMessage.prefix)
+    harness.assert_equal("nomination", addon.__lastCommMessage.message.payloadType)
+    harness.assert_equal("nom:42", addon.__lastCommMessage.message.payload.nominationId)
+  end,
+
+  ["ace comm payloads route through the sync dispatcher"] = function()
+    wow.reset({
+      ace3 = true,
+      guildName = "Raid Bakery",
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon:OnEnable()
+
+    local called = false
+    addon.sync.AcceptAward = function(_, payload)
+      called = payload.awardId == "award:5"
+
+      return true
+    end
+
+    addon:OnCommReceived(addon.Constants.COMM_PREFIX, {
+      payloadType = "award",
+      payload = {
+        awardId = "award:5",
+      },
+    }, "GUILD", "Officerone-Stormrage")
+
+    harness.assert_true(called)
+  end,
 }

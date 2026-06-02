@@ -1,0 +1,42 @@
+local harness = require("tests.TestHarness")
+local wow = require("tests.WoWStubs")
+
+return {
+  ["core bootstrap embeds ace addon methods when ace3 is available"] = function()
+    wow.reset({
+      ace3 = true,
+      guildName = "Raid Bakery",
+    })
+
+    local addon = wow.loadAddon()
+
+    harness.assert_true(type(addon.RegisterChatCommand) == "function")
+    harness.assert_true(type(addon.RegisterComm) == "function")
+    harness.assert_true(addon.__rpaUsesAce3 == true)
+  end,
+
+  ["on initialize registers the slash command through ace console when available"] = function()
+    wow.reset({
+      ace3 = true,
+      guildName = "Raid Bakery",
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    harness.assert_equal("HandleChatCommand", addon.__aceConsoleCommands.rpa)
+  end,
+
+  ["on enable registers the sync comm prefix through ace comm when available"] = function()
+    wow.reset({
+      ace3 = true,
+      guildName = "Raid Bakery",
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon:OnEnable()
+
+    harness.assert_equal(addon.Constants.COMM_PREFIX, addon.__aceCommPrefix)
+  end,
+}
