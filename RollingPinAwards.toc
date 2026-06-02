@@ -13,5 +13,6 @@ Utils.lua
 Database.lua
 RosterPermissions.lua
 Permissions.lua
+Awards.lua
 Nominations.lua
 Core.lua

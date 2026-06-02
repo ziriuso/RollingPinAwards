@@ -122,4 +122,68 @@ function Nominations:CastVote(nominationId, voteType)
   return true
 end
 
+function Nominations:Approve(nominationId)
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild then
+    return nil, "missing guild context"
+  end
+
+  if not self.addon.permissions or not self.addon.permissions:CanManageAwards() then
+    return nil, "unauthorized"
+  end
+
+  local nomination = self.addon.db:GetNomination(guild.guildKey, nominationId)
+  if not nomination then
+    return nil, "missing nomination"
+  end
+
+  if nomination.status ~= "pending" then
+    return nil, "nomination closed"
+  end
+
+  local now = currentTimestamp()
+  nomination.status = "approved"
+  nomination.resolvedBy = self.addon:GetCurrentPlayerFullName()
+  nomination.resolvedAt = now
+  nomination.lastModifiedAt = now
+  nomination.lastModifiedBy = nomination.resolvedBy
+
+  local award = self.addon.awards:CreateFromNomination(nomination)
+  nomination.awardId = award.awardId
+  self.addon.db:UpsertNomination(guild.guildKey, nomination)
+
+  return award
+end
+
+function Nominations:Reject(nominationId)
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild then
+    return false, "missing guild context"
+  end
+
+  if not self.addon.permissions or not self.addon.permissions:CanManageAwards() then
+    return false, "unauthorized"
+  end
+
+  local nomination = self.addon.db:GetNomination(guild.guildKey, nominationId)
+  if not nomination then
+    return false, "missing nomination"
+  end
+
+  if nomination.status ~= "pending" then
+    return false, "nomination closed"
+  end
+
+  local now = currentTimestamp()
+  nomination.status = "rejected"
+  nomination.resolvedBy = self.addon:GetCurrentPlayerFullName()
+  nomination.resolvedAt = now
+  nomination.lastModifiedAt = now
+  nomination.lastModifiedBy = nomination.resolvedBy
+
+  self.addon.db:UpsertNomination(guild.guildKey, nomination)
+
+  return true
+end
+
 return RPA.Nominations

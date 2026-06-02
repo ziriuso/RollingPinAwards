@@ -55,6 +55,21 @@ local function rebuildNominationRows(dataset)
   end
 end
 
+local function rebuildAwardRows(dataset)
+  local awardIds = {}
+
+  for awardId in pairs(dataset.awardsById) do
+    awardIds[#awardIds + 1] = awardId
+  end
+
+  table.sort(awardIds)
+
+  dataset.awards = {}
+  for _, awardId in ipairs(awardIds) do
+    dataset.awards[#dataset.awards + 1] = dataset.awardsById[awardId]
+  end
+end
+
 function Database:New(storage)
   local obj = {
     storage = storage,
@@ -153,6 +168,46 @@ function Database:NextNominationId(guildKey)
   dataset.meta.nextNominationSequence = dataset.meta.nextNominationSequence + 1
 
   return ("nom:%d"):format(dataset.meta.nextNominationSequence), nil
+end
+
+function Database:NextAwardId(guildKey)
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return nil, err
+  end
+
+  dataset.meta.nextAwardSequence = dataset.meta.nextAwardSequence + 1
+
+  return ("award:%d"):format(dataset.meta.nextAwardSequence), nil
+end
+
+function Database:UpsertAward(guildKey, award)
+  if type(award) ~= "table" or isMissingString(award.awardId) then
+    return nil, "missing awardId"
+  end
+
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return nil, err
+  end
+
+  dataset.awardsById[award.awardId] = award
+  rebuildAwardRows(dataset)
+
+  return award
+end
+
+function Database:GetAward(guildKey, awardId)
+  if isMissingString(awardId) then
+    return nil, "missing awardId"
+  end
+
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return nil, err
+  end
+
+  return dataset.awardsById[awardId], nil
 end
 
 function Database:StoreVote(guildKey, nominationId, vote)

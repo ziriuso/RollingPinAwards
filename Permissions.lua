@@ -43,28 +43,46 @@ function Permissions:New(addon, roster)
   return setmetatable(obj, self)
 end
 
-function Permissions:IsGuildMaster()
-  local _, rankName, rankIndex = GetGuildInfo("player")
+function Permissions:GetGuildRankInfo(playerFullName)
+  local normalizedTarget = normalizeFullName(playerFullName or self.addon:GetCurrentPlayerFullName())
+  if not normalizedTarget then
+    return nil, nil
+  end
+
+  if normalizedTarget == normalizeFullName(self.addon:GetCurrentPlayerFullName()) then
+    local _, rankName, rankIndex = GetGuildInfo("player")
+
+    if rankName ~= nil or rankIndex ~= nil then
+      return rankName, rankIndex
+    end
+  end
+
+  if type(GetNumGuildMembers) ~= "function" or type(GetGuildRosterInfo) ~= "function" then
+    return nil, nil
+  end
+
+  local memberCount = GetNumGuildMembers() or 0
+
+  for index = 1, memberCount do
+    local rosterName, rankName, rankIndex = GetGuildRosterInfo(index)
+    if normalizeFullName(rosterName) == normalizedTarget then
+      return rankName, rankIndex
+    end
+  end
+
+  return nil, nil
+end
+
+function Permissions:IsGuildMaster(playerFullName)
+  local rankName, rankIndex = self:GetGuildRankInfo(playerFullName)
 
   return rankIndex == 0 or rankName == "Guild Master"
 end
 
 function Permissions:IsOfficerFromGuildRoster(playerFullName)
-  if type(GetNumGuildMembers) ~= "function" or type(GetGuildRosterInfo) ~= "function" then
-    return false
-  end
+  local rankName, rankIndex = self:GetGuildRankInfo(playerFullName)
 
-  local memberCount = GetNumGuildMembers() or 0
-  local normalizedTarget = normalizeFullName(playerFullName)
-
-  for index = 1, memberCount do
-    local rosterName, rankName, rankIndex = GetGuildRosterInfo(index)
-    if normalizeFullName(rosterName) == normalizedTarget then
-      return isOfficerRank(rankName, rankIndex)
-    end
-  end
-
-  return false
+  return isOfficerRank(rankName, rankIndex)
 end
 
 function Permissions:IsOfficer(playerFullName)
@@ -74,7 +92,7 @@ function Permissions:IsOfficer(playerFullName)
   end
 
   if normalizedTarget == normalizeFullName(self.addon:GetCurrentPlayerFullName()) then
-    if self:IsGuildMaster() then
+    if self:IsGuildMaster(normalizedTarget) then
       return true
     end
 
@@ -89,16 +107,20 @@ end
 
 function Permissions:HasOfficerPermission(playerFullName)
   local guild = self.addon:GetActiveGuildContext()
-  if not guild or isMissingString(playerFullName) then
+  local normalizedTarget = normalizeFullName(playerFullName)
+
+  if not guild or not normalizedTarget then
     return false
   end
 
-  return self.roster:Has(guild.guildKey, playerFullName)
+  return self.roster:Has(guild.guildKey, normalizedTarget)
 end
 
 function Permissions:GrantOfficerPermission(playerFullName)
   local guild = self.addon:GetActiveGuildContext()
-  if not guild or isMissingString(playerFullName) then
+  local normalizedTarget = normalizeFullName(playerFullName)
+
+  if not guild or not normalizedTarget then
     return false
   end
 
@@ -106,15 +128,28 @@ function Permissions:GrantOfficerPermission(playerFullName)
     return false
   end
 
-  if not self:IsOfficer(playerFullName) then
+  if not self:IsOfficer(normalizedTarget) then
     return false
   end
 
   return self.roster:Grant(
     guild.guildKey,
-    playerFullName,
+    normalizedTarget,
     self.addon:GetCurrentPlayerFullName()
   )
+end
+
+function Permissions:CanManageAwards(playerFullName)
+  local normalizedTarget = normalizeFullName(playerFullName or self.addon:GetCurrentPlayerFullName())
+  if not normalizedTarget then
+    return false
+  end
+
+  if self:IsGuildMaster(normalizedTarget) then
+    return true
+  end
+
+  return self:IsOfficer(normalizedTarget) and self:HasOfficerPermission(normalizedTarget)
 end
 
 return RPA.Permissions

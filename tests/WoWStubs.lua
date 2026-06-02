@@ -84,8 +84,12 @@ function wow.setPlayer(playerName, guildRankName, guildRankIndex)
   state.guildRankName = guildRankName or state.guildRankName
   if guildRankIndex ~= nil then
     state.guildRankIndex = guildRankIndex
+    state.isGuildOfficer = guildRankIndex <= 1
+  elseif guildRankName ~= nil then
+    state.isGuildOfficer = guildRankName == "Guild Master" or guildRankName == "Officer"
   end
 end
+
 
 wow.loadAddon = loadAddonFromToc
 
