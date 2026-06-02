@@ -8,7 +8,7 @@
 
 ## Goal
 
-Build a guild-scoped World of Warcraft addon that lets guild members submit funny nominations, lets GM-authorized officers moderate and award rolling pins, and presents the data in a custom native WoW Lua UI with safe guild sync.
+Build a guild-scoped World of Warcraft addon that lets guild members submit funny nominations, lets GM-authorized officers moderate and award `The Burnt Rolling Pin`, and presents the data in a custom native WoW Lua UI with safe guild sync.
 
 ## Design Decisions
 
@@ -174,7 +174,9 @@ All synced objects must match the active guild context before they are accepted.
 
 ### Awards
 
-Awards are permanent records for approved or directly granted rolling pins.
+Awards are permanent records for approved or directly granted instances of `The Burnt Rolling Pin`.
+
+The player-facing award name should always be rendered as `The Burnt Rolling Pin`.
 
 Fields:
 
