@@ -34,4 +34,20 @@ function Utils.ApplyDefaults(target, defaults)
   return target
 end
 
+function Utils.NormalizeAliasKey(value)
+  if type(value) ~= "string" then
+    return nil
+  end
+
+  local normalized = string.lower(value)
+  normalized = string.gsub(normalized, "^%s+", "")
+  normalized = string.gsub(normalized, "%s+$", "")
+
+  if normalized == "" then
+    return nil
+  end
+
+  return normalized
+end
+
 return RPA.Utils

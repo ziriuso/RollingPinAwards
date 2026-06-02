@@ -110,7 +110,12 @@ UITabs.history = {
       end
 
       Components.AddListRow(section, {
-        text = ("%s\n%s\nAwarded by %s"):format(award.recipient, award.reason, award.awardedBy),
+        text = ("%s\n%s\n%s  Awarded by %s"):format(
+          award.recipient,
+          award.reason,
+          award.dateText or "Unknown date",
+          award.awardedBy
+        ),
         labelWidth = 640,
         rowHeight = 54,
         actions = actions,

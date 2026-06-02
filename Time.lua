@@ -20,4 +20,20 @@ function Time:Now()
   return 0
 end
 
+function Time:FormatDate(timestamp)
+  if type(timestamp) ~= "number" or timestamp <= 0 then
+    return "Unknown date"
+  end
+
+  if type(date) == "function" then
+    return date("%Y-%m-%d", timestamp)
+  end
+
+  if _G.os and type(_G.os.date) == "function" then
+    return _G.os.date("%Y-%m-%d", timestamp)
+  end
+
+  return tostring(timestamp)
+end
+
 return RPA.Time

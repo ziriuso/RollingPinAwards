@@ -83,6 +83,10 @@ function Sync:DispatchEnvelope(envelope, distribution, sender)
     return self:AcceptRankPermission(payload)
   end
 
+  if envelope.payloadType == "alias_mapping" then
+    return self:AcceptAliasMapping(payload)
+  end
+
   return false, "unknown payloadType"
 end
 
@@ -185,6 +189,37 @@ function Sync:AcceptRankPermission(update)
     canManageAddonPermissions = update.canManageAddonPermissions == true,
     lastModifiedAt = update.lastModifiedAt,
     lastModifiedBy = actor,
+  })
+
+  return true
+end
+
+function Sync:AcceptAliasMapping(update)
+  if type(update) ~= "table" or isMissingString(update.aliasKey) then
+    return false, "missing alias mapping update"
+  end
+
+  if not self:IsActiveGuildPayload(update.guildKey) then
+    return false, "wrong guild"
+  end
+
+  local actor = update.lastModifiedBy or update.sender
+  if not self.addon.permissions or not self.addon.permissions:CanManageAddonPermissions(actor) then
+    return false, "unauthorized"
+  end
+
+  if update.deleted == true then
+    return self.addon.db:DeleteAliasMapping(update.guildKey, update.aliasKey)
+  end
+
+  self.addon.db:UpsertAliasMapping(update.guildKey, {
+    aliasKey = update.aliasKey,
+    aliasDisplay = update.aliasDisplay,
+    canonicalName = update.canonicalName,
+    createdBy = update.createdBy or actor,
+    createdAt = update.createdAt,
+    lastModifiedBy = actor,
+    lastModifiedAt = update.lastModifiedAt,
   })
 
   return true

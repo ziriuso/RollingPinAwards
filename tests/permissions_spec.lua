@@ -175,4 +175,30 @@ return {
     harness.assert_true(addon.permissions:CanDeleteAwards())
     harness.assert_true(addon.permissions:CanManageAddonPermissions())
   end,
+
+  ["guild rank matrix uses guild control ranks when the member roster is empty"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      guildMembers = {},
+      guildRanks = {
+        { name = "Guild Master" },
+        { name = "Officer" },
+        { name = "Veteran" },
+        { name = "Member" },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    local matrix = addon.permissions:GetGuildRankMatrix()
+
+    harness.assert_equal(4, #matrix)
+    harness.assert_equal("Guild Master", matrix[1].rankName)
+    harness.assert_equal("Officer", matrix[2].rankName)
+    harness.assert_equal("Member", matrix[4].rankName)
+  end,
 }

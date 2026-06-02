@@ -40,4 +40,25 @@ return {
 
     harness.assert_true(addon:GetActiveGuildContext() == nil)
   end,
+
+  ["guild context refreshes lazily when guild info appears after initialization"] = function()
+    wow.reset({
+      guildName = nil,
+      playerName = "Ziri",
+      realmName = "Stormrage",
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    harness.assert_true(addon.activeGuildContext == nil)
+
+    wow.setGuild("Raid Bakery", 77)
+
+    local guild = addon:GetActiveGuildContext()
+
+    harness.assert_true(guild ~= nil)
+    harness.assert_equal("Raid Bakery", guild.guildName)
+    harness.assert_equal("77", guild.guildKey)
+  end,
 }

@@ -322,6 +322,29 @@ function Components.CreateScrollableSection(parent, config)
     scrollBar.Text:Hide()
   end
 
+  if section.EnableMouseWheel then
+    section:EnableMouseWheel(true)
+  end
+
+  if section.SetScript then
+    section:SetScript("OnMouseWheel", function(self, delta)
+      local currentValue = 0
+      if self.scrollBar and self.scrollBar.GetValue then
+        currentValue = self.scrollBar:GetValue() or 0
+      else
+        currentValue = self.scrollOffset or 0
+      end
+
+      local nextValue = currentValue - (delta or 0)
+      if self.scrollBar and self.scrollBar.SetValue then
+        self.scrollBar:SetValue(nextValue)
+      else
+        self.scrollOffset = math.max(0, math.min(self.scrollBar.maxValue or 0, nextValue))
+        Components.RenderScrollableSection(self)
+      end
+    end)
+  end
+
   return section
 end
 
@@ -408,14 +431,16 @@ function Components.CreateCheckButton(parent, config)
     button:SetPoint(config.anchor or "TOPLEFT", parent, config.relativeTo or "TOPLEFT", config.x or 0, config.y or 0)
   end
 
-  local text = Components.CreateLabel(parent, {
-    text = config.text or "",
-    x = (config.x or 0) + 28,
-    y = config.y or 0,
-    font = "GameFontHighlight",
-  })
+  if config.text and config.text ~= "" then
+    local text = Components.CreateLabel(parent, {
+      text = config.text or "",
+      x = (config.x or 0) + 28,
+      y = config.y or 0,
+      font = "GameFontHighlight",
+    })
+    button.label = text
+  end
 
-  button.label = text
   return button
 end
 
@@ -487,6 +512,64 @@ function Components.CreateConfirmationDialog(parent, config)
   return dialog
 end
 
+function Components.CreateModalWindow(parent, config)
+  local dialog = CreateFrame("Frame", config.id, parent, "BackdropTemplate")
+  dialog.width = config.width or 520
+  dialog.height = config.height or 420
+
+  if dialog.SetSize then
+    dialog:SetSize(dialog.width, dialog.height)
+  end
+
+  if dialog.SetPoint then
+    dialog:SetPoint("CENTER", parent, "CENTER", config.x or 0, config.y or 0)
+  end
+
+  if dialog.SetFrameStrata then
+    dialog:SetFrameStrata("DIALOG")
+  end
+
+  if dialog.SetBackdrop then
+    dialog:SetBackdrop({
+      bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+      edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+      tile = true,
+      tileSize = 16,
+      edgeSize = 16,
+      insets = {
+        left = 4,
+        right = 4,
+        top = 4,
+        bottom = 4,
+      },
+    })
+  end
+
+  if dialog.SetBackdropColor then
+    dialog:SetBackdropColor(0.04, 0.03, 0.05, 0.98)
+  end
+
+  dialog.titleLabel = Components.CreateLabel(dialog, {
+    text = config.title or "",
+    x = 16,
+    y = -16,
+    font = "GameFontNormalLarge",
+  })
+  dialog.closeButton = Components.CreateButton(dialog, {
+    text = config.closeText or "Close",
+    width = 84,
+    x = dialog.width - 100,
+    y = -12,
+    onClick = function()
+      Components.SetVisible(dialog, false)
+    end,
+  })
+
+  Components.SetVisible(dialog, false)
+
+  return dialog
+end
+
 function Components.ClearRows(section)
   section.rows = section.rows or {}
 
@@ -535,9 +618,9 @@ function Components.SetScrollableItems(section, items, renderItem)
 
   if section.scrollBar.SetValue then
     section.scrollBar:SetValue(section.scrollOffset)
-  else
-    Components.RenderScrollableSection(section)
   end
+
+  Components.RenderScrollableSection(section)
 end
 
 function Components.AddListRow(section, config)
@@ -567,13 +650,20 @@ function Components.AddListRow(section, config)
   row.actions = {}
 
   local actionX = config.actionX or ((section.width or 100) - 150)
+  local actionColumns = config.actionColumns or #((config.actions or {}))
+  local actionSpacingX = config.actionSpacingX or 6
+  local actionSpacingY = config.actionSpacingY or 4
+  local actionBaseY = config.actionBaseY or 0
   for actionIndex, action in ipairs(config.actions or {}) do
+    local columnIndex = ((actionIndex - 1) % actionColumns)
+    local rowIndex = math.floor((actionIndex - 1) / actionColumns)
+    local buttonWidth = action.width or 64
     local button = Components.CreateButton(row, {
       text = action.text,
-      width = action.width or 64,
+      width = buttonWidth,
       height = 22,
-      x = actionX + ((actionIndex - 1) * ((action.width or 64) + 6)),
-      y = 0,
+      x = actionX + (columnIndex * (buttonWidth + actionSpacingX)),
+      y = actionBaseY - (rowIndex * (22 + actionSpacingY)),
       onClick = action.onClick,
     })
 
@@ -594,7 +684,7 @@ function Components.AddPermissionMatrixRow(section, config)
 
   local row = CreateFrame("Frame", nil, section)
   local index = #section.rows
-  local offsetY = -34 - (index * (config.rowHeight or 40))
+  local offsetY = -54 - (index * (config.rowHeight or 32))
 
   if row.SetSize then
     row:SetSize(config.width or ((section.width or 100) - 20), config.rowHeight or 40)
@@ -608,28 +698,28 @@ function Components.AddPermissionMatrixRow(section, config)
     text = config.rankName or "",
     x = 0,
     y = -8,
-    width = config.rankLabelWidth or 170,
+    width = config.rankLabelWidth or 180,
     justifyH = "LEFT",
   })
   row.manageNominationsCheck = Components.CreateCheckButton(row, {
-    text = "Manage Nominations",
-    x = config.nominationX or 178,
-    y = -4,
+    text = config.nominationText or "",
+    x = config.nominationX or 228,
+    y = -6,
   })
   row.createAwardsCheck = Components.CreateCheckButton(row, {
-    text = "Direct Awards",
-    x = config.awardX or 340,
-    y = -4,
+    text = config.awardText or "",
+    x = config.awardX or 336,
+    y = -6,
   })
   row.deleteAwardsCheck = Components.CreateCheckButton(row, {
-    text = "Delete Awards",
-    x = config.deleteX or 476,
-    y = -4,
+    text = config.deleteText or "",
+    x = config.deleteX or 444,
+    y = -6,
   })
   row.manageAddonCheck = Components.CreateCheckButton(row, {
-    text = "Addon Settings",
-    x = config.addonX or 610,
-    y = -4,
+    text = config.addonText or "",
+    x = config.addonX or 552,
+    y = -6,
   })
 
   row.manageNominationsCheck:SetChecked(config.canManageNominations == true)
@@ -640,7 +730,7 @@ function Components.AddPermissionMatrixRow(section, config)
   row.saveButton = Components.CreateButton(row, {
     text = config.saveText or "Save",
     width = 56,
-    x = config.saveX or 736,
+    x = config.saveX or 670,
     y = -4,
     onClick = config.onSave,
   })

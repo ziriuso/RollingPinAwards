@@ -3,6 +3,7 @@ _G.RollingPinAwards = RPA
 
 local Bridge = RPA.UIBridge or {}
 RPA.UIBridge = Bridge
+local Utils = RPA.Utils or {}
 
 local function copyRows(input)
   local output = {}
@@ -14,10 +15,21 @@ local function copyRows(input)
   return output
 end
 
-local function buildRow(nomination, includeModeration)
+local function trim(value)
+  if type(value) ~= "string" then
+    return value
+  end
+
+  local result = string.gsub(value, "^%s+", "")
+  result = string.gsub(result, "%s+$", "")
+
+  return result
+end
+
+local function buildRow(nomination, includeModeration, displayNominee)
   local row = {
     nominationId = nomination.nominationId,
-    nominee = nomination.nominee,
+    nominee = displayNominee or nomination.nominee,
     reason = nomination.reason,
     nominatedBy = nomination.nominatedBy,
     status = nomination.status,
@@ -44,6 +56,17 @@ local function copyMatrixRow(row)
   }
 end
 
+local function sortDescendingByCreatedAt(left, right)
+  local leftTime = left.createdAt or 0
+  local rightTime = right.createdAt or 0
+
+  if leftTime ~= rightTime then
+    return leftTime > rightTime
+  end
+
+  return (left.awardId or "") < (right.awardId or "")
+end
+
 function Bridge:New(addon)
   local obj = {
     addon = addon,
@@ -52,6 +75,20 @@ function Bridge:New(addon)
   self.__index = self
 
   return setmetatable(obj, self)
+end
+
+function Bridge:ResolveDisplayCharacterName(rawName)
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild or type(rawName) ~= "string" or rawName == "" then
+    return rawName
+  end
+
+  local mapping = self.addon.db:GetAliasMapping(guild.guildKey, rawName)
+  if mapping and mapping.canonicalName then
+    return mapping.canonicalName
+  end
+
+  return rawName
 end
 
 function Bridge:GetPendingNominationsViewModel()
@@ -65,7 +102,7 @@ function Bridge:GetPendingNominationsViewModel()
 
   for _, nomination in ipairs(dataset.nominations) do
     if nomination.status == "pending" then
-      local row = buildRow(nomination, false)
+      local row = buildRow(nomination, false, self:ResolveDisplayCharacterName(nomination.nominee))
       row.hasCurrentPlayerVoted =
         self.addon.db:GetVote(
           guild.guildKey,
@@ -95,7 +132,7 @@ function Bridge:GetAdminNominationsViewModel()
   local rows = {}
 
   for _, nomination in ipairs(dataset.nominations) do
-    rows[#rows + 1] = buildRow(nomination, true)
+    rows[#rows + 1] = buildRow(nomination, true, self:ResolveDisplayCharacterName(nomination.nominee))
   end
 
   return rows
@@ -109,13 +146,81 @@ function Bridge:GetPublicHistoryViewModel()
     rows[#rows + 1] = {
       awardId = award.awardId,
       awardName = award.awardName,
-      recipient = award.recipient,
+      recipient = self:ResolveDisplayCharacterName(award.recipient),
       reason = award.reason,
       awardedBy = award.awardedBy,
       source = award.source,
+      dateText = self.addon.Time:FormatDate(award.createdAt),
       canDelete = canDelete,
     }
   end
+
+  return rows
+end
+
+function Bridge:GetLeaderboardViewModel()
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild then
+    return {}
+  end
+
+  local dataset = self.addon.db:GetGuildDataset(guild.guildKey)
+  local grouped = {}
+  local rows = {}
+
+  for _, award in ipairs(dataset.awards or {}) do
+    local recipient = self:ResolveDisplayCharacterName(award.recipient or award.player)
+    if recipient then
+      grouped[recipient] = grouped[recipient] or {
+        recipient = recipient,
+        pinCount = 0,
+        mostRecentAwardAt = 0,
+        mostRecentAwardText = "",
+        entries = {},
+      }
+
+      local nomination = nil
+      if award.source == "nomination" and award.nominationId then
+        nomination = self.addon.db:GetNomination(guild.guildKey, award.nominationId)
+      end
+
+      local displayAwardedBy = award.awardedBy
+      if nomination and nomination.nominatedBy then
+        displayAwardedBy = nomination.nominatedBy
+      end
+
+      grouped[recipient].pinCount = grouped[recipient].pinCount + 1
+      grouped[recipient].mostRecentAwardAt = math.max(
+        grouped[recipient].mostRecentAwardAt or 0,
+        award.createdAt or 0
+      )
+      grouped[recipient].entries[#grouped[recipient].entries + 1] = {
+        awardId = award.awardId,
+        dateText = self.addon.Time:FormatDate(award.createdAt),
+        createdAt = award.createdAt or 0,
+        reason = award.reason,
+        displayAwardedBy = displayAwardedBy,
+      }
+    end
+  end
+
+  for _, row in pairs(grouped) do
+    table.sort(row.entries, sortDescendingByCreatedAt)
+    row.mostRecentAwardText = self.addon.Time:FormatDate(row.mostRecentAwardAt)
+    rows[#rows + 1] = row
+  end
+
+  table.sort(rows, function(left, right)
+    if left.pinCount ~= right.pinCount then
+      return left.pinCount > right.pinCount
+    end
+
+    if left.mostRecentAwardAt ~= right.mostRecentAwardAt then
+      return left.mostRecentAwardAt > right.mostRecentAwardAt
+    end
+
+    return left.recipient < right.recipient
+  end)
 
   return rows
 end
@@ -184,6 +289,21 @@ function Bridge:GetRankPermissionsViewModel()
   }
 end
 
+function Bridge:GetAliasMappingsViewModel()
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild then
+    return {
+      canManageAliases = self:CanCurrentPlayerManageAddonPermissions(),
+      rows = {},
+    }
+  end
+
+  return {
+    canManageAliases = self:CanCurrentPlayerManageAddonPermissions(),
+    rows = self.addon.db:GetAliasMappings(guild.guildKey) or {},
+  }
+end
+
 function Bridge:SubmitNomination(nominee, reason)
   return self.addon.nominations:Create(nominee, reason)
 end
@@ -206,6 +326,90 @@ end
 
 function Bridge:DeleteAward(awardId)
   return self.addon.awards:DeleteAward(awardId)
+end
+
+function Bridge:SaveAliasMapping(aliasDisplay, canonicalName)
+  if not self:CanCurrentPlayerManageAddonPermissions() then
+    return false, "unauthorized"
+  end
+
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild then
+    return false, "missing guild context"
+  end
+
+  aliasDisplay = trim(aliasDisplay)
+  canonicalName = trim(canonicalName)
+
+  local aliasKey = Utils.NormalizeAliasKey(aliasDisplay)
+  if not aliasKey then
+    return false, "missing alias"
+  end
+
+  if type(canonicalName) ~= "string" or canonicalName == "" then
+    return false, "missing canonical name"
+  end
+
+  if not canonicalName:find("-", 1, true) then
+    return false, "canonical name must include realm"
+  end
+
+  local row, err = self.addon.db:UpsertAliasMapping(guild.guildKey, {
+    aliasKey = aliasKey,
+    aliasDisplay = aliasDisplay,
+    canonicalName = canonicalName,
+    createdBy = self.addon:GetCurrentPlayerFullName(),
+    createdAt = self.addon.Time:Now(),
+  })
+  if not row then
+    return false, err
+  end
+
+  if self.addon.sync then
+    self.addon.sync:Broadcast("alias_mapping", {
+      guildKey = guild.guildKey,
+      aliasKey = row.aliasKey,
+      aliasDisplay = row.aliasDisplay,
+      canonicalName = row.canonicalName,
+      createdBy = row.createdBy,
+      createdAt = row.createdAt,
+      lastModifiedBy = self.addon:GetCurrentPlayerFullName(),
+      lastModifiedAt = self.addon.Time:Now(),
+    }, "GUILD")
+  end
+
+  return row, nil
+end
+
+function Bridge:DeleteAliasMapping(aliasKey)
+  if not self:CanCurrentPlayerManageAddonPermissions() then
+    return false, "unauthorized"
+  end
+
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild then
+    return false, "missing guild context"
+  end
+
+  local mapping = self.addon.db:GetAliasMapping(guild.guildKey, aliasKey)
+  local deleted, err = self.addon.db:DeleteAliasMapping(guild.guildKey, aliasKey)
+  if not deleted then
+    return false, err
+  end
+
+  if self.addon.sync then
+    self.addon.sync:Broadcast("alias_mapping", {
+      guildKey = guild.guildKey,
+      aliasKey = Utils.NormalizeAliasKey(aliasKey),
+      aliasDisplay = mapping and mapping.aliasDisplay or aliasKey,
+      canonicalName = mapping and mapping.canonicalName or nil,
+      deleted = true,
+      lastModifiedBy = self.addon:GetCurrentPlayerFullName(),
+      lastModifiedAt = self.addon.Time:Now(),
+    }, "GUILD")
+  end
+
+  return true, nil
 end
 
 function Bridge:SaveRankPermissions(rankIndex, rankName, permissions)

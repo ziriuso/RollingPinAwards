@@ -96,6 +96,26 @@ function Permissions:GetGuildRankMatrix()
   local matrix = {}
   local seen = {}
 
+  if type(GuildControlGetNumRanks) == "function" and type(GuildControlGetRankName) == "function" then
+    local rankCount = GuildControlGetNumRanks() or 0
+    for index = 1, rankCount do
+      local rankName = GuildControlGetRankName(index)
+      local rankIndex = index - 1
+
+      if type(rankIndex) == "number" and not seen[rankIndex] then
+        seen[rankIndex] = true
+        local row = copyRow(rowsByRank[rankIndex] or {})
+        row.rankIndex = rankIndex
+        row.rankName = row.rankName or rankName or ("Rank %d"):format(rankIndex)
+        row.canManageNominations = row.canManageNominations == true
+        row.canCreateDirectAwards = row.canCreateDirectAwards == true
+        row.canDeleteAwards = row.canDeleteAwards == true
+        row.canManageAddonPermissions = row.canManageAddonPermissions == true
+        matrix[#matrix + 1] = row
+      end
+    end
+  end
+
   if type(GetNumGuildMembers) == "function" and type(GetGuildRosterInfo) == "function" then
     local memberCount = GetNumGuildMembers() or 0
     for index = 1, memberCount do

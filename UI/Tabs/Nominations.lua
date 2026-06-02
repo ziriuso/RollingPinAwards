@@ -96,8 +96,8 @@ UITabs.nominations = {
       height = 360,
       x = 0,
       y = -92,
-      visibleRowCount = 5,
-      rowHeight = 54,
+      visibleRowCount = 4,
+      rowHeight = 68,
     })
 
     return panel
@@ -165,9 +165,13 @@ UITabs.nominations = {
 
       Components.AddListRow(section, {
         text = ("%s\n%s\nUpvotes: %d"):format(row.nominee, row.reason, row.upvotes or 0),
-        labelWidth = 430,
-        rowHeight = 54,
-        actionX = 438,
+        labelWidth = 400,
+        rowHeight = 68,
+        actionX = 434,
+        actionColumns = 2,
+        actionSpacingX = 8,
+        actionSpacingY = 6,
+        actionBaseY = 0,
         actions = actions,
       })
     end)

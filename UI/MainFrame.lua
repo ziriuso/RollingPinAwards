@@ -14,6 +14,7 @@ if not RPA.UITabs or not RPA.UITabs.dashboard then
   dofile("UI/Tabs/Award.lua")
   dofile("UI/Tabs/Nominations.lua")
   dofile("UI/Tabs/History.lua")
+  dofile("UI/Tabs/Leaderboard.lua")
   dofile("UI/Tabs/Settings.lua")
   dofile("UI/Tabs/Admin.lua")
 end

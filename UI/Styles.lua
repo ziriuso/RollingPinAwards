@@ -12,6 +12,7 @@ RPA.UIStyles = {
     "award",
     "nominations",
     "history",
+    "leaderboard",
     "settings",
     "admin",
   },

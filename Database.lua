@@ -3,6 +3,7 @@ _G.RollingPinAwards = RPA
 
 local Database = RPA.Database or {}
 RPA.Database = Database
+local Utils = RPA.Utils or {}
 
 local function isMissingString(value)
   return type(value) ~= "string" or value == ""
@@ -29,6 +30,7 @@ local function ensureGuildDatasetShape(dataset, guildKey)
   dataset.nominationsById = type(dataset.nominationsById) == "table" and dataset.nominationsById or {}
   dataset.permissionRoster = type(dataset.permissionRoster) == "table" and dataset.permissionRoster or {}
   dataset.rankPermissions = type(dataset.rankPermissions) == "table" and dataset.rankPermissions or {}
+  dataset.aliasMappingsByKey = type(dataset.aliasMappingsByKey) == "table" and dataset.aliasMappingsByKey or {}
   dataset.votesByNomination = type(dataset.votesByNomination) == "table" and dataset.votesByNomination or {}
   dataset.meta = type(dataset.meta) == "table" and dataset.meta or {}
   dataset.meta.nextNominationSequence = type(dataset.meta.nextNominationSequence) == "number"
@@ -71,6 +73,14 @@ local function rebuildAwardRows(dataset)
   end
 end
 
+local function isEmptyMap(input)
+  for _ in pairs(input or {}) do
+    return false
+  end
+
+  return true
+end
+
 function Database:New(storage)
   local obj = {
     storage = storage,
@@ -97,11 +107,89 @@ function Database:GetGuildDataset(guildKey)
       nominationsById = {},
       permissionRoster = {},
       rankPermissions = {},
+      aliasMappingsByKey = {},
       votesByNomination = {},
     }
   end
 
   return ensureGuildDatasetShape(datasets[guildKey], guildKey)
+end
+
+function Database:MigrateGuildDatasetKey(fromGuildKey, toGuildKey)
+  if isMissingString(fromGuildKey) or isMissingString(toGuildKey) then
+    return false, "missing guildKey"
+  end
+
+  if fromGuildKey == toGuildKey then
+    return true
+  end
+
+  local datasets = self.storage.profile.guildDatasets
+  local source = datasets[fromGuildKey]
+  if type(source) ~= "table" then
+    return false, "missing source guild dataset"
+  end
+
+  local target = datasets[toGuildKey]
+  if type(target) ~= "table" then
+    datasets[toGuildKey] = source
+    datasets[toGuildKey].guildKey = toGuildKey
+    datasets[fromGuildKey] = nil
+    ensureGuildDatasetShape(datasets[toGuildKey], toGuildKey)
+    return true
+  end
+
+  source = ensureGuildDatasetShape(source, fromGuildKey)
+  target = ensureGuildDatasetShape(target, toGuildKey)
+
+  for nominationId, nomination in pairs(source.nominationsById) do
+    nomination.guildKey = toGuildKey
+    target.nominationsById[nominationId] = target.nominationsById[nominationId] or nomination
+  end
+
+  for awardId, award in pairs(source.awardsById) do
+    award.guildKey = toGuildKey
+    target.awardsById[awardId] = target.awardsById[awardId] or award
+  end
+
+  for rankIndex, row in pairs(source.rankPermissions) do
+    target.rankPermissions[rankIndex] = target.rankPermissions[rankIndex] or row
+  end
+
+  for playerName, row in pairs(source.permissionRoster) do
+    target.permissionRoster[playerName] = target.permissionRoster[playerName] or row
+  end
+
+  for aliasKey, row in pairs(source.aliasMappingsByKey) do
+    target.aliasMappingsByKey[aliasKey] = target.aliasMappingsByKey[aliasKey] or row
+  end
+
+  for nominationId, ledger in pairs(source.votesByNomination) do
+    target.votesByNomination[nominationId] = target.votesByNomination[nominationId] or {}
+    for voter, vote in pairs(ledger) do
+      target.votesByNomination[nominationId][voter] = target.votesByNomination[nominationId][voter] or vote
+    end
+  end
+
+  if type(source.meta.nextNominationSequence) == "number" then
+    target.meta.nextNominationSequence = math.max(
+      target.meta.nextNominationSequence or 0,
+      source.meta.nextNominationSequence
+    )
+  end
+
+  if type(source.meta.nextAwardSequence) == "number" then
+    target.meta.nextAwardSequence = math.max(
+      target.meta.nextAwardSequence or 0,
+      source.meta.nextAwardSequence
+    )
+  end
+
+  rebuildNominationRows(target)
+  rebuildAwardRows(target)
+  datasets[fromGuildKey] = nil
+
+  return true
 end
 
 function Database:UpsertNomination(guildKey, nomination)
@@ -255,6 +343,86 @@ function Database:GetRankPermissions(guildKey)
   end
 
   return dataset.rankPermissions, nil
+end
+
+function Database:UpsertAliasMapping(guildKey, row)
+  local aliasKey = type(row) == "table" and Utils.NormalizeAliasKey(row.aliasKey or row.aliasDisplay) or nil
+  if isMissingString(aliasKey) then
+    return nil, "missing aliasKey"
+  end
+
+  if type(row) ~= "table" or isMissingString(row.canonicalName) then
+    return nil, "missing canonicalName"
+  end
+
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return nil, err
+  end
+
+  row.aliasKey = aliasKey
+  dataset.aliasMappingsByKey[aliasKey] = row
+
+  return row
+end
+
+function Database:GetAliasMapping(guildKey, aliasKey)
+  aliasKey = Utils.NormalizeAliasKey(aliasKey)
+  if isMissingString(aliasKey) then
+    return nil, "missing aliasKey"
+  end
+
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return nil, err
+  end
+
+  return dataset.aliasMappingsByKey[aliasKey], nil
+end
+
+function Database:GetAliasMappings(guildKey)
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return nil, err
+  end
+
+  local rows = {}
+
+  for _, row in pairs(dataset.aliasMappingsByKey) do
+    rows[#rows + 1] = row
+  end
+
+  table.sort(rows, function(left, right)
+    local leftDisplay = left.aliasDisplay or ""
+    local rightDisplay = right.aliasDisplay or ""
+    if leftDisplay ~= rightDisplay then
+      return leftDisplay < rightDisplay
+    end
+
+    return (left.canonicalName or "") < (right.canonicalName or "")
+  end)
+
+  return rows
+end
+
+function Database:DeleteAliasMapping(guildKey, aliasKey)
+  aliasKey = Utils.NormalizeAliasKey(aliasKey)
+  if isMissingString(aliasKey) then
+    return false, "missing aliasKey"
+  end
+
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return false, err
+  end
+
+  if dataset.aliasMappingsByKey[aliasKey] == nil then
+    return false, "missing alias mapping"
+  end
+
+  dataset.aliasMappingsByKey[aliasKey] = nil
+
+  return true
 end
 
 function Database:NextNominationId(guildKey)

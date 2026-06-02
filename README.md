@@ -11,8 +11,9 @@ Rolling Pin Awards is a guild-only World of Warcraft addon for managing nominati
 - Public pending nominations with advisory upvotes
 - Hidden downvote moderation signal for authorized officer/admin views
 - Direct awards, nomination approval/rejection, and award deletion gated by separate rank permissions
+- Guild-shared alias merges for canonical nominee and recipient display without rewriting stored records
 - Custom Lua UI with reusable tab and component modules
-- Interactive tabs for dashboard, nominations, direct awards, history, settings, and rank-based admin management
+- Interactive tabs for dashboard, nominations, direct awards, history, leaderboard, settings, and rank-based admin management
 - Conservative guild-scoped sync validation helpers
 
 ## Slash Command
@@ -35,11 +36,13 @@ The current MVP ships a functional in-game window with:
 - nomination submission and voting controls
 - rank-gated approve/reject controls inside the nominations view
 - rank-gated direct award controls
-- public award history
+- public award history with human-readable award dates
+- a leaderboard ranked by rolling pin count with click-through award-history popups
 - confirmed award deletion for ranks that have delete permission
 - local settings toggles
 - admin-only rank permission matrix with checkbox editing by guild rank name
-- scrollable long-list sections for nominations, history, and admin queues
+- admin alias merge management for collapsing nicknames and alternate typed names into one canonical character
+- scrollable long-list sections for nominations, history, leaderboard, and admin queues
 - dashboard shortcuts between the main participation flows
 
 ## Runtime Notes

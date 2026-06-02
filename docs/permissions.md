@@ -24,4 +24,6 @@ Each non-GM rank can independently receive these permissions:
 - `Create Direct Awards` controls direct award creation.
 - `Delete Awards` controls destructive award removal and also removes any linked nomination.
 - `Manage Addon Permissions/Settings` controls editing the guild rank matrix and viewing the `Admin` tab.
+- The same `Manage Addon Permissions/Settings` permission also controls the guild-shared `Alias Merges` section in `Admin`.
+- Alias merges only canonicalize nomination nominees and award recipients; they do not rewrite stored records or alter `nominatedBy`, `awardedBy`, or voter identities.
 - Privileged sync updates are rejected unless the sender satisfies the same rules the local UI uses.

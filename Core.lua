@@ -207,6 +207,34 @@ function RPA:OnInitialize()
   return true
 end
 
+function RPA:RefreshActiveGuildContext()
+  if type(self.GuildContext.Build) ~= "function" then
+    return self.activeGuildContext
+  end
+
+  local nextContext = self.GuildContext:Build()
+  if nextContext then
+    local previousContext = self.activeGuildContext
+    if previousContext
+      and previousContext.guildName == nextContext.guildName
+      and previousContext.guildKey ~= nextContext.guildKey
+      and self.db
+      and type(self.db.MigrateGuildDatasetKey) == "function"
+    then
+      self.db:MigrateGuildDatasetKey(previousContext.guildKey, nextContext.guildKey)
+    end
+
+    self.activeGuildContext = nextContext
+    return self.activeGuildContext
+  end
+
+  if type(IsInGuild) == "function" and IsInGuild() == false then
+    self.activeGuildContext = nil
+  end
+
+  return self.activeGuildContext
+end
+
 function RPA:OnEnable()
   if self.__rpaEnabled or self.__rpaEnabling then
     return self.__rpaEnabled == true
@@ -247,7 +275,7 @@ function RPA:OnCommReceived(prefix, message, distribution, sender)
 end
 
 function RPA:GetActiveGuildContext()
-  return self.activeGuildContext
+  return self:RefreshActiveGuildContext()
 end
 
 function RPA:GetCurrentPlayerFullName()
@@ -271,6 +299,7 @@ if type(CreateFrame) == "function" then
   local startupFrame = CreateFrame("Frame", "RollingPinAwardsStartupFrame")
   startupFrame:RegisterEvent("ADDON_LOADED")
   startupFrame:RegisterEvent("PLAYER_LOGIN")
+  startupFrame:RegisterEvent("PLAYER_GUILD_UPDATE")
   startupFrame:SetScript("OnEvent", function(_, event, addonName)
     if event == "ADDON_LOADED" and addonName == RPA.ADDON_NAME then
       RPA:OnInitialize()
@@ -283,6 +312,16 @@ if type(CreateFrame) == "function" then
       end
 
       RPA:OnEnable()
+      RPA:RefreshActiveGuildContext()
+      return
+    end
+
+    if event == "PLAYER_GUILD_UPDATE" then
+      if not RPA.__rpaInitialized then
+        RPA:OnInitialize()
+      end
+
+      RPA:RefreshActiveGuildContext()
     end
   end)
 end

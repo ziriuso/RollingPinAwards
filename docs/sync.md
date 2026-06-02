@@ -14,6 +14,7 @@ Privileged payload mapping:
 - direct award updates require `Create Direct Awards`
 - moderated nomination updates require `Manage Nominations`
 - rank permission matrix updates require `Manage Addon Permissions/Settings`
+- alias merge updates require `Manage Addon Permissions/Settings`
 
 ## Transport Notes
 
@@ -35,5 +36,6 @@ Privileged payload mapping:
 - nomination upserts
 - nomination vote updates
 - rank permission matrix updates
+- alias merge updates
 
 These helpers are intentionally data-first so the later AceComm transport layer can call into one validation path instead of duplicating merge logic in UI or command code.

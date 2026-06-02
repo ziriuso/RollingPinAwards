@@ -196,6 +196,10 @@ local function createFrameObject(frameType, name, parent, template)
     self.mouseEnabled = value == true
   end
 
+  function frame:EnableMouseWheel(value)
+    self.mouseWheelEnabled = value == true
+  end
+
   function frame:SetMovable(value)
     self.movable = value == true
   end
@@ -244,6 +248,15 @@ local function createFrameObject(frameType, name, parent, template)
     local handler = self.scripts.OnClick
     if type(handler) == "function" then
       return handler(self, ...)
+    end
+
+    return nil
+  end
+
+  function frame:MouseWheel(delta)
+    local handler = self.scripts.OnMouseWheel
+    if type(handler) == "function" then
+      return handler(self, delta)
     end
 
     return nil
@@ -390,6 +403,7 @@ function wow.reset(seed)
     framesByEvent = {},
     guildClubId = seed.guildClubId,
     guildName = seed.guildName,
+    guildRanks = seed.guildRanks or {},
     guildRankName = seed.guildRankName or "Member",
     guildRankIndex = seed.guildRankIndex or 9,
     guildMembers = seed.guildMembers or {},
@@ -452,6 +466,19 @@ function wow.reset(seed)
     return member.name, member.rankName or "Member", member.rankIndex or 9
   end
 
+  _G.GuildControlGetNumRanks = function()
+    return #state.guildRanks
+  end
+
+  _G.GuildControlGetRankName = function(index)
+    local rank = state.guildRanks[index]
+    if type(rank) == "table" then
+      return rank.name
+    end
+
+    return rank
+  end
+
   _G.SlashCmdList = {}
   _G.SLASH_ROLLINGPINAWARDS1 = nil
   _G.os = originalOs
@@ -474,6 +501,11 @@ function wow.setPlayer(playerName, guildRankName, guildRankIndex)
   elseif guildRankName ~= nil then
     state.isGuildOfficer = guildRankName == "Guild Master" or guildRankName == "Officer"
   end
+end
+
+function wow.setGuild(guildName, guildClubId)
+  state.guildName = guildName
+  state.guildClubId = guildClubId
 end
 
 

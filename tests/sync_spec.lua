@@ -217,6 +217,63 @@ return {
     harness.assert_true(row.canManageNominations)
   end,
 
+  ["sync accepts an alias mapping update from an authorized rank manager and rejects unauthorized senders"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+        {
+          name = "Veteran-Stormrage",
+          rankName = "Veteran",
+          rankIndex = 2,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.permissions:SetRankPermissions(1, "Officer", {
+      canManageAddonPermissions = true,
+    })
+
+    local accepted = addon.sync:AcceptAliasMapping({
+      guildKey = addon:GetActiveGuildContext().guildKey,
+      aliasKey = "moon",
+      aliasDisplay = "Moon",
+      canonicalName = "Moonrustle-Stormrage",
+      createdBy = "Officerone-Stormrage",
+      createdAt = 1760000000,
+      lastModifiedBy = "Officerone-Stormrage",
+    })
+    local found = addon.db:GetAliasMapping(addon:GetActiveGuildContext().guildKey, "moon")
+    local rejected, rejectError = addon.sync:AcceptAliasMapping({
+      guildKey = addon:GetActiveGuildContext().guildKey,
+      aliasKey = "burny",
+      aliasDisplay = "Burny",
+      canonicalName = "Burny-Stormrage",
+      createdBy = "Veteran-Stormrage",
+      createdAt = 1760000001,
+      lastModifiedBy = "Veteran-Stormrage",
+    })
+
+    harness.assert_true(accepted)
+    harness.assert_equal("Moonrustle-Stormrage", found.canonicalName)
+    harness.assert_false(rejected)
+    harness.assert_equal("unauthorized", rejectError)
+  end,
+
   ["sync broadcasts envelopes through ace comm when available"] = function()
     wow.reset({
       ace3 = true,

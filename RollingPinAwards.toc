@@ -38,6 +38,7 @@ UI\Tabs\Dashboard.lua
 UI\Tabs\Award.lua
 UI\Tabs\Nominations.lua
 UI\Tabs\History.lua
+UI\Tabs\Leaderboard.lua
 UI\Tabs\Settings.lua
 UI\Tabs\Admin.lua
 UI\MainFrame.lua
