@@ -1,4 +1,4 @@
-## Interface: 120005, 110207
+## Interface: 120007, 110207
 ## Title: Rolling Pin Awards
 ## Notes: Guild awards and nominations for The Burnt Rolling Pin
 ## Author: Ziri

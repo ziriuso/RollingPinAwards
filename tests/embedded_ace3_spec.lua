@@ -21,6 +21,12 @@ local function indexOf(lines, exactValue)
 end
 
 return {
+  ["toc declares support for retail 12.0.7"] = function()
+    local lines = readLines("RollingPinAwards.toc")
+
+    harness.assert_equal("## Interface: 120007, 110207", lines[1])
+  end,
+
   ["toc embeds required ace3 library files in load order"] = function()
     local lines = readLines("RollingPinAwards.toc")
 
