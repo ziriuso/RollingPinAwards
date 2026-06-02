@@ -6,4 +6,7 @@
 ## SavedVariables: RollingPinAwardsDB
 ## OptionalDeps: Ace3
 
+Constants.lua
+Defaults.lua
+GuildContext.lua
 Core.lua
