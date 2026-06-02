@@ -11,4 +11,6 @@ Defaults.lua
 GuildContext.lua
 Utils.lua
 Database.lua
+RosterPermissions.lua
+Permissions.lua
 Core.lua

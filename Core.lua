@@ -19,11 +19,15 @@ local Defaults = RPA.Defaults or {
 }
 local GuildContext = RPA.GuildContext or {}
 local Database = RPA.Database
+local Permissions = RPA.Permissions or {}
+local RosterPermissions = RPA.RosterPermissions or {}
 local Utils = RPA.Utils
 
 RPA.Constants = Constants
 RPA.Defaults = Defaults
 RPA.GuildContext = GuildContext
+RPA.Permissions = Permissions
+RPA.RosterPermissions = RosterPermissions
 
 RPA.ADDON_NAME = Constants.ADDON_NAME
 RPA.SLASH_COMMAND = Constants.SLASH_COMMAND
@@ -40,10 +44,29 @@ function RPA:OnInitialize()
   _G.RollingPinAwardsDB = storage
 
   self.db = Database:New(storage)
+
+  if type(RosterPermissions.New) == "function" then
+    self.rosterPermissions = RosterPermissions:New(self.db)
+  else
+    self.rosterPermissions = nil
+  end
+
+  if self.rosterPermissions and type(Permissions.New) == "function" then
+    self.permissions = Permissions:New(self, self.rosterPermissions)
+  else
+    self.permissions = nil
+  end
 end
 
 function RPA:GetActiveGuildContext()
   return self.activeGuildContext
+end
+
+function RPA:GetCurrentPlayerFullName()
+  local playerName = UnitName("player")
+  local realmName = GetRealmName()
+
+  return ("%s-%s"):format(playerName, realmName)
 end
 
 return RPA

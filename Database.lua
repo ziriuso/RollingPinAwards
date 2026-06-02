@@ -96,4 +96,32 @@ function Database:GetNomination(guildKey, nominationId)
   return dataset.nominationsById[nominationId], nil
 end
 
+function Database:UpsertPermissionRosterEntry(guildKey, entry)
+  if type(entry) ~= "table" or isMissingString(entry.player) then
+    return nil, "missing playerFullName"
+  end
+
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return nil, err
+  end
+
+  dataset.permissionRoster[entry.player] = entry
+
+  return entry
+end
+
+function Database:GetPermissionRosterEntry(guildKey, playerFullName)
+  if isMissingString(playerFullName) then
+    return nil, "missing playerFullName"
+  end
+
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return nil, err
+  end
+
+  return dataset.permissionRoster[playerFullName], nil
+end
+
 return RPA.Database

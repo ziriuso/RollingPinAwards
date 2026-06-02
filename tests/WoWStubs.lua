@@ -17,6 +17,10 @@ function wow.reset(seed)
   state = {
     guildClubId = seed.guildClubId,
     guildName = seed.guildName,
+    guildRankName = seed.guildRankName or "Member",
+    guildRankIndex = seed.guildRankIndex or 9,
+    guildMembers = seed.guildMembers or {},
+    isGuildOfficer = seed.isGuildOfficer,
     realmName = seed.realmName or "Stormrage",
     playerName = seed.playerName or "Ziri",
     savedVariables = seed.savedVariables,
@@ -24,7 +28,11 @@ function wow.reset(seed)
 
   _G.__RPA_TEST_STATE = state
 
-  _G.GetGuildInfo = function()
+  _G.GetGuildInfo = function(unit)
+    if unit == "player" then
+      return state.guildName, state.guildRankName, state.guildRankIndex
+    end
+
     return state.guildName
   end
 
@@ -42,10 +50,41 @@ function wow.reset(seed)
     end,
   }
 
+  _G.C_GuildInfo = {
+    IsGuildOfficer = function()
+      if state.isGuildOfficer ~= nil then
+        return state.isGuildOfficer
+      end
+
+      return state.guildRankIndex ~= nil and state.guildRankIndex <= 1
+    end,
+  }
+
+  _G.GetNumGuildMembers = function()
+    return #state.guildMembers
+  end
+
+  _G.GetGuildRosterInfo = function(index)
+    local member = state.guildMembers[index]
+    if not member then
+      return nil
+    end
+
+    return member.name, member.rankName or "Member", member.rankIndex or 9
+  end
+
   _G.SlashCmdList = {}
   _G.SLASH_ROLLINGPINAWARDS1 = nil
   _G.RollingPinAwards = nil
   _G.RollingPinAwardsDB = state.savedVariables
+end
+
+function wow.setPlayer(playerName, guildRankName, guildRankIndex)
+  state.playerName = playerName or state.playerName
+  state.guildRankName = guildRankName or state.guildRankName
+  if guildRankIndex ~= nil then
+    state.guildRankIndex = guildRankIndex
+  end
 end
 
 wow.loadAddon = loadAddonFromToc
