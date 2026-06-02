@@ -25,3 +25,5 @@ powershell -ExecutionPolicy Bypass -File .\tests\run.ps1 "guild member can"
 The suite exercises addon bootstrap, guild context, SavedVariables behavior, permissions, nominations, voting, awards, commands, bridge view models, and sync validation.
 
 It also includes Ace3-aware stubs so lifecycle, AceDB profile setup, chat-command registration, and comm registration can be verified without a live WoW client.
+
+The harness intentionally skips executing files under `Libs/` during plain Lua tests. Embedded-library presence and TOC load order are verified separately so packaging stays covered without requiring the full WoW client runtime.

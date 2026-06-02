@@ -150,7 +150,9 @@ local function loadAddonFromToc(path)
   for line in io.lines(path or "RollingPinAwards.toc") do
     local entry = line:match("^%s*(.-)%s*$")
     if entry ~= "" and not entry:match("^##") then
-      dofile(entry)
+      if not entry:match("^Libs[\\/]") then
+        dofile(entry)
+      end
     end
   end
 
