@@ -4,6 +4,8 @@ _G.RollingPinAwards = RPA
 local Bridge = RPA.UIBridge or {}
 RPA.UIBridge = Bridge
 local Utils = RPA.Utils or {}
+local Constants = RPA.Constants or {}
+local getAwardTypeMediaPath
 
 local function copyRows(input)
   local output = {}
@@ -30,10 +32,13 @@ local function buildRow(nomination, includeModeration, displayNominee)
   local row = {
     nominationId = nomination.nominationId,
     nominee = displayNominee or nomination.nominee,
+    shortNominee = Utils.GetShortCharacterName(displayNominee or nomination.nominee),
     reason = nomination.reason,
     nominatedBy = nomination.nominatedBy,
     status = nomination.status,
     upvotes = nomination.upvoteCount or 0,
+    awardType = Utils.NormalizeAwardType(nomination.awardType),
+    awardIconPath = getAwardTypeMediaPath(nomination.awardType),
     hasCurrentPlayerVoted = false,
   }
 
@@ -43,6 +48,17 @@ local function buildRow(nomination, includeModeration, displayNominee)
   end
 
   return row
+end
+
+function getAwardTypeMediaPath(awardType)
+  local media = (RPA.UIStyles or {}).Media or {}
+  local normalized = Utils.NormalizeAwardType(awardType)
+
+  if normalized == Constants.AWARD_TYPE_GOLDEN then
+    return media.leaderboardIcon
+  end
+
+  return media.awardIcon
 end
 
 local function copyMatrixRow(row)
@@ -146,7 +162,10 @@ function Bridge:GetPublicHistoryViewModel()
     rows[#rows + 1] = {
       awardId = award.awardId,
       awardName = award.awardName,
+      awardType = Utils.NormalizeAwardType(award.awardType),
+      awardIconPath = getAwardTypeMediaPath(award.awardType),
       recipient = self:ResolveDisplayCharacterName(award.recipient),
+      shortRecipient = Utils.GetShortCharacterName(self:ResolveDisplayCharacterName(award.recipient)),
       reason = award.reason,
       awardedBy = award.awardedBy,
       source = award.source,
@@ -158,22 +177,31 @@ function Bridge:GetPublicHistoryViewModel()
   return rows
 end
 
-function Bridge:GetLeaderboardViewModel()
+function Bridge:GetLeaderboardViewModel(mode)
   local guild = self.addon:GetActiveGuildContext()
   if not guild then
     return {}
   end
 
+  local selectedMode = mode or "combined"
   local dataset = self.addon.db:GetGuildDataset(guild.guildKey)
   local grouped = {}
   local rows = {}
 
   for _, award in ipairs(dataset.awards or {}) do
     local recipient = self:ResolveDisplayCharacterName(award.recipient or award.player)
-    if recipient then
+    local normalizedAwardType = Utils.NormalizeAwardType(award.awardType)
+    local includeAward = selectedMode == "combined"
+      or selectedMode == normalizedAwardType
+
+    if recipient and includeAward then
       grouped[recipient] = grouped[recipient] or {
         recipient = recipient,
+        shortRecipient = Utils.GetShortCharacterName(recipient),
         pinCount = 0,
+        burntCount = 0,
+        goldenCount = 0,
+        totalCount = 0,
         mostRecentAwardAt = 0,
         mostRecentAwardText = "",
         entries = {},
@@ -189,13 +217,27 @@ function Bridge:GetLeaderboardViewModel()
         displayAwardedBy = nomination.nominatedBy
       end
 
-      grouped[recipient].pinCount = grouped[recipient].pinCount + 1
+      grouped[recipient].totalCount = grouped[recipient].totalCount + 1
+      if normalizedAwardType == Constants.AWARD_TYPE_GOLDEN then
+        grouped[recipient].goldenCount = grouped[recipient].goldenCount + 1
+      else
+        grouped[recipient].burntCount = grouped[recipient].burntCount + 1
+      end
+      if selectedMode == "combined" then
+        grouped[recipient].pinCount = grouped[recipient].totalCount
+      elseif normalizedAwardType == Constants.AWARD_TYPE_GOLDEN then
+        grouped[recipient].pinCount = grouped[recipient].goldenCount
+      else
+        grouped[recipient].pinCount = grouped[recipient].burntCount
+      end
       grouped[recipient].mostRecentAwardAt = math.max(
         grouped[recipient].mostRecentAwardAt or 0,
         award.createdAt or 0
       )
       grouped[recipient].entries[#grouped[recipient].entries + 1] = {
         awardId = award.awardId,
+        awardType = normalizedAwardType,
+        awardIconPath = getAwardTypeMediaPath(normalizedAwardType),
         dateText = self.addon.Time:FormatDate(award.createdAt),
         createdAt = award.createdAt or 0,
         reason = award.reason,
@@ -262,6 +304,26 @@ end
 function Bridge:GetDashboardViewModel()
   local nominations = self:GetPendingNominationsViewModel()
   local history = self:GetPublicHistoryViewModel()
+  local leaderboard = self:GetLeaderboardViewModel("combined")
+  local leaderboardRows = {}
+
+  for index, row in ipairs(leaderboard or {}) do
+    if index > 5 then
+      break
+    end
+
+    leaderboardRows[#leaderboardRows + 1] = {
+      rank = index,
+      recipient = row.recipient,
+      shortRecipient = row.shortRecipient,
+      pinCount = row.pinCount,
+      burntCount = row.burntCount,
+      goldenCount = row.goldenCount,
+      mostRecentAwardText = row.mostRecentAwardText,
+    }
+  end
+
+  local latestAward = history[1]
 
   return {
     canManageAwards = self:CanCurrentPlayerManageAwards(),
@@ -271,6 +333,10 @@ function Bridge:GetDashboardViewModel()
     pendingCount = #nominations,
     recentAwards = copyRows(history),
     awardCount = #history,
+    leaderboardRows = leaderboardRows,
+    topRecipient = leaderboardRows[1] and leaderboardRows[1].shortRecipient or nil,
+    topRecipientCount = leaderboardRows[1] and leaderboardRows[1].pinCount or 0,
+    latestAwardRecipient = latestAward and latestAward.shortRecipient or nil,
   }
 end
 
@@ -304,8 +370,8 @@ function Bridge:GetAliasMappingsViewModel()
   }
 end
 
-function Bridge:SubmitNomination(nominee, reason)
-  return self.addon.nominations:Create(nominee, reason)
+function Bridge:SubmitNomination(nominee, reason, awardType)
+  return self.addon.nominations:Create(nominee, reason, awardType)
 end
 
 function Bridge:CastVote(nominationId, voteType)
@@ -320,8 +386,8 @@ function Bridge:RejectNomination(nominationId)
   return self.addon.nominations:Reject(nominationId)
 end
 
-function Bridge:CreateDirectAward(recipient, reason)
-  return self.addon.awards:CreateDirectAward(recipient, reason)
+function Bridge:CreateDirectAward(recipient, reason, awardType)
+  return self.addon.awards:CreateDirectAward(recipient, reason, awardType)
 end
 
 function Bridge:DeleteAward(awardId)

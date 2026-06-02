@@ -123,8 +123,69 @@ return {
     )
 
     harness.assert_equal("direct", award.source)
+    harness.assert_equal("burnt", award.awardType)
     harness.assert_equal("Officerone-Stormrage", award.awardedBy)
     harness.assert_equal(1, #addon.awards:GetPublicHistory())
+  end,
+
+  ["direct awards can be created as golden rolling pins"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    local award = addon.awards:CreateDirectAward(
+      "Moonrustle-Stormrage",
+      "Saved the pull and the mood",
+      "golden"
+    )
+
+    harness.assert_true(award ~= nil)
+    harness.assert_equal("golden", award.awardType)
+    harness.assert_equal("The Golden Rolling Pin", award.awardName)
+  end,
+
+  ["approving a golden nomination creates a golden award"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Bakerone-Stormrage",
+          rankName = "Member",
+          rankIndex = 5,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    wow.setPlayer("Bakerone", "Member", 5)
+    local nomination = addon.nominations:Create(
+      "Burny-Stormrage",
+      "Kept everyone alive through pure heroics",
+      "golden"
+    )
+
+    wow.setPlayer("Guildmaster", "Guild Master", 0)
+    local award = addon.nominations:Approve(nomination.nominationId)
+
+    harness.assert_true(award ~= nil)
+    harness.assert_equal("golden", award.awardType)
+    harness.assert_equal("The Golden Rolling Pin", award.awardName)
   end,
 
   ["authorized officer can create a direct award without os"] = function()

@@ -3,7 +3,24 @@ _G.RollingPinAwards = RPA
 
 local UITabs = RPA.UITabs or {}
 local Components = RPA.UIComponents or {}
+local Styles = RPA.UIStyles or {}
 RPA.UITabs = UITabs
+
+local function buildNominationText(row)
+  local lines = {
+    row.nominee or "Unknown",
+    row.reason or "",
+    ("Upvotes: %d"):format(row.upvotes or 0),
+  }
+
+  if row.hasCurrentPlayerVoted then
+    lines[#lines + 1] = "Your vote is locked in."
+  elseif row.canVote then
+    lines[#lines + 1] = "Guild voting is open."
+  end
+
+  return table.concat(lines, "\n")
+end
 
 UITabs.nominations = {
   id = "nominations",
@@ -32,43 +49,91 @@ UITabs.nominations = {
     }
   end,
   BuildPanel = function(parent, mainFrame)
+    local media = Styles.Media or {}
     local panel = CreateFrame("Frame", nil, parent)
-    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 12, -44)
-    panel:SetSize((parent.width or 820) - 24, (parent.height or 520) - 24)
+    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 14, -42)
+    panel:SetSize((parent.width or 820) - 28, (parent.height or 520) - 56)
 
-    panel.nomineeLabel = Components.CreateLabel(panel, {
-      text = "Nominee",
+    panel.formSection = Components.CreateSection(panel, {
+      id = "RollingPinAwardsNominationFormSection",
+      title = "Nominate A Guild Legend",
+      iconPath = media.standardPinIcon,
+      iconWidth = 24,
+      iconHeight = 24,
+      width = 780,
+      height = 132,
       x = 0,
       y = 0,
+    })
+    panel.helperLabel = Components.CreateLabel(panel.formSection, {
+      text = "Tell the story, let the guild react, and leave the final verdict to authorized judges.",
+      x = 14,
+      y = -38,
+      width = 740,
+      font = "GameFontHighlightSmall",
+      justifyH = "LEFT",
+    })
+    panel.selectedAwardType = panel.selectedAwardType or "burnt"
+    panel.typeBurntButton = Components.CreateButton(panel.formSection, {
+      text = "Burnt",
+      width = 96,
+      height = 28,
+      x = 14,
+      y = -66,
+      variant = "primary",
+      onClick = function()
+        panel.selectedAwardType = "burnt"
+        mainFrame:RenderActiveTab()
+      end,
+    })
+    panel.typeGoldenButton = Components.CreateButton(panel.formSection, {
+      text = "Golden",
+      width = 96,
+      height = 28,
+      x = 118,
+      y = -66,
+      variant = "secondary",
+      onClick = function()
+        panel.selectedAwardType = "golden"
+        mainFrame:RenderActiveTab()
+      end,
+    })
+    panel.nomineeLabel = Components.CreateLabel(panel.formSection, {
+      text = "Nominee",
+      x = 14,
+      y = -102,
       font = "GameFontNormal",
     })
-    panel.nomineeInput = Components.CreateEditBox(panel, {
+    panel.nomineeInput = Components.CreateEditBox(panel.formSection, {
       width = 220,
-      x = 0,
-      y = -22,
+      x = 14,
+      y = -124,
       maxLetters = 64,
     })
-    panel.reasonLabel = Components.CreateLabel(panel, {
+    panel.reasonLabel = Components.CreateLabel(panel.formSection, {
       text = "Reason",
-      x = 238,
-      y = 0,
+      x = 252,
+      y = -102,
       font = "GameFontNormal",
     })
-    panel.reasonInput = Components.CreateEditBox(panel, {
-      width = 330,
-      x = 238,
-      y = -22,
+    panel.reasonInput = Components.CreateEditBox(panel.formSection, {
+      width = 340,
+      x = 252,
+      y = -124,
       maxLetters = 180,
     })
-    panel.submitButton = Components.CreateButton(panel, {
+    panel.submitButton = Components.CreateButton(panel.formSection, {
       text = "Submit Nomination",
-      width = 150,
-      x = 586,
-      y = -20,
+      width = 194,
+      height = 36,
+      x = 610,
+      y = -122,
+      variant = "primary",
       onClick = function()
         local nomination, err = mainFrame.uiBridge:SubmitNomination(
           panel.nomineeInput:GetText(),
-          panel.reasonInput:GetText()
+          panel.reasonInput:GetText(),
+          panel.selectedAwardType
         )
 
         if nomination then
@@ -82,22 +147,26 @@ UITabs.nominations = {
         mainFrame:RenderActiveTab()
       end,
     })
-    panel.statusLabel = Components.CreateLabel(panel, {
-      text = "",
-      x = 0,
-      y = -58,
-      width = 740,
-      justifyH = "LEFT",
-    })
+
     panel.listSection = Components.CreateScrollableSection(panel, {
       id = "RollingPinAwardsNominationsList",
       title = "Pending Nominations",
+      iconPath = media.headerIcon,
+      iconWidth = 22,
+      iconHeight = 22,
       width = 780,
-      height = 360,
+      height = 214,
       x = 0,
-      y = -92,
-      visibleRowCount = 4,
-      rowHeight = 68,
+      y = -146,
+      visibleRowCount = 3,
+      rowHeight = 72,
+    })
+    panel.statusLabel = Components.CreateLabel(panel, {
+      text = "",
+      x = 0,
+      y = -372,
+      width = 760,
+      justifyH = "LEFT",
     })
 
     return panel
@@ -117,7 +186,7 @@ UITabs.nominations = {
         Components.AddListRow(section, {
           text = "No pending nominations yet.",
           labelWidth = 520,
-          rowHeight = 32,
+          rowHeight = 40,
           actions = {},
         })
         return
@@ -128,7 +197,7 @@ UITabs.nominations = {
       if row.canVote and not row.hasCurrentPlayerVoted then
         actions[#actions + 1] = {
           text = "Upvote",
-          width = 62,
+          width = 68,
           onClick = function()
             bridge:CastVote(row.nominationId, "upvote")
             mainFrame:RenderActiveTab()
@@ -136,7 +205,8 @@ UITabs.nominations = {
         }
         actions[#actions + 1] = {
           text = "Downvote",
-          width = 74,
+          width = 82,
+          variant = "secondary",
           onClick = function()
             bridge:CastVote(row.nominationId, "downvote")
             mainFrame:RenderActiveTab()
@@ -147,7 +217,7 @@ UITabs.nominations = {
       if row.canModerate then
         actions[#actions + 1] = {
           text = "Approve",
-          width = 66,
+          width = 74,
           onClick = function()
             bridge:ApproveNomination(row.nominationId)
             mainFrame:RenderActiveTab()
@@ -155,7 +225,8 @@ UITabs.nominations = {
         }
         actions[#actions + 1] = {
           text = "Reject",
-          width = 62,
+          width = 68,
+          variant = "secondary",
           onClick = function()
             bridge:RejectNomination(row.nominationId)
             mainFrame:RenderActiveTab()
@@ -164,17 +235,37 @@ UITabs.nominations = {
       end
 
       Components.AddListRow(section, {
-        text = ("%s\n%s\nUpvotes: %d"):format(row.nominee, row.reason, row.upvotes or 0),
-        labelWidth = 400,
-        rowHeight = 68,
-        actionX = 434,
+        text = buildNominationText(row),
+        iconPath = row.awardIconPath,
+        iconWidth = 18,
+        iconHeight = 18,
+        labelWidth = 422,
+        rowHeight = 72,
+        actionX = 448,
         actionColumns = 2,
         actionSpacingX = 8,
-        actionSpacingY = 6,
-        actionBaseY = 0,
+        actionSpacingY = 8,
+        actionBaseY = 4,
         actions = actions,
       })
     end)
+
+    local isGolden = (panel.selectedAwardType or "burnt") == "golden"
+    Components.SetButtonVariant(panel.typeBurntButton, isGolden and "secondary" or "primary")
+    Components.SetButtonVariant(panel.typeGoldenButton, isGolden and "primary" or "secondary")
+    Components.SetText(
+      panel.formSection.titleText,
+      isGolden and "Praise A Guild Legend" or "Nominate A Guild Legend"
+    )
+    if panel.formSection.iconFrame and panel.formSection.iconFrame.texture and panel.formSection.iconFrame.texture.SetTexture then
+      panel.formSection.iconFrame.texture:SetTexture(isGolden and (Styles.Media or {}).leaderboardIcon or (Styles.Media or {}).standardPinIcon)
+      panel.formSection.iconFrame.texturePath = isGolden and (Styles.Media or {}).leaderboardIcon or (Styles.Media or {}).standardPinIcon
+    end
+    Components.SetText(
+      panel.statusLabel,
+      panel.statusLabel.text ~= "" and panel.statusLabel.text
+        or "Public hype is visible to everyone. Downvotes remain an officer moderation signal."
+    )
   end,
 }
 

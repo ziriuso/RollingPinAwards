@@ -43,6 +43,7 @@ function MainFrame:New(deps)
     frame = Components.CreateWindow({
       id = "RollingPinAwardsMainFrame",
       title = Styles.Window.title,
+      subtitle = Styles.Window.subtitle,
       width = Styles.Window.width,
       height = Styles.Window.height,
     }),
@@ -126,7 +127,7 @@ function MainFrame:RenderActiveTab()
   if tab and type(tab.buildPanel) == "function" then
     local panel = self.tabPanels[tab.id]
     if not panel then
-      panel = tab.buildPanel(self.contentPanel, self)
+      panel = tab.buildPanel(self.contentPanel.contentHost or self.contentPanel, self)
       self.tabPanels[tab.id] = panel
     end
 
@@ -168,7 +169,7 @@ function MainFrame:EnsureRendered()
     id = "RollingPinAwardsContentPanel",
     title = "Content",
     width = (Styles.Window.width or 920) - 48,
-    height = (Styles.Window.height or 680) - 120,
+    height = (Styles.Window.height or 736) - 190,
   })
 
   self.rendered = true

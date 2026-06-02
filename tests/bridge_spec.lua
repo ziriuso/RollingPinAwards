@@ -60,6 +60,51 @@ return {
     harness.assert_equal(1, rows[2].pinCount)
   end,
 
+  ["combined leaderboard tallies burnt and golden awards separately"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    addon.awards:CreateDirectAward("Moonrustle-Moonguard", "Baiting Fae", "burnt")
+    addon.awards:CreateDirectAward("Moonrustle-Moonguard", "Saved the raid", "golden")
+    addon.awards:CreateDirectAward("Burny-Stormrage", "Set the oven to lava", "burnt")
+
+    local rows = addon.uiBridge:GetLeaderboardViewModel("combined")
+
+    harness.assert_equal(2, #rows)
+    harness.assert_equal("Moonrustle-Moonguard", rows[1].recipient)
+    harness.assert_equal(1, rows[1].burntCount)
+    harness.assert_equal(1, rows[1].goldenCount)
+    harness.assert_equal(2, rows[1].totalCount)
+  end,
+
+  ["dashboard top recipient uses combined tally and short display name"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    addon.awards:CreateDirectAward("Moonrustle-Moonguard", "Baiting Fae", "burnt")
+    addon.awards:CreateDirectAward("Moonrustle-Moonguard", "Saved the raid", "golden")
+    addon.awards:CreateDirectAward("Burny-Stormrage", "Set the oven to lava", "burnt")
+
+    local viewModel = addon.uiBridge:GetDashboardViewModel()
+
+    harness.assert_equal("Moonrustle", viewModel.topRecipient)
+    harness.assert_equal(2, viewModel.topRecipientCount)
+  end,
+
   ["leaderboard detail rows show date text and awarded-by display names"] = function()
     wow.reset({
       guildName = "Raid Bakery",
@@ -274,7 +319,92 @@ return {
 
     harness.assert_equal("Dashboard", addon.mainFrame.contentPanel.titleText.text)
     harness.assert_true(addon.mainFrame.tabPanels.dashboard ~= nil)
-    harness.assert_true(addon.mainFrame.tabPanels.dashboard.pendingLabel.text:match("Pending nominations: 1") ~= nil)
+    harness.assert_equal("1", addon.mainFrame.tabPanels.dashboard.statCards[3].value.text)
+  end,
+
+  ["main frame builds the recomposed shell chrome containers"] = function()
+    wow.reset({ guildName = "Raid Bakery" })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.mainFrame:EnsureRendered()
+
+    harness.assert_true(addon.mainFrame.frame.headerBand ~= nil)
+    harness.assert_true(addon.mainFrame.frame.tabRail ~= nil)
+    harness.assert_true(addon.mainFrame.contentPanel ~= nil)
+    harness.assert_true(addon.mainFrame.contentPanel.contentHost ~= nil)
+    harness.assert_true(addon.mainFrame.contentPanel.clipsChildren == true)
+    harness.assert_true((addon.mainFrame.contentPanel.contentHost.frameLevel or 0) > (addon.mainFrame.contentPanel.innerShade.frameLevel or 0))
+    harness.assert_equal("BACKGROUND", addon.mainFrame.contentPanel.innerShade.frameStrata)
+    harness.assert_equal("MEDIUM", addon.mainFrame.contentPanel.contentHost.frameStrata)
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\flameember.png", addon.mainFrame.frame.titleIcon.texturePath)
+    harness.assert_true(addon.mainFrame.frame.titleIcon.texture ~= nil)
+  end,
+
+  ["tab rail layout keeps the admin button inside the rail width"] = function()
+    wow.reset({ guildName = "Raid Bakery" })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.mainFrame:EnsureRendered()
+
+    local tabRail = addon.mainFrame.frame.tabRail
+    local lastButton = addon.mainFrame.tabButtons[#addon.mainFrame.tabButtons]
+    local leftOffset = lastButton.point and lastButton.point[4] or 0
+    local rightEdge = leftOffset + (lastButton.width or 0)
+
+    harness.assert_true(rightEdge <= (tabRail.width or 0))
+  end,
+
+  ["dashboard renders stats, content sections, and footer actions after recomposition"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.awards:CreateDirectAward("Burny-Stormrage", "Set the oven to lava")
+    addon.nominations:Create("Moonrustle-Stormrage", "Baiting Fae")
+
+    addon.mainFrame:EnsureRendered()
+
+    local panel = addon.mainFrame.tabPanels.dashboard
+
+    harness.assert_true(panel.statsSection ~= nil)
+    harness.assert_equal(4, #(panel.statCards or {}))
+    harness.assert_true(panel.leaderboardSection ~= nil)
+    harness.assert_true(panel.recentAwardsSection ~= nil)
+    harness.assert_true(panel.quickActionsSection ~= nil)
+    harness.assert_true(panel.nominationButton ~= nil)
+    harness.assert_true(panel.awardButton ~= nil)
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\burntrollingpin.png", panel.statCards[1].iconFrame.texturePath)
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\goldenrollingpin.png", panel.statCards[2].iconFrame.texturePath)
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\flameember.png", panel.statCards[3].iconFrame.texturePath)
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\rollingpin.png", panel.statCards[4].iconFrame.texturePath)
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\rollingpin.png", panel.nominationButton.iconFrame.texturePath)
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\burntrollingpin.png", panel.awardButton.iconFrame.texturePath)
+  end,
+
+  ["dashboard footer actions remain clickable after recomposition"] = function()
+    wow.reset({ guildName = "Raid Bakery" })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.mainFrame:EnsureRendered()
+
+    local panel = addon.mainFrame.tabPanels.dashboard
+    panel.nominationButton:Click()
+
+    harness.assert_equal("nominations", addon.mainFrame.activeTabId)
+
+    addon.mainFrame:SelectTab("dashboard")
+    panel = addon.mainFrame.tabPanels.dashboard
+    panel.awardButton:Click()
+
+    harness.assert_equal("award", addon.mainFrame.activeTabId)
   end,
 
   ["clicking a tab button selects the tab and rerenders its content"] = function()
@@ -809,10 +939,35 @@ return {
     addon.mainFrame:EnsureRendered()
     addon.mainFrame:SelectTab("admin")
 
-    local section = addon.mainFrame.tabPanels.admin.aliasSection
+    local panel = addon.mainFrame.tabPanels.admin
+    panel.aliasBrowseButton:Click()
+    local section = panel.aliasDialog.listSection
 
     harness.assert_true(section.scrollBar ~= nil)
     harness.assert_true(section.scrollBar.maxValue > 0)
+  end,
+
+  ["award and nomination tabs support selecting golden rolling pin mode"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.mainFrame:EnsureRendered()
+
+    addon.mainFrame:SelectTab("award")
+    local awardPanel = addon.mainFrame.tabPanels.award
+    awardPanel.typeGoldenButton:Click()
+    harness.assert_equal("golden", awardPanel.selectedAwardType)
+
+    addon.mainFrame:SelectTab("nominations")
+    local nominationsPanel = addon.mainFrame.tabPanels.nominations
+    nominationsPanel.typeGoldenButton:Click()
+    harness.assert_equal("golden", nominationsPanel.selectedAwardType)
   end,
 
   ["reopening the addon keeps tab buttons interactive"] = function()

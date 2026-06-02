@@ -3,6 +3,7 @@ _G.RollingPinAwards = RPA
 
 local UITabs = RPA.UITabs or {}
 local Components = RPA.UIComponents or {}
+local Styles = RPA.UIStyles or {}
 RPA.UITabs = UITabs
 
 local function buildModerationText(row)
@@ -48,48 +49,52 @@ UITabs.admin = {
     }
   end,
   BuildPanel = function(parent)
+    local media = Styles.Media or {}
     local panel = CreateFrame("Frame", nil, parent)
-    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 12, -44)
-    panel:SetSize((parent.width or 820) - 24, (parent.height or 520) - 24)
+    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 14, -42)
+    panel:SetSize((parent.width or 820) - 28, (parent.height or 520) - 34)
 
     panel.rankSection = Components.CreateScrollableSection(panel, {
       id = "RollingPinAwardsRankPermissionsSection",
       title = "Guild Rank Permissions",
+      iconPath = media.goldenrollingpin or media.leaderboardIcon,
+      iconWidth = 22,
+      iconHeight = 22,
       width = 780,
-      height = 176,
+      height = 138,
       x = 0,
       y = 0,
-      visibleRowCount = 4,
+      visibleRowCount = 2,
       rowHeight = 32,
     })
     panel.rankHeaderNomination = Components.CreateLabel(panel.rankSection, {
       text = "Nominations",
-      x = 214,
-      y = -28,
+      x = 212,
+      y = -30,
       width = 96,
       justifyH = "CENTER",
       font = "GameFontNormalSmall",
     })
     panel.rankHeaderAwards = Components.CreateLabel(panel.rankSection, {
       text = "Direct",
-      x = 326,
-      y = -28,
+      x = 324,
+      y = -30,
       width = 72,
       justifyH = "CENTER",
       font = "GameFontNormalSmall",
     })
     panel.rankHeaderDelete = Components.CreateLabel(panel.rankSection, {
       text = "Delete",
-      x = 434,
-      y = -28,
+      x = 432,
+      y = -30,
       width = 72,
       justifyH = "CENTER",
       font = "GameFontNormalSmall",
     })
     panel.rankHeaderAdmin = Components.CreateLabel(panel.rankSection, {
       text = "Admin",
-      x = 542,
-      y = -28,
+      x = 540,
+      y = -30,
       width = 72,
       justifyH = "CENTER",
       font = "GameFontNormalSmall",
@@ -97,76 +102,123 @@ UITabs.admin = {
     panel.gmNote = Components.CreateLabel(panel, {
       text = "Rank 0 / Guild Master always has full access.",
       x = 0,
-      y = -182,
+      y = -144,
       width = 760,
       justifyH = "LEFT",
     })
     panel.permissionHelpLabel = Components.CreateLabel(panel, {
       text = table.concat({
         "Manage Nominations: approve and reject pending nominations.",
-        "Create Direct Awards: award The Burnt Rolling Pin without a nomination.",
+        "Create Direct Awards: issue a direct verdict with no nomination.",
         "Delete Awards: remove awards and any linked nomination.",
-        "Manage Addon Permissions/Settings: edit the guild rank matrix and access Admin.",
+        "Manage Addon Permissions/Settings: edit this matrix and access Admin.",
       }, "\n"),
       x = 0,
-      y = -202,
+      y = -162,
       width = 760,
       justifyH = "LEFT",
       justifyV = "TOP",
       font = "GameFontHighlightSmall",
     })
-    panel.aliasLabel = Components.CreateLabel(panel, {
-      text = "Alias",
-      x = 0,
-      y = -258,
-      font = "GameFontNormal",
-    })
-    panel.aliasInput = Components.CreateEditBox(panel, {
-      width = 180,
-      x = 0,
-      y = -280,
-    })
-    panel.canonicalLabel = Components.CreateLabel(panel, {
-      text = "Canonical Character",
-      x = 196,
-      y = -258,
-      font = "GameFontNormal",
-    })
-    panel.canonicalInput = Components.CreateEditBox(panel, {
-      width = 248,
-      x = 196,
-      y = -280,
-    })
-    panel.aliasSaveButton = Components.CreateButton(panel, {
-      text = "Add Merge",
-      width = 100,
-      x = 458,
-      y = -278,
-    })
-    panel.aliasSection = Components.CreateScrollableSection(panel, {
-      id = "RollingPinAwardsAliasMappingsSection",
-      title = "Alias Merges",
-      width = 780,
-      height = 120,
-      x = 0,
-      y = -310,
-      visibleRowCount = 4,
-      rowHeight = 30,
-    })
-    panel.moderationSection = Components.CreateScrollableSection(panel, {
-      id = "RollingPinAwardsModerationSection",
-      title = "Moderation Queue",
+
+    panel.aliasFormSection = Components.CreateSection(panel, {
+      id = "RollingPinAwardsAliasFormSection",
+      title = "Alias Merge Controls",
+      iconPath = media.standardPinIcon,
+      iconWidth = 20,
+      iconHeight = 20,
       width = 780,
       height = 74,
       x = 0,
-      y = -438,
+      y = -236,
+    })
+    panel.aliasLabel = Components.CreateLabel(panel.aliasFormSection, {
+      text = "Alias",
+      x = 14,
+      y = -32,
+      font = "GameFontNormalSmall",
+    })
+    panel.aliasInput = Components.CreateEditBox(panel.aliasFormSection, {
+      width = 150,
+      x = 14,
+      y = -52,
+    })
+    panel.canonicalLabel = Components.CreateLabel(panel.aliasFormSection, {
+      text = "Canonical Character",
+      x = 180,
+      y = -32,
+      font = "GameFontNormalSmall",
+    })
+    panel.canonicalInput = Components.CreateEditBox(panel.aliasFormSection, {
+      width = 230,
+      x = 180,
+      y = -52,
+    })
+    panel.aliasSaveButton = Components.CreateButton(panel.aliasFormSection, {
+      text = "Add Merge",
+      width = 144,
+      height = 28,
+      x = 426,
+      y = -50,
+      variant = "primary",
+    })
+    panel.aliasBrowseButton = Components.CreateButton(panel.aliasFormSection, {
+      text = "View Alias Merges",
+      width = 168,
+      height = 28,
+      x = 584,
+      y = -50,
+      variant = "secondary",
+      onClick = function()
+        Components.SetVisible(panel.aliasDialog, true)
+      end,
+    })
+    panel.aliasSummaryLabel = Components.CreateLabel(panel, {
+      text = "",
+      x = 0,
+      y = -320,
+      width = 760,
+      justifyH = "LEFT",
+      font = "GameFontHighlightSmall",
+    })
+    panel.aliasDialog = Components.CreateModalWindow(panel, {
+      id = "RollingPinAwardsAliasMappingsDialog",
+      title = "Alias Merges",
+      width = 640,
+      height = 420,
+      closeText = "Close",
+    })
+    panel.aliasDialog.listSection = Components.CreateScrollableSection(panel.aliasDialog, {
+      id = "RollingPinAwardsAliasMappingsSection",
+      title = "Active Alias Merges",
+      iconPath = media.standardPinIcon,
+      iconWidth = 18,
+      iconHeight = 18,
+      width = 600,
+      height = 320,
+      x = 16,
+      y = -48,
+      visibleRowCount = 6,
+      rowHeight = 34,
+    })
+
+    panel.moderationSection = Components.CreateScrollableSection(panel, {
+      id = "RollingPinAwardsModerationSection",
+      title = "Moderation Queue",
+      iconPath = media.headerIcon,
+      iconWidth = 20,
+      iconHeight = 20,
+      width = 780,
+      height = 96,
+      x = 0,
+      y = -350,
       visibleRowCount = 1,
       rowHeight = 60,
     })
     panel.statusLabel = Components.CreateLabel(panel, {
       text = "",
       x = 0,
-      y = -518,
+      y = -392,
       width = 760,
       justifyH = "LEFT",
     })
@@ -194,9 +246,7 @@ UITabs.admin = {
         return
       end
 
-      local permissionRow
-
-      permissionRow = Components.AddPermissionMatrixRow(section, {
+      local permissionRow = Components.AddPermissionMatrixRow(section, {
         rankName = row.rankName,
         canManageNominations = row.rankIndex == 0 or row.canManageNominations,
         canCreateDirectAwards = row.rankIndex == 0 or row.canCreateDirectAwards,
@@ -259,11 +309,13 @@ UITabs.admin = {
       }
     end
 
-    Components.SetScrollableItems(panel.aliasSection, aliasRows, function(section, row)
+    Components.SetText(panel.aliasSummaryLabel, ("Configured alias merges: %d"):format(#((viewModel.aliases or {}).rows or {})))
+
+    Components.SetScrollableItems(panel.aliasDialog.listSection, aliasRows, function(section, row)
       if row.emptyState then
         Components.AddListRow(section, {
           text = "No alias merges configured.",
-          rowHeight = 30,
+          rowHeight = 34,
           actions = {},
         })
         return
@@ -271,12 +323,13 @@ UITabs.admin = {
 
       Components.AddListRow(section, {
         text = ("%s -> %s"):format(row.aliasDisplay or row.aliasKey or "", row.canonicalName or ""),
-        labelWidth = 620,
-        rowHeight = 30,
+        labelWidth = 460,
+        rowHeight = 34,
         actions = {
           {
             text = "Remove",
-            width = 72,
+            width = 78,
+            variant = "secondary",
             onClick = function()
               local ok, err = bridge:DeleteAliasMapping(row.aliasKey)
               Components.SetText(
@@ -284,6 +337,7 @@ UITabs.admin = {
                 ok and ("Removed alias merge for %s."):format(row.aliasDisplay or row.aliasKey or "")
                   or ("Unable to remove alias merge: %s"):format(err or "unknown error")
               )
+              Components.SetVisible(panel.aliasDialog, false)
               mainFrame:RenderActiveTab()
             end,
           },
@@ -312,11 +366,18 @@ UITabs.admin = {
 
       Components.AddListRow(section, {
         text = buildModerationText(row),
+        iconPath = row.awardIconPath,
+        iconWidth = 18,
+        iconHeight = 18,
         labelWidth = 640,
         rowHeight = 60,
         actions = {},
       })
     end)
+
+    if panel.statusLabel.text == "" then
+      Components.SetText(panel.statusLabel, "Guild configuration changes sync through the admin path.")
+    end
   end,
 }
 

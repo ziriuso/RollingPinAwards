@@ -4,6 +4,7 @@ _G.RollingPinAwards = RPA
 local Constants = RPA.Constants or {
   DISPLAY_AWARD_NAME = "The Burnt Rolling Pin",
 }
+local Utils = RPA.Utils or {}
 
 local Awards = RPA.Awards or {}
 RPA.Awards = Awards
@@ -30,7 +31,7 @@ function Awards:New(addon)
   return setmetatable(obj, self)
 end
 
-function Awards:BuildAward(recipient, reason, source, nominationId)
+function Awards:BuildAward(recipient, reason, source, nominationId, awardType)
   local guild = self.addon:GetActiveGuildContext()
   if not guild then
     return nil, "missing guild context"
@@ -38,11 +39,13 @@ function Awards:BuildAward(recipient, reason, source, nominationId)
 
   local awardId = self.addon.db:NextAwardId(guild.guildKey)
   local now = currentTimestamp(self.addon)
+  local normalizedAwardType = Utils.NormalizeAwardType(awardType)
 
   return {
     awardId = awardId,
     guildKey = guild.guildKey,
-    awardName = Constants.DISPLAY_AWARD_NAME,
+    awardName = Utils.GetAwardDisplayName(normalizedAwardType),
+    awardType = normalizedAwardType,
     recipient = recipient,
     player = recipient,
     reason = reason,
@@ -60,7 +63,8 @@ function Awards:CreateFromNomination(nomination)
     nomination.nominee,
     nomination.reason,
     "nomination",
-    nomination.nominationId
+    nomination.nominationId,
+    nomination.awardType
   )
   if not award then
     return nil, err
@@ -71,7 +75,7 @@ function Awards:CreateFromNomination(nomination)
   return award
 end
 
-function Awards:CreateDirectAward(recipient, reason)
+function Awards:CreateDirectAward(recipient, reason, awardType)
   if isMissingString(recipient) or isMissingString(reason) then
     return nil, "missing award fields"
   end
@@ -80,7 +84,7 @@ function Awards:CreateDirectAward(recipient, reason)
     return nil, "unauthorized"
   end
 
-  local award, err = self:BuildAward(recipient, reason, "direct", nil)
+  local award, err = self:BuildAward(recipient, reason, "direct", nil, awardType)
   if not award then
     return nil, err
   end

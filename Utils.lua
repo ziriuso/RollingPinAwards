@@ -50,4 +50,34 @@ function Utils.NormalizeAliasKey(value)
   return normalized
 end
 
+function Utils.NormalizeAwardType(value)
+  local Constants = RPA.Constants or {}
+
+  if value == Constants.AWARD_TYPE_GOLDEN then
+    return Constants.AWARD_TYPE_GOLDEN
+  end
+
+  return Constants.AWARD_TYPE_BURNT or "burnt"
+end
+
+function Utils.GetAwardDisplayName(awardType)
+  local Constants = RPA.Constants or {}
+  local normalized = Utils.NormalizeAwardType(awardType)
+
+  if normalized == Constants.AWARD_TYPE_GOLDEN then
+    return Constants.GOLDEN_AWARD_NAME or "The Golden Rolling Pin"
+  end
+
+  return Constants.DISPLAY_AWARD_NAME or "The Burnt Rolling Pin"
+end
+
+function Utils.GetShortCharacterName(value)
+  if type(value) ~= "string" or value == "" then
+    return value
+  end
+
+  local shortName = value:match("^[^-]+")
+  return shortName or value
+end
+
 return RPA.Utils

@@ -3,6 +3,7 @@ _G.RollingPinAwards = RPA
 
 local UITabs = RPA.UITabs or {}
 local Components = RPA.UIComponents or {}
+local Styles = RPA.UIStyles or {}
 RPA.UITabs = UITabs
 
 UITabs.history = {
@@ -32,24 +33,40 @@ UITabs.history = {
     }
   end,
   BuildPanel = function(parent)
+    local media = Styles.Media or {}
     local panel = CreateFrame("Frame", nil, parent)
-    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 12, -44)
-    panel:SetSize((parent.width or 820) - 24, (parent.height or 520) - 24)
+    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 14, -42)
+    panel:SetSize((parent.width or 820) - 28, (parent.height or 520) - 56)
+
     panel.listSection = Components.CreateScrollableSection(panel, {
       id = "RollingPinAwardsHistoryList",
       title = "Approved Awards",
+      iconPath = media.awardIcon,
+      iconWidth = 22,
+      iconHeight = 22,
       width = 780,
-      height = 430,
+      height = 290,
       x = 0,
       y = 0,
-      visibleRowCount = 6,
-      rowHeight = 54,
+      visibleRowCount = 5,
+      rowHeight = 56,
     })
-    panel.statusLabel = Components.CreateLabel(panel, {
-      text = "",
+    panel.statusSection = Components.CreateSection(panel, {
+      id = "RollingPinAwardsHistoryStatusSection",
+      title = "Archive Notes",
+      iconPath = media.standardPinIcon,
+      iconWidth = 20,
+      iconHeight = 20,
+      width = 780,
+      height = 74,
       x = 0,
-      y = -438,
-      width = 760,
+      y = -304,
+    })
+    panel.statusLabel = Components.CreateLabel(panel.statusSection, {
+      text = "",
+      x = 14,
+      y = -38,
+      width = 736,
       justifyH = "LEFT",
     })
     panel.confirmDialog = Components.CreateConfirmationDialog(panel, {
@@ -76,7 +93,7 @@ UITabs.history = {
       if award.emptyState then
         Components.AddListRow(section, {
           text = "No approved awards yet.",
-          rowHeight = 32,
+          rowHeight = 40,
           actions = {},
         })
         return
@@ -86,7 +103,8 @@ UITabs.history = {
       if award.canDelete then
         actions[#actions + 1] = {
           text = "Delete",
-          width = 62,
+          width = 72,
+          variant = "secondary",
           onClick = function()
             panel.pendingDeleteAwardId = award.awardId
             Components.SetText(
@@ -116,11 +134,20 @@ UITabs.history = {
           award.dateText or "Unknown date",
           award.awardedBy
         ),
-        labelWidth = 640,
-        rowHeight = 54,
+        iconPath = award.awardIconPath,
+        iconWidth = 18,
+        iconHeight = 18,
+        labelWidth = 620,
+        rowHeight = 56,
         actions = actions,
       })
     end)
+
+      Components.SetText(
+        panel.statusLabel,
+        panel.statusLabel.text ~= "" and panel.statusLabel.text
+        or "This archive is visible to the guild and sorted by latest approved awards. Deleting an award also removes its linked nomination."
+      )
   end,
 }
 

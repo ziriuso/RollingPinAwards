@@ -4,6 +4,7 @@ _G.RollingPinAwards = RPA
 local Constants = RPA.Constants or {
   MODERATION_DOWNVOTE_THRESHOLD = 3,
 }
+local Utils = RPA.Utils or {}
 
 local Nominations = RPA.Nominations or {}
 RPA.Nominations = Nominations
@@ -58,7 +59,7 @@ function Nominations:RefreshVoteSummary(nomination)
   return nomination
 end
 
-function Nominations:Create(nominee, reason)
+function Nominations:Create(nominee, reason, awardType)
   if isMissingString(nominee) or isMissingString(reason) then
     return nil, "missing nomination fields"
   end
@@ -75,6 +76,7 @@ function Nominations:Create(nominee, reason)
     guildKey = guild.guildKey,
     nominee = nominee,
     reason = reason,
+    awardType = Utils.NormalizeAwardType(awardType),
     nominatedBy = self.addon:GetCurrentPlayerFullName(),
     status = "pending",
     upvoteCount = 0,

@@ -38,6 +38,8 @@ local function createFrameObject(frameType, name, parent, template)
     events = {},
     scripts = {},
     visible = true,
+    frameLevel = parent and ((parent.frameLevel or 0) + 1) or 0,
+    frameStrata = parent and parent.frameStrata or "MEDIUM",
   }
 
   if parent and type(parent.children) == "table" then
@@ -65,6 +67,40 @@ local function createFrameObject(frameType, name, parent, template)
       blue = blue,
       alpha = alpha,
     }
+  end
+
+  function frame:CreateTexture(name, layer, templateName)
+    local texture = {
+      name = name,
+      layer = layer,
+      parent = self,
+      template = templateName,
+    }
+
+    function texture:SetPoint(...)
+      self.point = { ... }
+    end
+
+    function texture:SetAllPoints(target)
+      self.allPointsTarget = target or self.parent
+    end
+
+    function texture:SetTexture(path)
+      self.texturePath = path
+    end
+
+    function texture:SetVertexColor(red, green, blue, alpha)
+      self.vertexColor = {
+        red = red,
+        green = green,
+        blue = blue,
+        alpha = alpha,
+      }
+    end
+
+    self.children[#self.children + 1] = texture
+
+    return texture
   end
 
   function frame:CreateFontString(fontName, layer, templateName)
@@ -124,6 +160,26 @@ local function createFrameObject(frameType, name, parent, template)
 
   function frame:SetPoint(...)
     self.point = { ... }
+  end
+
+  function frame:SetFrameLevel(value)
+    self.frameLevel = value
+  end
+
+  function frame:GetFrameLevel()
+    return self.frameLevel or 0
+  end
+
+  function frame:SetFrameStrata(value)
+    self.frameStrata = value
+  end
+
+  function frame:GetFrameStrata()
+    return self.frameStrata or "MEDIUM"
+  end
+
+  function frame:SetClipsChildren(value)
+    self.clipsChildren = value == true
   end
 
   function frame:SetText(value)
@@ -218,6 +274,23 @@ local function createFrameObject(frameType, name, parent, template)
 
   function frame:SetAutoFocus(value)
     self.autoFocus = value == true
+  end
+
+  function frame:SetTextInsets(left, right, top, bottom)
+    self.textInsets = {
+      left = left,
+      right = right,
+      top = top,
+      bottom = bottom,
+    }
+  end
+
+  function frame:SetJustifyH(value)
+    self.justifyH = value
+  end
+
+  function frame:SetJustifyV(value)
+    self.justifyV = value
   end
 
   function frame:SetMultiLine(value)
