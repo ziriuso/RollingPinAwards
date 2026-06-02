@@ -159,6 +159,40 @@ function Database:GetPermissionRosterEntry(guildKey, playerFullName)
   return dataset.permissionRoster[playerFullName], nil
 end
 
+function Database:RemovePermissionRosterEntry(guildKey, playerFullName)
+  if isMissingString(playerFullName) then
+    return false, "missing playerFullName"
+  end
+
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return false, err
+  end
+
+  dataset.permissionRoster[playerFullName] = nil
+
+  return true
+end
+
+function Database:GetPermissionRosterEntries(guildKey)
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return nil, err
+  end
+
+  local rows = {}
+
+  for _, entry in pairs(dataset.permissionRoster) do
+    rows[#rows + 1] = entry
+  end
+
+  table.sort(rows, function(left, right)
+    return left.player < right.player
+  end)
+
+  return rows
+end
+
 function Database:NextNominationId(guildKey)
   local dataset, err = self:GetGuildDataset(guildKey)
   if not dataset then

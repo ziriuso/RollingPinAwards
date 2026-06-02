@@ -11,7 +11,8 @@ Rolling Pin Awards is a guild-only World of Warcraft addon for managing nominati
 - Public pending nominations with advisory upvotes
 - Hidden downvote moderation signal for authorized officer/admin views
 - Direct awards and nomination approval/rejection for authorized users
-- Custom Lua UI shell with reusable tab and component modules
+- Custom Lua UI with reusable tab and component modules
+- Interactive tabs for dashboard, nominations, direct awards, history, settings, and admin roster management
 - Conservative guild-scoped sync validation helpers
 
 ## Slash Command
@@ -25,12 +26,26 @@ Current command support:
 - `/rpa toggle`
 - `/rpa nominate Name-Realm "Reason"`
 
+## UI Surface
+
+The current MVP ships a functional in-game window with:
+
+- a movable framed window
+- a close button
+- nomination submission and voting controls
+- officer approve/reject controls inside the nominations view
+- direct award controls for authorized users
+- public award history
+- local settings toggles
+- GM-only officer permission grant and revoke controls
+- scrollable long-list sections for nominations, history, and admin queues
+- dashboard shortcuts between the main participation flows
+
 ## Runtime Notes
 
 - The addon now prefers an Ace3-backed runtime when `LibStub` and the Ace3 libraries are available in-game.
 - The repo now vendors the required Ace3 libraries under `Libs/` and also includes `.pkgmeta` externals so packager-driven releases stay reproducible.
 - When `AceDB-3.0` is available, the domain database is backed by the active Ace profile instead of the plain SavedVariables fallback table.
-- The current repository keeps the addon code Ace3-compatible without vendoring the libraries directly.
 - The TOC continues to advertise `Ace3` as an optional dependency.
 
 ## Testing

@@ -15,7 +15,7 @@ return {
     harness.assert_true(addon.__rpaUsesAce3 == true)
   end,
 
-  ["on initialize registers the slash command through ace console when available"] = function()
+  ["on initialize registers the slash command through the native wow slash table in ace mode"] = function()
     wow.reset({
       ace3 = true,
       guildName = "Raid Bakery",
@@ -24,7 +24,8 @@ return {
     local addon = wow.loadAddon()
     addon:OnInitialize()
 
-    harness.assert_equal("HandleChatCommand", addon.__aceConsoleCommands.rpa)
+    harness.assert_equal("/rpa", _G.SLASH_ROLLINGPINAWARDS1)
+    harness.assert_true(type(_G.SlashCmdList.ROLLINGPINAWARDS) == "function")
   end,
 
   ["on enable registers the sync comm prefix through ace comm when available"] = function()

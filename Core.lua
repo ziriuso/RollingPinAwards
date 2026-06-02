@@ -89,7 +89,28 @@ RPA.ADDON_NAME = Constants.ADDON_NAME
 RPA.SLASH_COMMAND = Constants.SLASH_COMMAND
 RPA.defaults = Defaults
 
+local function registerFallbackSlashCommand(addon)
+  _G.SlashCmdList = _G.SlashCmdList or {}
+  _G.SLASH_ROLLINGPINAWARDS1 = addon.SLASH_COMMAND
+  _G.SlashCmdList.ROLLINGPINAWARDS = function(message)
+    if not addon.__rpaInitialized then
+      addon:OnInitialize()
+    end
+
+    if not addon.__rpaEnabled and (type(IsLoggedIn) ~= "function" or IsLoggedIn()) then
+      addon:OnEnable()
+    end
+
+    return addon:HandleChatCommand(message or "")
+  end
+end
+
 function RPA:OnInitialize()
+  if self.__rpaInitialized or self.__rpaInitializing then
+    return self.__rpaInitialized == true
+  end
+
+  self.__rpaInitializing = true
   self.activeGuildContext = nil
   if type(self.GuildContext.Build) == "function" then
     self.activeGuildContext = self.GuildContext:Build()
@@ -174,20 +195,35 @@ function RPA:OnInitialize()
     self.tooltip = nil
   end
 
-  if self.commands and type(self.RegisterChatCommand) == "function" then
-    self:RegisterChatCommand("rpa", "HandleChatCommand")
-  elseif self.commands then
-    _G.SLASH_ROLLINGPINAWARDS1 = self.SLASH_COMMAND
-    _G.SlashCmdList.ROLLINGPINAWARDS = function(message)
-      return self.commands:Handle(message or "")
-    end
+  if self.commands then
+    registerFallbackSlashCommand(self)
   end
+
+  self.__rpaInitializing = nil
+  self.__rpaInitialized = true
+
+  return true
 end
 
 function RPA:OnEnable()
+  if self.__rpaEnabled or self.__rpaEnabling then
+    return self.__rpaEnabled == true
+  end
+
+  if not self.__rpaInitialized then
+    self:OnInitialize()
+  end
+
+  self.__rpaEnabling = true
+
   if self.sync and type(self.RegisterComm) == "function" then
     self:RegisterComm(self.Constants.COMM_PREFIX)
   end
+
+  self.__rpaEnabling = nil
+  self.__rpaEnabled = true
+
+  return true
 end
 
 function RPA:OnCommReceived(prefix, message, distribution, sender)
@@ -225,6 +261,28 @@ function RPA:HandleChatCommand(message)
   end
 
   return self.commands:Handle(message or "")
+end
+
+registerFallbackSlashCommand(RPA)
+
+if type(CreateFrame) == "function" then
+  local startupFrame = CreateFrame("Frame", "RollingPinAwardsStartupFrame")
+  startupFrame:RegisterEvent("ADDON_LOADED")
+  startupFrame:RegisterEvent("PLAYER_LOGIN")
+  startupFrame:SetScript("OnEvent", function(_, event, addonName)
+    if event == "ADDON_LOADED" and addonName == RPA.ADDON_NAME then
+      RPA:OnInitialize()
+      return
+    end
+
+    if event == "PLAYER_LOGIN" then
+      if not RPA.__rpaInitialized then
+        RPA:OnInitialize()
+      end
+
+      RPA:OnEnable()
+    end
+  end)
 end
 
 return RPA

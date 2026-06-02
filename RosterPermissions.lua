@@ -37,4 +37,16 @@ function RosterPermissions:Has(guildKey, playerFullName)
   return record ~= nil
 end
 
+function RosterPermissions:Revoke(guildKey, playerFullName)
+  if isMissingString(playerFullName) then
+    return false
+  end
+
+  return self.db:RemovePermissionRosterEntry(guildKey, playerFullName) == true
+end
+
+function RosterPermissions:List(guildKey)
+  return self.db:GetPermissionRosterEntries(guildKey) or {}
+end
+
 return RPA.RosterPermissions

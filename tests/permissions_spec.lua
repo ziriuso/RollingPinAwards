@@ -89,4 +89,37 @@ return {
       addon.db:GetGuildDataset(guild.guildKey).permissionRoster["Officertwo-Stormrage"] == nil
     )
   end,
+
+  ["gm can revoke addon permission from an officer"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      isGuildOfficer = true,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.permissions:GrantOfficerPermission("Officerone-Stormrage")
+
+    local revoked = addon.permissions:RevokeOfficerPermission("Officerone-Stormrage")
+    local guild = addon:GetActiveGuildContext()
+
+    harness.assert_true(revoked)
+    harness.assert_false(addon.permissions:HasOfficerPermission("Officerone-Stormrage"))
+    harness.assert_nil(addon.db:GetGuildDataset(guild.guildKey).permissionRoster["Officerone-Stormrage"])
+  end,
 }

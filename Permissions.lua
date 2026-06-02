@@ -139,6 +139,59 @@ function Permissions:GrantOfficerPermission(playerFullName)
   )
 end
 
+function Permissions:RevokeOfficerPermission(playerFullName)
+  local guild = self.addon:GetActiveGuildContext()
+  local normalizedTarget = normalizeFullName(playerFullName)
+
+  if not guild or not normalizedTarget then
+    return false
+  end
+
+  if not self:IsGuildMaster() then
+    return false
+  end
+
+  return self.roster:Revoke(guild.guildKey, normalizedTarget)
+end
+
+function Permissions:GetGrantedOfficerPermissions()
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild then
+    return {}
+  end
+
+  return self.roster:List(guild.guildKey)
+end
+
+function Permissions:GetEligibleOfficers()
+  if type(GetNumGuildMembers) ~= "function" or type(GetGuildRosterInfo) ~= "function" then
+    return {}
+  end
+
+  local candidates = {}
+  local count = GetNumGuildMembers() or 0
+
+  for index = 1, count do
+    local rosterName, rankName, rankIndex = GetGuildRosterInfo(index)
+    local normalizedName = normalizeFullName(rosterName)
+
+    if normalizedName and rankIndex ~= 0 and isOfficerRank(rankName, rankIndex) then
+      candidates[#candidates + 1] = {
+        player = normalizedName,
+        rankName = rankName,
+        rankIndex = rankIndex,
+        hasPermission = self:HasOfficerPermission(normalizedName),
+      }
+    end
+  end
+
+  table.sort(candidates, function(left, right)
+    return left.player < right.player
+  end)
+
+  return candidates
+end
+
 function Permissions:CanManageAwards(playerFullName)
   local normalizedTarget = normalizeFullName(playerFullName or self.addon:GetCurrentPlayerFullName())
   if not normalizedTarget then

@@ -27,6 +27,230 @@ local function applyDefaults(target, defaults)
   return target
 end
 
+local function createFrameObject(frameType, name, parent, template)
+  local frame = {
+    children = {},
+    frameType = frameType,
+    name = name,
+    parent = parent,
+    template = template,
+    events = {},
+    scripts = {},
+    visible = true,
+  }
+
+  if parent and type(parent.children) == "table" then
+    parent.children[#parent.children + 1] = frame
+  end
+
+  function frame:RegisterEvent(eventName)
+    self.events[eventName] = true
+    state.framesByEvent[eventName] = state.framesByEvent[eventName] or {}
+    state.framesByEvent[eventName][#state.framesByEvent[eventName] + 1] = self
+  end
+
+  function frame:SetScript(scriptName, handler)
+    self.scripts[scriptName] = handler
+  end
+
+  function frame:SetBackdrop(backdrop)
+    self.backdrop = backdrop
+  end
+
+  function frame:SetBackdropColor(red, green, blue, alpha)
+    self.backdropColor = {
+      red = red,
+      green = green,
+      blue = blue,
+      alpha = alpha,
+    }
+  end
+
+  function frame:CreateFontString(fontName, layer, templateName)
+    local fontString = {
+      fontName = fontName,
+      layer = layer,
+      parent = self,
+      template = templateName,
+      text = "",
+    }
+
+    function fontString:SetPoint(...)
+      self.point = { ... }
+    end
+
+    function fontString:SetJustifyH(value)
+      self.justifyH = value
+    end
+
+    function fontString:SetJustifyV(value)
+      self.justifyV = value
+    end
+
+    function fontString:SetWidth(value)
+      self.width = value
+    end
+
+    function fontString:SetText(value)
+      self.text = value
+    end
+
+    self.children[#self.children + 1] = fontString
+
+    return fontString
+  end
+
+  function frame:Show()
+    self.visible = true
+  end
+
+  function frame:Hide()
+    self.visible = false
+  end
+
+  function frame:SetSize(width, height)
+    self.width = width
+    self.height = height
+  end
+
+  function frame:SetWidth(width)
+    self.width = width
+  end
+
+  function frame:SetHeight(height)
+    self.height = height
+  end
+
+  function frame:SetPoint(...)
+    self.point = { ... }
+  end
+
+  function frame:SetText(value)
+    self.text = value
+  end
+
+  function frame:GetText()
+    return self.text or ""
+  end
+
+  function frame:SetMinMaxValues(minValue, maxValue)
+    self.minValue = minValue
+    self.maxValue = maxValue
+  end
+
+  function frame:SetValueStep(step)
+    self.valueStep = step
+  end
+
+  function frame:SetObeyStepOnDrag(value)
+    self.obeyStepOnDrag = value == true
+  end
+
+  function frame:SetOrientation(value)
+    self.orientation = value
+  end
+
+  function frame:SetValue(value)
+    if self.minValue ~= nil and value < self.minValue then
+      value = self.minValue
+    end
+
+    if self.maxValue ~= nil and value > self.maxValue then
+      value = self.maxValue
+    end
+
+    self.value = value
+
+    local handler = self.scripts.OnValueChanged
+    if type(handler) == "function" then
+      handler(self, value)
+    end
+  end
+
+  function frame:GetValue()
+    return self.value or 0
+  end
+
+  function frame:SetChecked(value)
+    self.checked = value == true
+  end
+
+  function frame:GetChecked()
+    return self.checked == true
+  end
+
+  function frame:Enable()
+    self.disabled = false
+  end
+
+  function frame:Disable()
+    self.disabled = true
+  end
+
+  function frame:SetEnabled(value)
+    self.disabled = value ~= true
+  end
+
+  function frame:EnableMouse(value)
+    self.mouseEnabled = value == true
+  end
+
+  function frame:SetMovable(value)
+    self.movable = value == true
+  end
+
+  function frame:RegisterForDrag(...)
+    self.dragButtons = { ... }
+  end
+
+  function frame:StartMoving()
+    self.moving = true
+  end
+
+  function frame:StopMovingOrSizing()
+    self.moving = false
+  end
+
+  function frame:SetAutoFocus(value)
+    self.autoFocus = value == true
+  end
+
+  function frame:SetMultiLine(value)
+    self.multiLine = value == true
+  end
+
+  function frame:SetMaxLetters(value)
+    self.maxLetters = value
+  end
+
+  function frame:ClearFocus()
+    self.focused = false
+  end
+
+  function frame:SetNormalFontObject(fontObject)
+    self.normalFontObject = fontObject
+  end
+
+  function frame:SetHighlightFontObject(fontObject)
+    self.highlightFontObject = fontObject
+  end
+
+  function frame:SetDisabledFontObject(fontObject)
+    self.disabledFontObject = fontObject
+  end
+
+  function frame:Click(...)
+    local handler = self.scripts.OnClick
+    if type(handler) == "function" then
+      return handler(self, ...)
+    end
+
+    return nil
+  end
+
+  return frame
+end
+
 local function buildAceLibStub()
   local libraries = {}
 
@@ -162,6 +386,7 @@ end
 function wow.reset(seed)
   seed = seed or {}
   state = {
+    framesByEvent = {},
     guildClubId = seed.guildClubId,
     guildName = seed.guildName,
     guildRankName = seed.guildRankName or "Member",
@@ -172,6 +397,7 @@ function wow.reset(seed)
     playerName = seed.playerName or "Ziri",
     savedVariables = seed.savedVariables,
     ace3 = seed.ace3,
+    loggedIn = seed.loggedIn == true,
   }
 
   _G.__RPA_TEST_STATE = state
@@ -223,6 +449,11 @@ function wow.reset(seed)
 
   _G.SlashCmdList = {}
   _G.SLASH_ROLLINGPINAWARDS1 = nil
+  _G.CreateFrame = createFrameObject
+  _G.UIParent = {}
+  _G.IsLoggedIn = function()
+    return state.loggedIn == true
+  end
   _G.LibStub = state.ace3 and buildAceLibStub() or nil
   _G.RollingPinAwards = nil
   _G.RollingPinAwardsDB = state.savedVariables
@@ -241,5 +472,20 @@ end
 
 
 wow.loadAddon = loadAddonFromToc
+
+function wow.fireEvent(eventName, ...)
+  local frames = state.framesByEvent[eventName] or {}
+
+  for _, frame in ipairs(frames) do
+    local handler = frame.scripts.OnEvent
+    if type(handler) == "function" then
+      handler(frame, eventName, ...)
+    end
+  end
+end
+
+function wow.setLoggedIn(isLoggedIn)
+  state.loggedIn = isLoggedIn == true
+end
 
 return wow
