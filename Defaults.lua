@@ -8,7 +8,7 @@ RPA.Defaults = {
       announceAwards = true,
       debug = false,
     },
-    guild = nil,
+    guildDatasets = {},
   },
 }
 

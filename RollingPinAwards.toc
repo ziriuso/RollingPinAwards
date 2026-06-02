@@ -9,4 +9,6 @@
 Constants.lua
 Defaults.lua
 GuildContext.lua
+Utils.lua
+Database.lua
 Core.lua

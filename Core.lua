@@ -14,10 +14,12 @@ local Defaults = RPA.Defaults or {
       announceAwards = true,
       debug = false,
     },
-    guild = nil,
+    guildDatasets = {},
   },
 }
 local GuildContext = RPA.GuildContext or {}
+local Database = RPA.Database
+local Utils = RPA.Utils
 
 RPA.Constants = Constants
 RPA.Defaults = Defaults
@@ -32,6 +34,12 @@ function RPA:OnInitialize()
   if type(self.GuildContext.Build) == "function" then
     self.activeGuildContext = self.GuildContext:Build()
   end
+
+  local storage = _G.RollingPinAwardsDB
+  storage = Utils.ApplyDefaults(storage, self.defaults)
+  _G.RollingPinAwardsDB = storage
+
+  self.db = Database:New(storage)
 end
 
 function RPA:GetActiveGuildContext()

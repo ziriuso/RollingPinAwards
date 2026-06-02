@@ -19,6 +19,7 @@ function wow.reset(seed)
     guildName = seed.guildName,
     realmName = seed.realmName or "Stormrage",
     playerName = seed.playerName or "Ziri",
+    savedVariables = seed.savedVariables,
   }
 
   _G.__RPA_TEST_STATE = state
@@ -44,6 +45,7 @@ function wow.reset(seed)
   _G.SlashCmdList = {}
   _G.SLASH_ROLLINGPINAWARDS1 = nil
   _G.RollingPinAwards = nil
+  _G.RollingPinAwardsDB = state.savedVariables
 end
 
 wow.loadAddon = loadAddonFromToc
