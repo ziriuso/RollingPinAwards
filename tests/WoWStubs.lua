@@ -1,5 +1,6 @@
 local state = {}
 local wow = {}
+local originalOs = _G.os
 
 local function copyTable(input)
   local output = {}
@@ -453,6 +454,7 @@ function wow.reset(seed)
 
   _G.SlashCmdList = {}
   _G.SLASH_ROLLINGPINAWARDS1 = nil
+  _G.os = originalOs
   _G.CreateFrame = createFrameObject
   _G.UIParent = {}
   _G.IsLoggedIn = function()

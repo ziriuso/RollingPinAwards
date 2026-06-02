@@ -20,16 +20,14 @@ local function normalizeFullName(name)
   return ("%s-%s"):format(name, GetRealmName())
 end
 
-local function isOfficerRank(rankName, rankIndex)
-  if rankIndex == 0 or rankName == "Guild Master" then
-    return true
+local function copyRow(row)
+  local output = {}
+
+  for key, value in pairs(row or {}) do
+    output[key] = value
   end
 
-  if rankName == "Officer" then
-    return true
-  end
-
-  return type(rankIndex) == "number" and rankIndex == 1
+  return output
 end
 
 function Permissions:New(addon, roster)
@@ -79,79 +77,212 @@ function Permissions:IsGuildMaster(playerFullName)
   return rankIndex == 0 or rankName == "Guild Master"
 end
 
-function Permissions:IsOfficerFromGuildRoster(playerFullName)
-  local rankName, rankIndex = self:GetGuildRankInfo(playerFullName)
+function Permissions:GetRankPermissionRow(rankIndex)
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild or type(rankIndex) ~= "number" then
+    return nil
+  end
 
-  return isOfficerRank(rankName, rankIndex)
+  return self.addon.db:GetRankPermission(guild.guildKey, rankIndex)
 end
 
-function Permissions:IsOfficer(playerFullName)
+function Permissions:GetGuildRankMatrix()
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild then
+    return {}
+  end
+
+  local rowsByRank = self.addon.db:GetRankPermissions(guild.guildKey) or {}
+  local matrix = {}
+  local seen = {}
+
+  if type(GetNumGuildMembers) == "function" and type(GetGuildRosterInfo) == "function" then
+    local memberCount = GetNumGuildMembers() or 0
+    for index = 1, memberCount do
+      local _, rankName, rankIndex = GetGuildRosterInfo(index)
+      if type(rankIndex) == "number" and not seen[rankIndex] then
+        seen[rankIndex] = true
+        local row = copyRow(rowsByRank[rankIndex] or {})
+        row.rankIndex = rankIndex
+        row.rankName = row.rankName or rankName or ("Rank %d"):format(rankIndex)
+        row.canManageNominations = row.canManageNominations == true
+        row.canCreateDirectAwards = row.canCreateDirectAwards == true
+        row.canDeleteAwards = row.canDeleteAwards == true
+        row.canManageAddonPermissions = row.canManageAddonPermissions == true
+        matrix[#matrix + 1] = row
+      end
+    end
+  end
+
+  for rankIndex, row in pairs(rowsByRank) do
+    if not seen[rankIndex] then
+      local copy = copyRow(row)
+      copy.rankIndex = rankIndex
+      copy.rankName = copy.rankName or ("Rank %d"):format(rankIndex)
+      copy.canManageNominations = copy.canManageNominations == true
+      copy.canCreateDirectAwards = copy.canCreateDirectAwards == true
+      copy.canDeleteAwards = copy.canDeleteAwards == true
+      copy.canManageAddonPermissions = copy.canManageAddonPermissions == true
+      matrix[#matrix + 1] = copy
+    end
+  end
+
+  table.sort(matrix, function(left, right)
+    return left.rankIndex < right.rankIndex
+  end)
+
+  return matrix
+end
+
+function Permissions:GetPermissionsForPlayer(playerFullName)
+  local rankName, rankIndex = self:GetGuildRankInfo(playerFullName)
+
+  if rankIndex == 0 or rankName == "Guild Master" then
+    return {
+      rankIndex = 0,
+      rankName = rankName or "Guild Master",
+      canManageNominations = true,
+      canCreateDirectAwards = true,
+      canDeleteAwards = true,
+      canManageAddonPermissions = true,
+    }
+  end
+
+  local row = self:GetRankPermissionRow(rankIndex)
+  if type(row) == "table" then
+    local copy = copyRow(row)
+    copy.rankIndex = rankIndex
+    copy.rankName = copy.rankName or rankName or ("Rank %d"):format(rankIndex or -1)
+    copy.canManageNominations = copy.canManageNominations == true
+    copy.canCreateDirectAwards = copy.canCreateDirectAwards == true
+    copy.canDeleteAwards = copy.canDeleteAwards == true
+    copy.canManageAddonPermissions = copy.canManageAddonPermissions == true
+    return copy
+  end
+
+  return {
+    rankIndex = rankIndex,
+    rankName = rankName,
+    canManageNominations = false,
+    canCreateDirectAwards = false,
+    canDeleteAwards = false,
+    canManageAddonPermissions = false,
+  }
+end
+
+function Permissions:SetRankPermissions(rankIndex, rankName, permissions)
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild or type(rankIndex) ~= "number" then
+    return false
+  end
+
+  if rankIndex ~= 0 and not self:CanManageAddonPermissions() then
+    return false
+  end
+
+  local row = {
+    rankIndex = rankIndex,
+    rankName = rankName or ("Rank %d"):format(rankIndex),
+    canManageNominations = permissions.canManageNominations == true,
+    canCreateDirectAwards = permissions.canCreateDirectAwards == true,
+    canDeleteAwards = permissions.canDeleteAwards == true,
+    canManageAddonPermissions = permissions.canManageAddonPermissions == true,
+    lastModifiedAt = self.addon.Time:Now(),
+    lastModifiedBy = self.addon:GetCurrentPlayerFullName(),
+  }
+
+  self.addon.db:UpsertRankPermission(guild.guildKey, rankIndex, row)
+
+  return true
+end
+
+function Permissions:CanManageNominations(playerFullName)
+  return self:GetPermissionsForPlayer(playerFullName).canManageNominations == true
+end
+
+function Permissions:CanCreateDirectAwards(playerFullName)
+  return self:GetPermissionsForPlayer(playerFullName).canCreateDirectAwards == true
+end
+
+function Permissions:CanDeleteAwards(playerFullName)
+  return self:GetPermissionsForPlayer(playerFullName).canDeleteAwards == true
+end
+
+function Permissions:CanManageAddonPermissions(playerFullName)
+  return self:GetPermissionsForPlayer(playerFullName).canManageAddonPermissions == true
+end
+
+function Permissions:CanManageAwards(playerFullName)
+  local row = self:GetPermissionsForPlayer(playerFullName)
+
+  return row.canManageNominations == true
+    or row.canCreateDirectAwards == true
+    or row.canDeleteAwards == true
+    or row.canManageAddonPermissions == true
+end
+
+function Permissions:HasOfficerPermission(playerFullName)
+  return self:CanManageAwards(playerFullName)
+end
+
+function Permissions:GrantOfficerPermission(playerFullName)
   local normalizedTarget = normalizeFullName(playerFullName)
   if not normalizedTarget then
     return false
   end
 
-  if normalizedTarget == normalizeFullName(self.addon:GetCurrentPlayerFullName()) then
-    if self:IsGuildMaster(normalizedTarget) then
-      return true
+  local rankName, rankIndex = self:GetGuildRankInfo(normalizedTarget)
+  if type(rankIndex) ~= "number" then
+    return false
+  end
+
+  local ok = self:SetRankPermissions(rankIndex, rankName, {
+    canManageNominations = true,
+    canCreateDirectAwards = true,
+    canDeleteAwards = true,
+    canManageAddonPermissions = true,
+  })
+
+  if ok and self.roster then
+    local guild = self.addon:GetActiveGuildContext()
+    if guild then
+      self.roster:Grant(
+        guild.guildKey,
+        normalizedTarget,
+        self.addon:GetCurrentPlayerFullName()
+      )
     end
-
-    local guildInfoApi = _G.C_GuildInfo
-    if guildInfoApi and type(guildInfoApi.IsGuildOfficer) == "function" then
-      return guildInfoApi.IsGuildOfficer() == true
-    end
   end
 
-  return self:IsOfficerFromGuildRoster(normalizedTarget)
-end
-
-function Permissions:HasOfficerPermission(playerFullName)
-  local guild = self.addon:GetActiveGuildContext()
-  local normalizedTarget = normalizeFullName(playerFullName)
-
-  if not guild or not normalizedTarget then
-    return false
-  end
-
-  return self.roster:Has(guild.guildKey, normalizedTarget)
-end
-
-function Permissions:GrantOfficerPermission(playerFullName)
-  local guild = self.addon:GetActiveGuildContext()
-  local normalizedTarget = normalizeFullName(playerFullName)
-
-  if not guild or not normalizedTarget then
-    return false
-  end
-
-  if not self:IsGuildMaster() then
-    return false
-  end
-
-  if not self:IsOfficer(normalizedTarget) then
-    return false
-  end
-
-  return self.roster:Grant(
-    guild.guildKey,
-    normalizedTarget,
-    self.addon:GetCurrentPlayerFullName()
-  )
+  return ok
 end
 
 function Permissions:RevokeOfficerPermission(playerFullName)
-  local guild = self.addon:GetActiveGuildContext()
   local normalizedTarget = normalizeFullName(playerFullName)
-
-  if not guild or not normalizedTarget then
+  if not normalizedTarget then
     return false
   end
 
-  if not self:IsGuildMaster() then
+  local rankName, rankIndex = self:GetGuildRankInfo(normalizedTarget)
+  if type(rankIndex) ~= "number" then
     return false
   end
 
-  return self.roster:Revoke(guild.guildKey, normalizedTarget)
+  local ok = self:SetRankPermissions(rankIndex, rankName, {
+    canManageNominations = false,
+    canCreateDirectAwards = false,
+    canDeleteAwards = false,
+    canManageAddonPermissions = false,
+  })
+
+  if ok and self.roster then
+    local guild = self.addon:GetActiveGuildContext()
+    if guild then
+      self.roster:Revoke(guild.guildKey, normalizedTarget)
+    end
+  end
+
+  return ok
 end
 
 function Permissions:GetGrantedOfficerPermissions()
@@ -160,7 +291,11 @@ function Permissions:GetGrantedOfficerPermissions()
     return {}
   end
 
-  return self.roster:List(guild.guildKey)
+  if self.roster then
+    return self.roster:List(guild.guildKey)
+  end
+
+  return {}
 end
 
 function Permissions:GetEligibleOfficers()
@@ -175,7 +310,7 @@ function Permissions:GetEligibleOfficers()
     local rosterName, rankName, rankIndex = GetGuildRosterInfo(index)
     local normalizedName = normalizeFullName(rosterName)
 
-    if normalizedName and rankIndex ~= 0 and isOfficerRank(rankName, rankIndex) then
+    if normalizedName and type(rankIndex) == "number" and rankIndex > 0 then
       candidates[#candidates + 1] = {
         player = normalizedName,
         rankName = rankName,
@@ -190,19 +325,6 @@ function Permissions:GetEligibleOfficers()
   end)
 
   return candidates
-end
-
-function Permissions:CanManageAwards(playerFullName)
-  local normalizedTarget = normalizeFullName(playerFullName or self.addon:GetCurrentPlayerFullName())
-  if not normalizedTarget then
-    return false
-  end
-
-  if self:IsGuildMaster(normalizedTarget) then
-    return true
-  end
-
-  return self:IsOfficer(normalizedTarget) and self:HasOfficerPermission(normalizedTarget)
 end
 
 return RPA.Permissions

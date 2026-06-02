@@ -91,6 +91,46 @@ return {
     harness.assert_equal(1, #addon.awards:GetPublicHistory())
   end,
 
+  ["sync accepts a same-guild privileged award update from a rank with direct-award permission"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.permissions:SetRankPermissions(1, "Officer", {
+      canCreateDirectAwards = true,
+    })
+
+    local accepted = addon.sync:AcceptAward({
+      guildKey = addon:GetActiveGuildContext().guildKey,
+      awardedBy = "Officerone-Stormrage",
+      awardId = "award:100",
+      awardName = "The Burnt Rolling Pin",
+      recipient = "Burny-Stormrage",
+      player = "Burny-Stormrage",
+      reason = "Set the oven to lava",
+      source = "direct",
+    })
+
+    harness.assert_true(accepted)
+  end,
+
   ["sync broadcasts envelopes through ace comm when available"] = function()
     wow.reset({
       ace3 = true,

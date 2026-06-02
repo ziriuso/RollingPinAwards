@@ -122,4 +122,57 @@ return {
     harness.assert_false(addon.permissions:HasOfficerPermission("Officerone-Stormrage"))
     harness.assert_nil(addon.db:GetGuildDataset(guild.guildKey).permissionRoster["Officerone-Stormrage"])
   end,
+
+  ["exact rank permission row controls nomination moderation"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    local saved = addon.permissions:SetRankPermissions(1, "Officer", {
+      canManageNominations = true,
+    })
+
+    wow.setPlayer("Officerone", "Officer", 1)
+
+    harness.assert_true(saved)
+    harness.assert_true(addon.permissions:CanManageNominations())
+    harness.assert_false(addon.permissions:CanCreateDirectAwards())
+    harness.assert_false(addon.permissions:CanDeleteAwards())
+    harness.assert_false(addon.permissions:CanManageAddonPermissions())
+  end,
+
+  ["guild master always has full access even without rank rows"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    harness.assert_true(addon.permissions:CanManageNominations())
+    harness.assert_true(addon.permissions:CanCreateDirectAwards())
+    harness.assert_true(addon.permissions:CanDeleteAwards())
+    harness.assert_true(addon.permissions:CanManageAddonPermissions())
+  end,
 }

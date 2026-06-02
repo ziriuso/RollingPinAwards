@@ -28,6 +28,7 @@ local function ensureGuildDatasetShape(dataset, guildKey)
   dataset.nominations = type(dataset.nominations) == "table" and dataset.nominations or {}
   dataset.nominationsById = type(dataset.nominationsById) == "table" and dataset.nominationsById or {}
   dataset.permissionRoster = type(dataset.permissionRoster) == "table" and dataset.permissionRoster or {}
+  dataset.rankPermissions = type(dataset.rankPermissions) == "table" and dataset.rankPermissions or {}
   dataset.votesByNomination = type(dataset.votesByNomination) == "table" and dataset.votesByNomination or {}
   dataset.meta = type(dataset.meta) == "table" and dataset.meta or {}
   dataset.meta.nextNominationSequence = type(dataset.meta.nextNominationSequence) == "number"
@@ -95,6 +96,7 @@ function Database:GetGuildDataset(guildKey)
       nominations = {},
       nominationsById = {},
       permissionRoster = {},
+      rankPermissions = {},
       votesByNomination = {},
     }
   end
@@ -191,6 +193,47 @@ function Database:GetPermissionRosterEntries(guildKey)
   end)
 
   return rows
+end
+
+function Database:UpsertRankPermission(guildKey, rankIndex, row)
+  if type(rankIndex) ~= "number" then
+    return nil, "missing rankIndex"
+  end
+
+  if type(row) ~= "table" then
+    return nil, "missing row"
+  end
+
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return nil, err
+  end
+
+  dataset.rankPermissions[rankIndex] = row
+
+  return row
+end
+
+function Database:GetRankPermission(guildKey, rankIndex)
+  if type(rankIndex) ~= "number" then
+    return nil, "missing rankIndex"
+  end
+
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return nil, err
+  end
+
+  return dataset.rankPermissions[rankIndex], nil
+end
+
+function Database:GetRankPermissions(guildKey)
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return nil, err
+  end
+
+  return dataset.rankPermissions, nil
 end
 
 function Database:NextNominationId(guildKey)
