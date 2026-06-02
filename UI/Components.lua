@@ -118,6 +118,7 @@ function Components.MakeTab(spec)
     buildPanel = spec.BuildPanel,
     refreshPanel = spec.RefreshPanel,
     id = spec.id,
+    isVisible = spec.IsVisible,
     label = spec.label,
     buildViewModel = spec.BuildViewModel,
   }
@@ -149,16 +150,42 @@ function Components.CreateTabButton(parent, spec, index)
 end
 
 function Components.CreateContentPanel(parent, config)
-  local panel = Components.CreateWindow({
-    id = config.id,
-    title = config.title,
-    width = config.width,
-    height = config.height,
-  })
+  local panel = CreateFrame("Frame", config.id, parent, "BackdropTemplate")
 
   if panel.SetPoint then
     panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 24, -72)
   end
+
+  if panel.SetSize then
+    panel:SetSize(config.width or 100, config.height or 100)
+  end
+
+  if panel.SetBackdrop then
+    panel:SetBackdrop({
+      bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
+      edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+      tile = true,
+      tileSize = 8,
+      edgeSize = 8,
+      insets = {
+        left = 2,
+        right = 2,
+        top = 2,
+        bottom = 2,
+      },
+    })
+  else
+    panel.backdrop = {
+      enabled = true,
+    }
+  end
+
+  if panel.SetBackdropColor then
+    panel:SetBackdropColor(0.02, 0.02, 0.03, 0.75)
+  end
+
+  panel.width = config.width or 100
+  panel.height = config.height or 100
 
   local titleText = {
     text = "",
@@ -276,12 +303,23 @@ function Components.CreateScrollableSection(parent, config)
 
   section.scrollBar = scrollBar
 
-  Components.SetButtonHandler(scrollBar, nil)
   if scrollBar.SetScript then
     scrollBar:SetScript("OnValueChanged", function(_, value)
       section.scrollOffset = math.max(0, math.floor((value or 0) + 0.5))
       Components.RenderScrollableSection(section)
     end)
+  end
+
+  if scrollBar.Low and scrollBar.Low.Hide then
+    scrollBar.Low:Hide()
+  end
+
+  if scrollBar.High and scrollBar.High.Hide then
+    scrollBar.High:Hide()
+  end
+
+  if scrollBar.Text and scrollBar.Text.Hide then
+    scrollBar.Text:Hide()
   end
 
   return section
@@ -381,6 +419,74 @@ function Components.CreateCheckButton(parent, config)
   return button
 end
 
+function Components.CreateConfirmationDialog(parent, config)
+  local dialog = CreateFrame("Frame", config.id, parent, "BackdropTemplate")
+  dialog.width = config.width or 420
+  dialog.height = config.height or 160
+
+  if dialog.SetSize then
+    dialog:SetSize(dialog.width, dialog.height)
+  end
+
+  if dialog.SetPoint then
+    dialog:SetPoint("CENTER", parent, "CENTER", config.x or 0, config.y or 0)
+  end
+
+  if dialog.SetBackdrop then
+    dialog:SetBackdrop({
+      bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+      edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+      tile = true,
+      tileSize = 16,
+      edgeSize = 16,
+      insets = {
+        left = 4,
+        right = 4,
+        top = 4,
+        bottom = 4,
+      },
+    })
+  end
+
+  if dialog.SetBackdropColor then
+    dialog:SetBackdropColor(0.04, 0.03, 0.05, 0.98)
+  end
+
+  dialog.titleLabel = Components.CreateLabel(dialog, {
+    text = config.title or "Confirm",
+    x = 16,
+    y = -16,
+    font = "GameFontNormalLarge",
+  })
+  dialog.messageLabel = Components.CreateLabel(dialog, {
+    text = config.message or "",
+    x = 16,
+    y = -46,
+    width = dialog.width - 32,
+    justifyH = "LEFT",
+    justifyV = "TOP",
+  })
+  dialog.confirmButton = Components.CreateButton(dialog, {
+    text = config.confirmText or "Confirm",
+    width = 100,
+    x = 16,
+    y = -118,
+  })
+  dialog.cancelButton = Components.CreateButton(dialog, {
+    text = config.cancelText or "Cancel",
+    width = 100,
+    x = 126,
+    y = -118,
+    onClick = function()
+      Components.SetVisible(dialog, false)
+    end,
+  })
+
+  Components.SetVisible(dialog, false)
+
+  return dialog
+end
+
 function Components.ClearRows(section)
   section.rows = section.rows or {}
 
@@ -477,6 +583,67 @@ function Components.AddListRow(section, config)
 
     row.actions[#row.actions + 1] = button
   end
+
+  section.rows[#section.rows + 1] = row
+
+  return row
+end
+
+function Components.AddPermissionMatrixRow(section, config)
+  section.rows = section.rows or {}
+
+  local row = CreateFrame("Frame", nil, section)
+  local index = #section.rows
+  local offsetY = -34 - (index * (config.rowHeight or 40))
+
+  if row.SetSize then
+    row:SetSize(config.width or ((section.width or 100) - 20), config.rowHeight or 40)
+  end
+
+  if row.SetPoint then
+    row:SetPoint("TOPLEFT", section, "TOPLEFT", 10, offsetY)
+  end
+
+  row.rankLabel = Components.CreateLabel(row, {
+    text = config.rankName or "",
+    x = 0,
+    y = -8,
+    width = config.rankLabelWidth or 170,
+    justifyH = "LEFT",
+  })
+  row.manageNominationsCheck = Components.CreateCheckButton(row, {
+    text = "Manage Nominations",
+    x = config.nominationX or 178,
+    y = -4,
+  })
+  row.createAwardsCheck = Components.CreateCheckButton(row, {
+    text = "Direct Awards",
+    x = config.awardX or 340,
+    y = -4,
+  })
+  row.deleteAwardsCheck = Components.CreateCheckButton(row, {
+    text = "Delete Awards",
+    x = config.deleteX or 476,
+    y = -4,
+  })
+  row.manageAddonCheck = Components.CreateCheckButton(row, {
+    text = "Addon Settings",
+    x = config.addonX or 610,
+    y = -4,
+  })
+
+  row.manageNominationsCheck:SetChecked(config.canManageNominations == true)
+  row.createAwardsCheck:SetChecked(config.canCreateDirectAwards == true)
+  row.deleteAwardsCheck:SetChecked(config.canDeleteAwards == true)
+  row.manageAddonCheck:SetChecked(config.canManageAddonPermissions == true)
+
+  row.saveButton = Components.CreateButton(row, {
+    text = config.saveText or "Save",
+    width = 56,
+    x = config.saveX or 736,
+    y = -4,
+    onClick = config.onSave,
+  })
 
   section.rows[#section.rows + 1] = row
 

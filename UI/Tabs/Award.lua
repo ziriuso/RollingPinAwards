@@ -10,7 +10,7 @@ UITabs.award = {
   label = "Award",
   BuildViewModel = function(bridge)
     return {
-      canAward = bridge:CanCurrentPlayerManageAwards(),
+      canAward = bridge:CanCurrentPlayerCreateDirectAwards(),
     }
   end,
   DescribeViewModel = function(viewModel)

@@ -133,6 +133,27 @@ function Database:GetNomination(guildKey, nominationId)
   return dataset.nominationsById[nominationId], nil
 end
 
+function Database:DeleteNomination(guildKey, nominationId)
+  if isMissingString(nominationId) then
+    return false, "missing nominationId"
+  end
+
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return false, err
+  end
+
+  if dataset.nominationsById[nominationId] == nil then
+    return false, "missing nomination"
+  end
+
+  dataset.nominationsById[nominationId] = nil
+  dataset.votesByNomination[nominationId] = nil
+  rebuildNominationRows(dataset)
+
+  return true
+end
+
 function Database:UpsertPermissionRosterEntry(guildKey, entry)
   if type(entry) ~= "table" or isMissingString(entry.player) then
     return nil, "missing playerFullName"
@@ -285,6 +306,26 @@ function Database:GetAward(guildKey, awardId)
   end
 
   return dataset.awardsById[awardId], nil
+end
+
+function Database:DeleteAward(guildKey, awardId)
+  if isMissingString(awardId) then
+    return false, "missing awardId"
+  end
+
+  local dataset, err = self:GetGuildDataset(guildKey)
+  if not dataset then
+    return false, err
+  end
+
+  if dataset.awardsById[awardId] == nil then
+    return false, "missing award"
+  end
+
+  dataset.awardsById[awardId] = nil
+  rebuildAwardRows(dataset)
+
+  return true
 end
 
 function Database:StoreVote(guildKey, nominationId, vote)

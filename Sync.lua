@@ -79,8 +79,8 @@ function Sync:DispatchEnvelope(envelope, distribution, sender)
     return self:AcceptNominationVote(payload)
   end
 
-  if envelope.payloadType == "permission_roster" then
-    return self:AcceptPermissionRosterEntry(payload)
+  if envelope.payloadType == "rank_permissions" or envelope.payloadType == "permission_roster" then
+    return self:AcceptRankPermission(payload)
   end
 
   return false, "unknown payloadType"
@@ -95,7 +95,20 @@ function Sync:AcceptAward(award)
     return false, "wrong guild"
   end
 
-  if not self.addon.permissions or not self.addon.permissions:CanManageAwards(award.awardedBy) then
+  local actor = award.lastModifiedBy or award.awardedBy
+  local isAuthorized = false
+
+  if self.addon.permissions then
+    if award.source == "nomination" then
+      isAuthorized = self.addon.permissions:CanManageNominations(actor)
+    elseif award.source == "direct" then
+      isAuthorized = self.addon.permissions:CanCreateDirectAwards(actor)
+    else
+      isAuthorized = self.addon.permissions:CanManageAwards(actor)
+    end
+  end
+
+  if not isAuthorized then
     return false, "unauthorized"
   end
 
@@ -115,7 +128,7 @@ function Sync:AcceptNomination(nomination)
 
   if nomination.status ~= "pending" then
     local actor = nomination.lastModifiedBy or nomination.resolvedBy
-    if not self.addon.permissions or not self.addon.permissions:CanManageAwards(actor) then
+    if not self.addon.permissions or not self.addon.permissions:CanManageNominations(actor) then
       return false, "unauthorized"
     end
   end
@@ -149,20 +162,30 @@ function Sync:AcceptNominationVote(vote)
   return true
 end
 
-function Sync:AcceptPermissionRosterEntry(update)
-  if type(update) ~= "table" or isMissingString(update.player) then
-    return false, "missing roster update"
+function Sync:AcceptRankPermission(update)
+  if type(update) ~= "table" or type(update.rankIndex) ~= "number" then
+    return false, "missing rank permission update"
   end
 
   if not self:IsActiveGuildPayload(update.guildKey) then
     return false, "wrong guild"
   end
 
-  if not self.addon.permissions or not self.addon.permissions:IsGuildMaster(update.grantedBy) then
+  local actor = update.lastModifiedBy or update.sender
+  if not self.addon.permissions or not self.addon.permissions:CanManageAddonPermissions(actor) then
     return false, "unauthorized"
   end
 
-  self.addon.db:UpsertPermissionRosterEntry(update.guildKey, update)
+  self.addon.db:UpsertRankPermission(update.guildKey, update.rankIndex, {
+    rankIndex = update.rankIndex,
+    rankName = update.rankName,
+    canManageNominations = update.canManageNominations == true,
+    canCreateDirectAwards = update.canCreateDirectAwards == true,
+    canDeleteAwards = update.canDeleteAwards == true,
+    canManageAddonPermissions = update.canManageAddonPermissions == true,
+    lastModifiedAt = update.lastModifiedAt,
+    lastModifiedBy = actor,
+  })
 
   return true
 end

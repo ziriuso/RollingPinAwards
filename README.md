@@ -7,12 +7,12 @@ Rolling Pin Awards is a guild-only World of Warcraft addon for managing nominati
 - Ace3-aware addon lifecycle using `AceAddon-3.0`, `AceConsole-3.0`, `AceComm-3.0`, `AceSerializer-3.0`, and `AceDB-3.0` when available
 - Embedded Ace3 library payload under `Libs/` for self-contained local and packaged installs
 - Guild-scoped datasets for the player's current guild only
-- GM-managed officer permission roster
+- Exact-rank guild permission matrix with GM always retaining full access
 - Public pending nominations with advisory upvotes
 - Hidden downvote moderation signal for authorized officer/admin views
-- Direct awards and nomination approval/rejection for authorized users
+- Direct awards, nomination approval/rejection, and award deletion gated by separate rank permissions
 - Custom Lua UI with reusable tab and component modules
-- Interactive tabs for dashboard, nominations, direct awards, history, settings, and admin roster management
+- Interactive tabs for dashboard, nominations, direct awards, history, settings, and rank-based admin management
 - Conservative guild-scoped sync validation helpers
 
 ## Slash Command
@@ -33,11 +33,12 @@ The current MVP ships a functional in-game window with:
 - a movable framed window
 - a close button
 - nomination submission and voting controls
-- officer approve/reject controls inside the nominations view
-- direct award controls for authorized users
+- rank-gated approve/reject controls inside the nominations view
+- rank-gated direct award controls
 - public award history
+- confirmed award deletion for ranks that have delete permission
 - local settings toggles
-- GM-only officer permission grant and revoke controls
+- admin-only rank permission matrix with checkbox editing by guild rank name
 - scrollable long-list sections for nominations, history, and admin queues
 - dashboard shortcuts between the main participation flows
 

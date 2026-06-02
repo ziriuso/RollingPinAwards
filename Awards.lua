@@ -76,7 +76,7 @@ function Awards:CreateDirectAward(recipient, reason)
     return nil, "missing award fields"
   end
 
-  if not self.addon.permissions or not self.addon.permissions:CanManageAwards() then
+  if not self.addon.permissions or not self.addon.permissions:CanCreateDirectAwards() then
     return nil, "unauthorized"
   end
 
@@ -88,6 +88,39 @@ function Awards:CreateDirectAward(recipient, reason)
   self.addon.db:UpsertAward(award.guildKey, award)
 
   return award
+end
+
+function Awards:DeleteAward(awardId)
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild then
+    return false, "missing guild context"
+  end
+
+  if not self.addon.permissions or not self.addon.permissions:CanDeleteAwards() then
+    return false, "unauthorized"
+  end
+
+  local award = self.addon.db:GetAward(guild.guildKey, awardId)
+  if not award then
+    return false, "missing award"
+  end
+
+  local ok, err = self.addon.db:DeleteAward(guild.guildKey, awardId)
+  if not ok then
+    return false, err
+  end
+
+  if award.nominationId then
+    local deletedNomination, nominationErr = self.addon.db:DeleteNomination(
+      guild.guildKey,
+      award.nominationId
+    )
+    if not deletedNomination and nominationErr ~= "missing nomination" then
+      return false, nominationErr
+    end
+  end
+
+  return true
 end
 
 function Awards:GetPublicHistory()

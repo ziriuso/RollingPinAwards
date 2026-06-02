@@ -67,12 +67,55 @@ function MainFrame:DescribeActiveTab(viewModel)
   }
 end
 
+function MainFrame:IsTabVisible(tab)
+  if not tab then
+    return false
+  end
+
+  if type(tab.isVisible) == "function" then
+    return tab.isVisible(self.uiBridge) ~= false
+  end
+
+  return true
+end
+
+function MainFrame:RefreshTabVisibility()
+  local fallbackTabId = nil
+  local activeVisible = false
+
+  for index, tab in ipairs(self.tabs) do
+    local visible = self:IsTabVisible(tab)
+    tab.visible = visible
+
+    if visible and not fallbackTabId then
+      fallbackTabId = tab.id
+    end
+
+    if visible and tab.id == self.activeTabId then
+      activeVisible = true
+    end
+
+    if self.tabButtons[index] then
+      Components.SetVisible(self.tabButtons[index], visible)
+    end
+  end
+
+  if not activeVisible then
+    self.activeTabId = fallbackTabId
+  end
+end
+
 function MainFrame:RenderActiveTab()
   if not self.contentPanel then
     return nil
   end
 
+  self:RefreshTabVisibility()
+
   local tab = self:GetActiveTab()
+  if not tab then
+    return nil
+  end
   local content = self:DescribeActiveTab(self:GetActiveViewModel() or {})
 
   for tabId, panel in pairs(self.tabPanels) do
@@ -128,6 +171,7 @@ function MainFrame:EnsureRendered()
   })
 
   self.rendered = true
+  self:RefreshTabVisibility()
   self:RenderActiveTab()
 
   return self.frame
@@ -154,7 +198,7 @@ end
 
 function MainFrame:SelectTab(tabId)
   for _, tab in ipairs(self.tabs) do
-    if tab.id == tabId then
+    if tab.id == tabId and self:IsTabVisible(tab) then
       self.activeTabId = tabId
       self:RenderActiveTab()
       return true

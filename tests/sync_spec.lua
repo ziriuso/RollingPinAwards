@@ -131,6 +131,92 @@ return {
     harness.assert_true(accepted)
   end,
 
+  ["sync accepts a moderated nomination update from a rank with nomination permission"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.permissions:SetRankPermissions(1, "Officer", {
+      canManageNominations = true,
+    })
+
+    local accepted = addon.sync:AcceptNomination({
+      guildKey = addon:GetActiveGuildContext().guildKey,
+      nominationId = "nom:100",
+      nominee = "Burny-Stormrage",
+      reason = "Pulled the boss while fishing",
+      status = "approved",
+      resolvedBy = "Officerone-Stormrage",
+      lastModifiedBy = "Officerone-Stormrage",
+    })
+
+    harness.assert_true(accepted)
+  end,
+
+  ["sync accepts a rank permission update from an authorized rank manager"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+        {
+          name = "Veteran-Stormrage",
+          rankName = "Veteran",
+          rankIndex = 2,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.permissions:SetRankPermissions(1, "Officer", {
+      canManageAddonPermissions = true,
+    })
+
+    local accepted = addon.sync:AcceptRankPermission({
+      guildKey = addon:GetActiveGuildContext().guildKey,
+      rankIndex = 2,
+      rankName = "Veteran",
+      canManageNominations = true,
+      canCreateDirectAwards = false,
+      canDeleteAwards = false,
+      canManageAddonPermissions = false,
+      lastModifiedBy = "Officerone-Stormrage",
+    })
+    local row = addon.permissions:GetRankPermissionRow(2)
+
+    harness.assert_true(accepted)
+    harness.assert_true(row.canManageNominations)
+  end,
+
   ["sync broadcasts envelopes through ace comm when available"] = function()
     wow.reset({
       ace3 = true,

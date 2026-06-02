@@ -33,6 +33,17 @@ local function buildRow(nomination, includeModeration)
   return row
 end
 
+local function copyMatrixRow(row)
+  return {
+    rankIndex = row.rankIndex,
+    rankName = row.rankName,
+    canManageNominations = row.canManageNominations == true,
+    canCreateDirectAwards = row.canCreateDirectAwards == true,
+    canDeleteAwards = row.canDeleteAwards == true,
+    canManageAddonPermissions = row.canManageAddonPermissions == true,
+  }
+end
+
 function Bridge:New(addon)
   local obj = {
     addon = addon,
@@ -62,7 +73,7 @@ function Bridge:GetPendingNominationsViewModel()
           self.addon:GetCurrentPlayerFullName()
         ) ~= nil
       row.canVote = not row.hasCurrentPlayerVoted
-      row.canModerate = self:CanCurrentPlayerManageAwards()
+      row.canModerate = self:CanCurrentPlayerManageNominations()
       rows[#rows + 1] = row
     end
   end
@@ -71,7 +82,7 @@ function Bridge:GetPendingNominationsViewModel()
 end
 
 function Bridge:GetAdminNominationsViewModel()
-  if not self.addon.permissions or not self.addon.permissions:CanManageAwards() then
+  if not self:CanCurrentPlayerManageAddonPermissions() then
     return {}
   end
 
@@ -92,6 +103,7 @@ end
 
 function Bridge:GetPublicHistoryViewModel()
   local rows = {}
+  local canDelete = self:CanCurrentPlayerDeleteAwards()
 
   for _, award in ipairs(self.addon.awards:GetPublicHistory()) do
     rows[#rows + 1] = {
@@ -101,6 +113,7 @@ function Bridge:GetPublicHistoryViewModel()
       reason = award.reason,
       awardedBy = award.awardedBy,
       source = award.source,
+      canDelete = canDelete,
     }
   end
 
@@ -113,6 +126,22 @@ function Bridge:CanCurrentPlayerManageAwards()
   end
 
   return self.addon.permissions:CanManageAwards()
+end
+
+function Bridge:CanCurrentPlayerManageNominations()
+  return self.addon.permissions and self.addon.permissions:CanManageNominations() or false
+end
+
+function Bridge:CanCurrentPlayerCreateDirectAwards()
+  return self.addon.permissions and self.addon.permissions:CanCreateDirectAwards() or false
+end
+
+function Bridge:CanCurrentPlayerDeleteAwards()
+  return self.addon.permissions and self.addon.permissions:CanDeleteAwards() or false
+end
+
+function Bridge:CanCurrentPlayerManageAddonPermissions()
+  return self.addon.permissions and self.addon.permissions:CanManageAddonPermissions() or false
 end
 
 function Bridge:GetSettingsViewModel()
@@ -131,6 +160,8 @@ function Bridge:GetDashboardViewModel()
 
   return {
     canManageAwards = self:CanCurrentPlayerManageAwards(),
+    canManageNominations = self:CanCurrentPlayerManageNominations(),
+    canCreateDirectAwards = self:CanCurrentPlayerCreateDirectAwards(),
     pendingNominations = copyRows(nominations),
     pendingCount = #nominations,
     recentAwards = copyRows(history),
@@ -138,24 +169,18 @@ function Bridge:GetDashboardViewModel()
   }
 end
 
-function Bridge:GetOfficerRosterViewModel()
-  local granted = {}
-  local eligible = {}
+function Bridge:GetRankPermissionsViewModel()
+  local rows = {}
 
   if self.addon.permissions then
-    granted = self.addon.permissions:GetGrantedOfficerPermissions()
-
-    for _, row in ipairs(self.addon.permissions:GetEligibleOfficers()) do
-      if not row.hasPermission then
-        eligible[#eligible + 1] = row
-      end
+    for _, row in ipairs(self.addon.permissions:GetGuildRankMatrix()) do
+      rows[#rows + 1] = copyMatrixRow(row)
     end
   end
 
   return {
-    canManageRoster = self.addon.permissions and self.addon.permissions:IsGuildMaster() or false,
-    eligible = eligible,
-    granted = granted,
+    canManageMatrix = self:CanCurrentPlayerManageAddonPermissions(),
+    rows = rows,
   }
 end
 
@@ -179,20 +204,16 @@ function Bridge:CreateDirectAward(recipient, reason)
   return self.addon.awards:CreateDirectAward(recipient, reason)
 end
 
-function Bridge:GrantOfficerPermission(playerFullName)
-  if not self.addon.permissions then
-    return false
-  end
-
-  return self.addon.permissions:GrantOfficerPermission(playerFullName)
+function Bridge:DeleteAward(awardId)
+  return self.addon.awards:DeleteAward(awardId)
 end
 
-function Bridge:RevokeOfficerPermission(playerFullName)
+function Bridge:SaveRankPermissions(rankIndex, rankName, permissions)
   if not self.addon.permissions then
     return false
   end
 
-  return self.addon.permissions:RevokeOfficerPermission(playerFullName)
+  return self.addon.permissions:SetRankPermissions(rankIndex, rankName, permissions)
 end
 
 function Bridge:SaveSettings(updatedSettings)

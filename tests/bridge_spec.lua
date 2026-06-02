@@ -181,7 +181,7 @@ return {
     harness.assert_true(settings.debug)
   end,
 
-  ["bridge exposes roster management data for the admin view"] = function()
+  ["bridge exposes guild rank permissions by rank name for the admin view"] = function()
     wow.reset({
       guildName = "Raid Bakery",
       playerName = "Guildmaster",
@@ -199,7 +199,45 @@ return {
           rankIndex = 1,
         },
         {
-          name = "Officertwo-Stormrage",
+          name = "Veteran-Stormrage",
+          rankName = "Veteran",
+          rankIndex = 2,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    local saved = addon.uiBridge:SaveRankPermissions(1, "Officer", {
+      canManageNominations = true,
+      canCreateDirectAwards = false,
+      canDeleteAwards = true,
+      canManageAddonPermissions = false,
+    })
+
+    local matrix = addon.uiBridge:GetRankPermissionsViewModel()
+
+    harness.assert_true(saved)
+    harness.assert_true(matrix.canManageMatrix)
+    harness.assert_equal("Officer", matrix.rows[2].rankName)
+    harness.assert_true(matrix.rows[2].canManageNominations)
+    harness.assert_true(matrix.rows[2].canDeleteAwards)
+  end,
+
+  ["main frame hides the admin tab when the player lacks addon-permission management"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Officerone",
+      guildRankName = "Officer",
+      guildRankIndex = 1,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Officerone-Stormrage",
           rankName = "Officer",
           rankIndex = 1,
         },
@@ -208,13 +246,9 @@ return {
 
     local addon = wow.loadAddon()
     addon:OnInitialize()
-    addon.uiBridge:GrantOfficerPermission("Officerone-Stormrage")
+    addon.mainFrame:EnsureRendered()
 
-    local roster = addon.uiBridge:GetOfficerRosterViewModel()
-
-    harness.assert_true(roster.canManageRoster)
-    harness.assert_equal("Officerone-Stormrage", roster.granted[1].player)
-    harness.assert_true(#roster.eligible == 0 or roster.eligible[1].player ~= nil)
+    harness.assert_false(addon.mainFrame.tabButtons[6].visible)
   end,
 
   ["main window provides a close button and backdrop"] = function()
@@ -272,6 +306,46 @@ return {
     harness.assert_true(settings.debug)
   end,
 
+  ["admin tab save button persists rank permissions for the selected guild rank"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.mainFrame:EnsureRendered()
+    addon.mainFrame:SelectTab("admin")
+
+    local row = addon.mainFrame.tabPanels.admin.rankSection.rows[2]
+    row.manageNominationsCheck:SetChecked(true)
+    row.createAwardsCheck:SetChecked(true)
+    row.deleteAwardsCheck:SetChecked(true)
+    row.manageAddonCheck:SetChecked(false)
+    row.saveButton:Click()
+
+    local officerPermissions = addon.permissions:GetPermissionsForPlayer("Officerone-Stormrage")
+
+    harness.assert_true(officerPermissions.canManageNominations)
+    harness.assert_true(officerPermissions.canCreateDirectAwards)
+    harness.assert_true(officerPermissions.canDeleteAwards)
+    harness.assert_false(officerPermissions.canManageAddonPermissions)
+  end,
+
   ["reopening the addon keeps tab buttons interactive"] = function()
     wow.reset({ guildName = "Raid Bakery" })
 
@@ -303,6 +377,29 @@ return {
 
     harness.assert_true(section.scrollBar ~= nil)
     harness.assert_true(section.scrollBar.maxValue > 0)
+  end,
+
+  ["history tab delete action confirms and removes an award"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.awards:CreateDirectAward("Burny-Stormrage", "Set the oven to lava")
+
+    addon.mainFrame:EnsureRendered()
+    addon.mainFrame:SelectTab("history")
+
+    local panel = addon.mainFrame.tabPanels.history
+    panel.listSection.rows[1].actions[1]:Click()
+    panel.confirmDialog.confirmButton:Click()
+
+    harness.assert_equal(0, #addon.uiBridge:GetPublicHistoryViewModel())
+    harness.assert_false(panel.confirmDialog.visible)
   end,
 
   ["scrolling a large nominations list rerenders later rows"] = function()

@@ -132,7 +132,7 @@ function Nominations:Approve(nominationId)
     return nil, "missing guild context"
   end
 
-  if not self.addon.permissions or not self.addon.permissions:CanManageAwards() then
+  if not self.addon.permissions or not self.addon.permissions:CanManageNominations() then
     return nil, "unauthorized"
   end
 
@@ -165,7 +165,7 @@ function Nominations:Reject(nominationId)
     return false, "missing guild context"
   end
 
-  if not self.addon.permissions or not self.addon.permissions:CanManageAwards() then
+  if not self.addon.permissions or not self.addon.permissions:CanManageNominations() then
     return false, "unauthorized"
   end
 

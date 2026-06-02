@@ -45,10 +45,24 @@ UITabs.history = {
       visibleRowCount = 6,
       rowHeight = 54,
     })
+    panel.statusLabel = Components.CreateLabel(panel, {
+      text = "",
+      x = 0,
+      y = -438,
+      width = 760,
+      justifyH = "LEFT",
+    })
+    panel.confirmDialog = Components.CreateConfirmationDialog(panel, {
+      id = "RollingPinAwardsHistoryDeleteConfirm",
+      title = "Delete Award",
+      message = "",
+      confirmText = "Delete",
+      cancelText = "Cancel",
+    })
 
     return panel
   end,
-  RefreshPanel = function(panel, viewModel)
+  RefreshPanel = function(panel, viewModel, bridge, mainFrame)
     local awards = viewModel.awards or {}
     if #awards == 0 then
       awards = {
@@ -68,11 +82,38 @@ UITabs.history = {
         return
       end
 
+      local actions = {}
+      if award.canDelete then
+        actions[#actions + 1] = {
+          text = "Delete",
+          width = 62,
+          onClick = function()
+            panel.pendingDeleteAwardId = award.awardId
+            Components.SetText(
+              panel.confirmDialog.messageLabel,
+              "Delete this award? If it came from a nomination, the linked nomination will also be deleted."
+            )
+            Components.SetButtonHandler(panel.confirmDialog.confirmButton, function()
+              local ok, err = bridge:DeleteAward(panel.pendingDeleteAwardId)
+              Components.SetVisible(panel.confirmDialog, false)
+              Components.SetText(
+                panel.statusLabel,
+                ok and ("Deleted award for %s."):format(award.recipient)
+                  or ("Unable to delete award: %s"):format(err or "unknown error")
+              )
+              panel.pendingDeleteAwardId = nil
+              mainFrame:RenderActiveTab()
+            end)
+            Components.SetVisible(panel.confirmDialog, true)
+          end,
+        }
+      end
+
       Components.AddListRow(section, {
         text = ("%s\n%s\nAwarded by %s"):format(award.recipient, award.reason, award.awardedBy),
         labelWidth = 640,
         rowHeight = 54,
-        actions = {},
+        actions = actions,
       })
     end)
   end,

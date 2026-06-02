@@ -149,6 +149,108 @@ return {
     harness.assert_equal(1717336800, award.createdAt)
   end,
 
+  ["rank with direct-award permission cannot approve nominations"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+        {
+          name = "Bakerone-Stormrage",
+          rankName = "Member",
+          rankIndex = 5,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.permissions:SetRankPermissions(1, "Officer", {
+      canManageNominations = false,
+      canCreateDirectAwards = true,
+      canDeleteAwards = false,
+      canManageAddonPermissions = false,
+    })
+
+    wow.setPlayer("Bakerone", "Member", 5)
+    local nomination = addon.nominations:Create(
+      "Burny-Stormrage",
+      "Pulled the boss while fishing"
+    )
+
+    wow.setPlayer("Officerone", "Officer", 1)
+    local award = addon.nominations:Approve(nomination.nominationId)
+    local directAward = addon.awards:CreateDirectAward(
+      "Burny-Stormrage",
+      "Set the oven to lava"
+    )
+
+    harness.assert_nil(award)
+    harness.assert_true(directAward ~= nil)
+  end,
+
+  ["rank with nomination permission cannot create direct awards"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+        {
+          name = "Bakerone-Stormrage",
+          rankName = "Member",
+          rankIndex = 5,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.permissions:SetRankPermissions(1, "Officer", {
+      canManageNominations = true,
+      canCreateDirectAwards = false,
+      canDeleteAwards = false,
+      canManageAddonPermissions = false,
+    })
+
+    wow.setPlayer("Bakerone", "Member", 5)
+    local nomination = addon.nominations:Create(
+      "Burny-Stormrage",
+      "Pulled the boss while fishing"
+    )
+
+    wow.setPlayer("Officerone", "Officer", 1)
+    local award = addon.nominations:Approve(nomination.nominationId)
+    local directAward = addon.awards:CreateDirectAward(
+      "Burny-Stormrage",
+      "Set the oven to lava"
+    )
+
+    harness.assert_true(award ~= nil)
+    harness.assert_nil(directAward)
+  end,
+
   ["officer without addon permission cannot approve or directly award"] = function()
     wow.reset({
       guildName = "Raid Bakery",
@@ -191,6 +293,73 @@ return {
       addon:GetActiveGuildContext().guildKey,
       nomination.nominationId
     ).status)
+    harness.assert_equal(0, #addon.awards:GetPublicHistory())
+  end,
+
+  ["deleting a direct award removes only the award"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    local award = addon.awards:CreateDirectAward(
+      "Moonrustle-Stormrage",
+      "Baiting Fae"
+    )
+
+    local ok = addon.awards:DeleteAward(award.awardId)
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    local storedAward = addon.db:GetAward(guildKey, award.awardId)
+
+    harness.assert_true(ok)
+    harness.assert_nil(storedAward)
+    harness.assert_equal(0, #addon.awards:GetPublicHistory())
+  end,
+
+  ["deleting a nomination award removes both award and nomination"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Bakerone-Stormrage",
+          rankName = "Member",
+          rankIndex = 5,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    wow.setPlayer("Bakerone", "Member", 5)
+    local nomination = addon.nominations:Create(
+      "Burny-Stormrage",
+      "Pulled the boss while fishing"
+    )
+
+    wow.setPlayer("Guildmaster", "Guild Master", 0)
+    local award = addon.nominations:Approve(nomination.nominationId)
+    local guildKey = addon:GetActiveGuildContext().guildKey
+
+    local ok = addon.awards:DeleteAward(award.awardId)
+    local storedAward = addon.db:GetAward(guildKey, award.awardId)
+    local storedNomination = addon.db:GetNomination(guildKey, nomination.nominationId)
+
+    harness.assert_true(ok)
+    harness.assert_nil(storedAward)
+    harness.assert_nil(storedNomination)
     harness.assert_equal(0, #addon.awards:GetPublicHistory())
   end,
 }
