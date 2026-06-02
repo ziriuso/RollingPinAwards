@@ -19,19 +19,23 @@ local Defaults = RPA.Defaults or {
 }
 local GuildContext = RPA.GuildContext or {}
 local Awards = RPA.Awards or {}
+local Commands = RPA.Commands or {}
 local Database = RPA.Database
 local Nominations = RPA.Nominations or {}
 local Permissions = RPA.Permissions or {}
 local RosterPermissions = RPA.RosterPermissions or {}
+local Bridge = RPA.UIBridge or {}
 local Utils = RPA.Utils
 
 RPA.Constants = Constants
 RPA.Defaults = Defaults
 RPA.GuildContext = GuildContext
 RPA.Awards = Awards
+RPA.Commands = Commands
 RPA.Nominations = Nominations
 RPA.Permissions = Permissions
 RPA.RosterPermissions = RosterPermissions
+RPA.UIBridge = Bridge
 
 RPA.ADDON_NAME = Constants.ADDON_NAME
 RPA.SLASH_COMMAND = Constants.SLASH_COMMAND
@@ -71,6 +75,25 @@ function RPA:OnInitialize()
     self.nominations = Nominations:New(self)
   else
     self.nominations = nil
+  end
+
+  if type(Commands.New) == "function" then
+    self.commands = Commands:New(self)
+  else
+    self.commands = nil
+  end
+
+  if type(Bridge.New) == "function" then
+    self.uiBridge = Bridge:New(self)
+  else
+    self.uiBridge = nil
+  end
+
+  if self.commands then
+    _G.SLASH_ROLLINGPINAWARDS1 = self.SLASH_COMMAND
+    _G.SlashCmdList.ROLLINGPINAWARDS = function(message)
+      return self.commands:Handle(message or "")
+    end
   end
 end
 

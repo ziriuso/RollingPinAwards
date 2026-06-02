@@ -15,4 +15,6 @@ RosterPermissions.lua
 Permissions.lua
 Awards.lua
 Nominations.lua
+Commands.lua
 Core.lua
+UI\Bridge.lua
