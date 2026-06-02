@@ -21,6 +21,7 @@ local GuildContext = RPA.GuildContext or {}
 local Awards = RPA.Awards or {}
 local Commands = RPA.Commands or {}
 local Database = RPA.Database
+local MainFrame = RPA.MainFrame or {}
 local Nominations = RPA.Nominations or {}
 local Permissions = RPA.Permissions or {}
 local RosterPermissions = RPA.RosterPermissions or {}
@@ -33,6 +34,7 @@ RPA.GuildContext = GuildContext
 RPA.Awards = Awards
 RPA.Commands = Commands
 RPA.Nominations = Nominations
+RPA.MainFrame = MainFrame
 RPA.Permissions = Permissions
 RPA.RosterPermissions = RosterPermissions
 RPA.UIBridge = Bridge
@@ -87,6 +89,15 @@ function RPA:OnInitialize()
     self.uiBridge = Bridge:New(self)
   else
     self.uiBridge = nil
+  end
+
+  if type(MainFrame.New) == "function" then
+    self.mainFrame = MainFrame:New({
+      addon = self,
+      uiBridge = self.uiBridge,
+    })
+  else
+    self.mainFrame = nil
   end
 
   if self.commands then

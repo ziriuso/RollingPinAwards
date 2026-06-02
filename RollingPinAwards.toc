@@ -18,3 +18,12 @@ Nominations.lua
 Commands.lua
 Core.lua
 UI\Bridge.lua
+UI\Styles.lua
+UI\Components.lua
+UI\Tabs\Dashboard.lua
+UI\Tabs\Award.lua
+UI\Tabs\Nominations.lua
+UI\Tabs\History.lua
+UI\Tabs\Settings.lua
+UI\Tabs\Admin.lua
+UI\MainFrame.lua

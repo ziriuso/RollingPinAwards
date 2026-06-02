@@ -87,4 +87,22 @@ function Bridge:GetPublicHistoryViewModel()
   return rows
 end
 
+function Bridge:CanCurrentPlayerManageAwards()
+  if not self.addon.permissions then
+    return false
+  end
+
+  return self.addon.permissions:CanManageAwards()
+end
+
+function Bridge:GetSettingsViewModel()
+  local settings = self.addon.db.storage.profile.settings or {}
+
+  return {
+    tooltipEnabled = settings.tooltipEnabled == true,
+    announceAwards = settings.announceAwards == true,
+    debug = settings.debug == true,
+  }
+end
+
 return RPA.UIBridge

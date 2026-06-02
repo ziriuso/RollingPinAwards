@@ -17,11 +17,27 @@ end
 function Commands:Handle(message)
   local command, rest = (message or ""):match("^(%S+)%s*(.-)$")
 
+  if not command or command == "" then
+    if self.addon.mainFrame then
+      self.addon.mainFrame:Toggle()
+      return true
+    end
+
+    return nil, "ui unavailable"
+  end
+
   if command == "nominate" then
     local nominee, reason = rest:match('^(%S+)%s+"(.+)"$')
     if nominee and reason then
       return self.addon.nominations:Create(nominee, reason)
     end
+  elseif command == "show" or command == "toggle" then
+    if self.addon.mainFrame then
+      self.addon.mainFrame:Toggle()
+      return true
+    end
+
+    return nil, "ui unavailable"
   end
 
   return nil, "unknown command"

@@ -78,4 +78,18 @@ return {
     harness.assert_equal(3, rows[1].downvotes)
     harness.assert_true(rows[1].moderationFlagged)
   end,
+
+  ["main frame registers the expected tab ids"] = function()
+    local MainFrame = dofile("UI/MainFrame.lua")
+    local frame = MainFrame:New({
+      uiBridge = {
+        GetPendingNominationsViewModel = function()
+          return {}
+        end,
+      },
+    })
+
+    harness.assert_equal("dashboard", frame.tabs[1].id)
+    harness.assert_equal("admin", frame.tabs[6].id)
+  end,
 }
