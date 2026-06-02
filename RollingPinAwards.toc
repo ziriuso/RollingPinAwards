@@ -1,0 +1,9 @@
+## Interface: 120005, 110207
+## Title: Rolling Pin Awards
+## Notes: Guild awards and nominations for The Burnt Rolling Pin
+## Author: Ziri
+## Version: 0.1.0
+## SavedVariables: RollingPinAwardsDB
+## OptionalDeps: Ace3
+
+Core.lua
