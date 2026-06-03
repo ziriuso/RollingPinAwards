@@ -15,7 +15,6 @@ if not RPA.UITabs or not RPA.UITabs.dashboard then
   dofile("UI/Tabs/Nominations.lua")
   dofile("UI/Tabs/History.lua")
   dofile("UI/Tabs/Leaderboard.lua")
-  dofile("UI/Tabs/Settings.lua")
   dofile("UI/Tabs/Admin.lua")
 end
 
@@ -215,6 +214,25 @@ function MainFrame:Toggle()
   Components.SetVisible(self.frame, not self.frame.visible)
 
   return self.frame.visible
+end
+
+function MainFrame:EnsureBackgroundCalibrator()
+  if not self.backgroundCalibrator then
+    self.backgroundCalibrator = Components.CreateBackgroundCalibrationWindow(self.frame, {
+      id = "RollingPinAwardsBackgroundCalibrator",
+      width = Styles.Window.width,
+      height = Styles.Window.height,
+    })
+  end
+
+  return self.backgroundCalibrator
+end
+
+function MainFrame:ToggleBackgroundCalibrator()
+  local calibration = self:EnsureBackgroundCalibrator()
+  Components.SetVisible(calibration, not calibration.visible)
+
+  return calibration.visible
 end
 
 return RPA.MainFrame

@@ -30,8 +30,44 @@ local function applyBackdrop(frame, backdrop, color, borderColor)
   end
 end
 
+local function applyTextTreatment(label)
+  if not label then
+    return
+  end
+
+  if label.SetShadowColor then
+    label:SetShadowColor(0, 0, 0, 0)
+  else
+    label.shadowColor = {
+      red = 0,
+      green = 0,
+      blue = 0,
+      alpha = 0,
+    }
+  end
+
+  if label.SetShadowOffset then
+    label:SetShadowOffset(0, 0)
+  else
+    label.shadowOffset = {
+      x = 0,
+      y = 0,
+    }
+  end
+
+  if label.GetFont and label.SetFont then
+    local fontFile, fontHeight = label:GetFont()
+    if fontFile and fontHeight then
+      label:SetFont(fontFile, fontHeight, "OUTLINE")
+    end
+  else
+    label.fontFlags = "OUTLINE"
+  end
+end
+
 local function createFontString(parent, font, x, y, width, justifyH, justifyV, text)
-  local label = parent.CreateFontString and parent:CreateFontString(nil, "OVERLAY", font or "GameFontHighlight") or {
+  local fontTemplate = font or "GameFontHighlight"
+  local label = parent.CreateFontString and parent:CreateFontString(nil, "OVERLAY", fontTemplate) or {
     text = "",
   }
 
@@ -57,6 +93,8 @@ local function createFontString(parent, font, x, y, width, justifyH, justifyV, t
     label.text = text or ""
   end
 
+  applyTextTreatment(label)
+
   return label
 end
 
@@ -67,6 +105,10 @@ local function createArtworkFrame(parent, config)
 
   if artwork.SetSize then
     artwork:SetSize(artwork.width, artwork.height)
+  end
+
+  if artwork.SetFrameStrata and parent and parent.GetFrameStrata then
+    artwork:SetFrameStrata(parent:GetFrameStrata())
   end
 
   if artwork.SetPoint then
@@ -105,6 +147,10 @@ local function createArtworkFrame(parent, config)
   return artwork
 end
 
+function Components.CreateArtworkFrame(parent, config)
+  return createArtworkFrame(parent, config or {})
+end
+
 function Components.CreateWindow(config)
   if type(CreateFrame) == "function" then
     local frame = CreateFrame("Frame", config.id, UIParent, "BackdropTemplate")
@@ -115,6 +161,30 @@ function Components.CreateWindow(config)
       frame:SetSize(config.width, config.height)
     end
 
+    if frame.SetFrameStrata then
+      frame:SetFrameStrata("TOOLTIP")
+    end
+
+    if frame.SetFrameLevel then
+      frame:SetFrameLevel(100)
+    end
+
+    if frame.SetToplevel then
+      frame:SetToplevel(true)
+    end
+
+    if frame.EnableKeyboard then
+      frame:EnableKeyboard(true)
+    end
+
+    if frame.SetPropagateKeyboardInput then
+      frame:SetPropagateKeyboardInput(true)
+    end
+
+    if frame.SetHitRectInsets then
+      frame:SetHitRectInsets(-52, -112, -92, -44)
+    end
+
     if frame.SetPoint then
       frame:SetPoint("CENTER")
     end
@@ -123,19 +193,15 @@ function Components.CreateWindow(config)
       frame:Hide()
     end
 
-    applyBackdrop(frame, {
-      bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-      edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-      tile = true,
-      tileSize = 16,
-      edgeSize = 16,
-      insets = {
-        left = 5,
-        right = 5,
-        top = 5,
-        bottom = 5,
-      },
-    }, colors.shell, colors.brassMuted)
+    frame.backgroundArt = createArtworkFrame(frame, {
+      texture = ((Styles.Media or {}).addonBackground) or "Interface\\AddOns\\RollingPinAwards\\Media\\addon-background.png",
+      width = 1048,
+      height = 872,
+      anchor = "TOPLEFT",
+      relativeTo = "TOPLEFT",
+      x = -52,
+      y = 92,
+    })
 
     if frame.EnableMouse then
       frame:EnableMouse(true)
@@ -160,127 +226,75 @@ function Components.CreateWindow(config)
           self:StopMovingOrSizing()
         end
       end)
+      frame:SetScript("OnKeyDown", function(self, key)
+        if key == "ESCAPE" then
+          if self.SetPropagateKeyboardInput then
+            self:SetPropagateKeyboardInput(false)
+          end
+          Components.SetVisible(self, false)
+        elseif self.SetPropagateKeyboardInput then
+          self:SetPropagateKeyboardInput(true)
+        end
+      end)
+    end
+
+    if type(UISpecialFrames) == "table" and config.id then
+      local registered = false
+      for _, frameName in ipairs(UISpecialFrames) do
+        if frameName == config.id then
+          registered = true
+          break
+        end
+      end
+      if not registered then
+        UISpecialFrames[#UISpecialFrames + 1] = config.id
+      end
     end
 
     frame.visible = false
     frame.title = config.title
 
-    frame.shadowFrame = CreateFrame("Frame", nil, frame, "BackdropTemplate")
-    if frame.shadowFrame.SetPoint then
-      frame.shadowFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", -10, 10)
-      frame.shadowFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 10, -10)
-    end
-    applyBackdrop(frame.shadowFrame, {
-      bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
-      edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-      tile = true,
-      tileSize = 8,
-      edgeSize = 12,
-      insets = {
-        left = 2,
-        right = 2,
-        top = 2,
-        bottom = 2,
-      },
-    }, colors.shellShadow, colors.brassMuted)
-
-    frame.headerBand = CreateFrame("Frame", nil, frame, "BackdropTemplate")
-    frame.headerBand.width = config.width - 28
-    frame.headerBand.height = layout.headerHeight or 86
-    if frame.headerBand.SetSize then
-      frame.headerBand:SetSize(frame.headerBand.width, frame.headerBand.height)
-    end
-    if frame.headerBand.SetPoint then
-      frame.headerBand:SetPoint("TOPLEFT", frame, "TOPLEFT", 14, -14)
-    end
-    applyBackdrop(frame.headerBand, {
-      bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-      edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-      tile = true,
-      tileSize = 16,
-      edgeSize = 10,
-      insets = {
-        left = 3,
-        right = 3,
-        top = 3,
-        bottom = 3,
-      },
-    }, colors.parchment, colors.brass)
-
-    frame.headerAccent = CreateFrame("Frame", nil, frame.headerBand, "BackdropTemplate")
-    if frame.headerAccent.SetSize then
-      frame.headerAccent:SetSize(frame.headerBand.width - 8, 2)
-    end
-    if frame.headerAccent.SetPoint then
-      frame.headerAccent:SetPoint("BOTTOMLEFT", frame.headerBand, "BOTTOMLEFT", 4, 4)
-    end
-    applyBackdrop(frame.headerAccent, {
-      bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
-      edgeFile = nil,
-      tile = true,
-      tileSize = 4,
-      edgeSize = 0,
-      insets = { left = 0, right = 0, top = 0, bottom = 0 },
-    }, colors.accentSoft, colors.accentSoft)
-
-    frame.titleIcon = createArtworkFrame(frame.headerBand, {
-      texture = ((Styles.Media or {}).headerIcon) or "Interface\\AddOns\\RollingPinAwards\\Media\\flameember.png",
-      width = 44,
-      height = 44,
-      x = 18,
-      y = -16,
-    })
-
     local titleText = createFontString(
-      frame.headerBand,
+      frame,
       "GameFontNormalLarge",
       74,
       -18,
-      frame.headerBand.width - 120,
+      config.width - 120,
       "LEFT",
       "TOP",
-      config.title or ""
+      ""
     )
     local subtitleText = createFontString(
-      frame.headerBand,
+      frame,
       "GameFontHighlightSmall",
       74,
       -50,
-      frame.headerBand.width - 120,
+      config.width - 120,
       "LEFT",
       "TOP",
-      config.subtitle or Styles.Window.subtitle or ""
+      ""
     )
 
     frame.titleText = titleText
     frame.subtitleText = subtitleText
 
     frame.tabRail = CreateFrame("Frame", nil, frame, "BackdropTemplate")
-    frame.tabRail.width = config.width - 76
+    local tabCount = #(Styles.TabOrder or {})
+    local tabWidth = layout.tabWidth or 114
+    local tabGap = layout.tabGap or 10
+    local tabGroupWidth = (tabCount * tabWidth) + (math.max(0, tabCount - 1) * tabGap)
+    local tabRailPadding = layout.tabRailPadding or 42
+    frame.tabRail.width = math.min(config.width - 76, tabGroupWidth + tabRailPadding)
     frame.tabRail.height = layout.tabRailHeight or 52
     if frame.tabRail.SetSize then
       frame.tabRail:SetSize(frame.tabRail.width, frame.tabRail.height)
     end
     if frame.tabRail.SetPoint then
-      frame.tabRail:SetPoint("TOPLEFT", frame, "TOPLEFT", 38, -112)
+      frame.tabRail:SetPoint("TOPLEFT", frame, "TOPLEFT", math.floor(((config.width or 0) - frame.tabRail.width) / 2), -112)
     end
-    applyBackdrop(frame.tabRail, {
-      bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-      edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-      tile = true,
-      tileSize = 16,
-      edgeSize = 8,
-      insets = {
-        left = 2,
-        right = 2,
-        top = 2,
-        bottom = 2,
-      },
-    }, colors.parchmentSoft, colors.brassMuted)
-
     local closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
     if closeButton.SetPoint then
-      closeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -6, -6)
+      closeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 106, 86)
     end
     if closeButton.SetScript then
       closeButton:SetScript("OnClick", function()
@@ -320,6 +334,106 @@ function Components.MakeTab(spec)
   }
 end
 
+function Components.CreateBackgroundCalibrationWindow(parentFrame, config)
+  config = config or {}
+  local colors = Styles.Colors or {}
+  local media = Styles.Media or {}
+  local calibration = CreateFrame("Frame", config.id, UIParent, "BackdropTemplate")
+  calibration.width = config.width or 920
+  calibration.height = config.height or 736
+  calibration.skipRaiseOnShow = true
+
+  if calibration.SetSize then
+    calibration:SetSize(calibration.width, calibration.height)
+  end
+  if calibration.SetPoint then
+    calibration:SetPoint("CENTER", parentFrame or UIParent, "CENTER", 0, 0)
+  end
+  if calibration.SetFrameStrata then
+    calibration:SetFrameStrata("BACKGROUND")
+  end
+  if calibration.SetFrameLevel and parentFrame and parentFrame.GetFrameLevel then
+    calibration:SetFrameLevel(math.max(0, (parentFrame:GetFrameLevel() or 1) - 1))
+  end
+  if calibration.EnableMouse then
+    calibration:EnableMouse(true)
+  end
+  if calibration.SetMovable then
+    calibration:SetMovable(true)
+  end
+  if calibration.SetResizable then
+    calibration:SetResizable(true)
+  end
+  if calibration.SetResizeBounds then
+    calibration:SetResizeBounds(420, 320, 1800, 1400)
+  end
+  if calibration.RegisterForDrag then
+    calibration:RegisterForDrag("LeftButton")
+  end
+  if calibration.SetScript then
+    calibration:SetScript("OnDragStart", function(self)
+      if self.StartMoving then
+        self:StartMoving()
+      end
+    end)
+    calibration:SetScript("OnDragStop", function(self)
+      if self.StopMovingOrSizing then
+        self:StopMovingOrSizing()
+      end
+    end)
+  end
+
+  calibration.backgroundArt = createArtworkFrame(calibration, {
+    texture = media.addonBackground or "Interface\\AddOns\\RollingPinAwards\\Media\\addon-background.png",
+    width = calibration.width,
+    height = calibration.height,
+    anchor = "CENTER",
+    relativeTo = "CENTER",
+    x = 0,
+    y = 0,
+  })
+
+  calibration.resizeHandle = CreateFrame("Button", nil, calibration, "BackdropTemplate")
+  if calibration.resizeHandle.SetSize then
+    calibration.resizeHandle:SetSize(22, 22)
+  end
+  if calibration.resizeHandle.SetPoint then
+    calibration.resizeHandle:SetPoint("BOTTOMRIGHT", calibration, "BOTTOMRIGHT", -4, 4)
+  end
+  if calibration.resizeHandle.EnableMouse then
+    calibration.resizeHandle:EnableMouse(true)
+  end
+  applyBackdrop(calibration.resizeHandle, {
+    bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
+    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    tile = true,
+    tileSize = 8,
+    edgeSize = 8,
+    insets = {
+      left = 1,
+      right = 1,
+      top = 1,
+      bottom = 1,
+    },
+  }, colors.darkPanel or { 0, 0, 0, 0.5 }, colors.brass or { 1, 1, 1, 1 })
+  if calibration.resizeHandle.SetScript then
+    calibration.resizeHandle:SetScript("OnMouseDown", function()
+      if calibration.StartSizing then
+        calibration:StartSizing("BOTTOMRIGHT")
+      end
+    end)
+    calibration.resizeHandle:SetScript("OnMouseUp", function()
+      if calibration.StopMovingOrSizing then
+        calibration:StopMovingOrSizing()
+      end
+    end)
+  end
+
+  Components.SetVisible(calibration, false)
+
+  return calibration
+end
+
 function Components.CreateTabButton(parent, spec, index)
   if type(CreateFrame) == "function" and parent then
     local colors = Styles.Colors or {}
@@ -336,11 +450,14 @@ function Components.CreateTabButton(parent, spec, index)
     end
 
     if button.SetPoint then
+      local tabCount = #(Styles.TabOrder or {})
+      local tabGroupWidth = (tabCount * button.width) + (math.max(0, tabCount - 1) * (layout.tabGap or 10))
+      local startX = math.floor(((host.width or tabGroupWidth) - tabGroupWidth) / 2)
       button:SetPoint(
         "TOPLEFT",
         host,
         "TOPLEFT",
-        10 + ((index - 1) * ((layout.tabWidth or 114) + (layout.tabGap or 10))),
+        startX + ((index - 1) * ((layout.tabWidth or 114) + (layout.tabGap or 10))),
         -6
       )
     end
@@ -395,44 +512,10 @@ function Components.CreateContentPanel(parent, config)
     panel:SetClipsChildren(true)
   end
 
-  applyBackdrop(panel, {
-    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-    tile = true,
-    tileSize = 16,
-    edgeSize = 10,
-    insets = {
-      left = 3,
-      right = 3,
-      top = 3,
-      bottom = 3,
-    },
-  }, colors.parchment, colors.brass)
-
   panel.width = config.width or 100
   panel.height = config.height or 100
 
-  panel.innerShade = CreateFrame("Frame", nil, panel, "BackdropTemplate")
-  if panel.innerShade.SetPoint then
-    panel.innerShade:SetPoint("TOPLEFT", panel, "TOPLEFT", 8, -8)
-    panel.innerShade:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -8, 8)
-  end
-  if panel.innerShade.SetFrameLevel and panel.GetFrameLevel then
-    panel.innerShade:SetFrameLevel(panel:GetFrameLevel())
-  end
-  if panel.innerShade.SetFrameStrata then
-    panel.innerShade:SetFrameStrata("BACKGROUND")
-  end
-  applyBackdrop(panel.innerShade, {
-    bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
-    edgeFile = nil,
-    tile = true,
-    tileSize = 8,
-    edgeSize = 0,
-    insets = { left = 0, right = 0, top = 0, bottom = 0 },
-  }, { colors.parchment[1], colors.parchment[2], colors.parchment[3], 0.18 }, colors.parchment)
-
-  panel.contentHost = CreateFrame("Frame", nil, panel)
+  panel.contentHost = CreateFrame("Frame", nil, parent)
   panel.contentHost.width = panel.width - 16
   panel.contentHost.height = panel.height - 16
   if panel.contentHost.SetPoint then
@@ -442,10 +525,10 @@ function Components.CreateContentPanel(parent, config)
     panel.contentHost:SetSize(panel.contentHost.width, panel.contentHost.height)
   end
   if panel.contentHost.SetFrameLevel and panel.GetFrameLevel then
-    panel.contentHost:SetFrameLevel(panel:GetFrameLevel() + 10)
+    panel.contentHost:SetFrameLevel(panel:GetFrameLevel() + 20)
   end
-  if panel.contentHost.SetFrameStrata then
-    panel.contentHost:SetFrameStrata("MEDIUM")
+  if panel.contentHost.SetFrameStrata and panel.GetFrameStrata then
+    panel.contentHost:SetFrameStrata(panel:GetFrameStrata())
   end
   if panel.contentHost.SetClipsChildren then
     panel.contentHost:SetClipsChildren(true)
@@ -461,6 +544,8 @@ function Components.CreateContentPanel(parent, config)
   if type(panel.contentHost.CreateFontString) == "function" then
     titleText = panel.contentHost:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     bodyText = panel.contentHost:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    applyTextTreatment(titleText)
+    applyTextTreatment(bodyText)
 
     if titleText.SetPoint then
       titleText:SetPoint("TOPLEFT", panel.contentHost, "TOPLEFT", 16, -16)
@@ -505,7 +590,7 @@ function Components.CreateSection(parent, config)
   end
 
   applyBackdrop(section, {
-    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+    bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
     edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
     tile = true,
     tileSize = 16,
@@ -516,7 +601,7 @@ function Components.CreateSection(parent, config)
       top = 2,
       bottom = 2,
     },
-  }, colors.parchmentSoft, colors.brass)
+  }, colors.bannerPanel or colors.parchmentSoft, colors.brass)
 
   if config.iconPath then
     section.iconFrame = createArtworkFrame(section, {
@@ -556,7 +641,7 @@ function Components.CreateStatCard(parent, config)
   end
 
   applyBackdrop(card, {
-    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+    bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
     edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
     tile = true,
     tileSize = 16,
@@ -567,7 +652,7 @@ function Components.CreateStatCard(parent, config)
       top = 2,
       bottom = 2,
     },
-  }, colors.parchment, colors.brass)
+  }, colors.bannerPanel or colors.parchment, colors.brass)
 
   if config.iconPath then
     card.iconFrame = createArtworkFrame(card, {
@@ -581,9 +666,18 @@ function Components.CreateStatCard(parent, config)
 
   local labelX = card.iconFrame and 48 or 14
   local labelWidth = card.width - labelX - 14
-  card.label = createFontString(card, "GameFontHighlight", labelX, -16, labelWidth, "LEFT", "TOP", config.label or "")
-  card.value = createFontString(card, "GameFontNormalLarge", 14, -54, card.width - 28, "LEFT", "TOP", config.value or "")
-  card.detail = createFontString(card, "GameFontHighlightSmall", 14, -78, card.width - 28, "LEFT", "TOP", config.detail or "")
+  card.label = createFontString(card, "GameFontNormal", labelX, -16, labelWidth, "CENTER", "TOP", config.label or "")
+  card.value = createFontString(card, "GameFontNormalLarge", 14, -54, card.width - 28, "CENTER", "TOP", config.value or "")
+  card.detail = createFontString(card, "GameFontHighlightSmall", 14, -78, card.width - 28, "CENTER", "TOP", config.detail or "")
+  if card.value.SetPoint then
+    if card.value.ClearAllPoints then
+      card.value:ClearAllPoints()
+    end
+    card.value:SetPoint("CENTER", card, "CENTER", 0, -2)
+  end
+  if card.value.SetJustifyV then
+    card.value:SetJustifyV("MIDDLE")
+  end
 
   return card
 end
@@ -594,13 +688,16 @@ function Components.CreateScrollableSection(parent, config)
   section.rowHeight = config.rowHeight or 44
   section.scrollOffset = 0
   section.items = {}
+  section.rowInsetLeft = config.rowInsetLeft or 14
+  section.rowScrollbarGutter = config.rowScrollbarGutter or 48
+  section.rowStartY = config.rowStartY or -34
 
   local scrollBar = CreateFrame("Slider", nil, section, "OptionsSliderTemplate")
   if scrollBar.SetPoint then
-    scrollBar:SetPoint("TOPRIGHT", section, "TOPRIGHT", -10, -28)
+    scrollBar:SetPoint("TOPRIGHT", section, "TOPRIGHT", -10, -(config.scrollBarTop or 28))
   end
   if scrollBar.SetSize then
-    scrollBar:SetSize(16, section.height - 44)
+    scrollBar:SetSize(16, section.height - ((config.scrollBarTop or 28) + (config.scrollBarBottom or 16)))
   end
   if scrollBar.SetMinMaxValues then
     scrollBar:SetMinMaxValues(0, 0)
@@ -701,7 +798,13 @@ function Components.CreateButton(parent, config)
 
   local labelX = button.iconFrame and 46 or 8
   local labelWidth = (config.width or 120) - labelX - 10
-  button.label = createFontString(button, "GameFontNormal", labelX, -6, labelWidth, button.iconFrame and "LEFT" or "CENTER", "TOP", config.text or "")
+  button.label = createFontString(button, "GameFontNormal", labelX, -6, labelWidth, button.iconFrame and "LEFT" or "CENTER", "MIDDLE", config.text or "")
+  if button.label.SetPoint then
+    if button.label.ClearAllPoints then
+      button.label:ClearAllPoints()
+    end
+    button.label:SetPoint("LEFT", button, "LEFT", labelX, 0)
+  end
   Components.SetButtonVariant(button, button.variant)
 
   if config.onClick then
@@ -799,20 +902,18 @@ end
 
 function Components.CreateCheckButton(parent, config)
   local colors = Styles.Colors or {}
-  local button = CreateFrame("CheckButton", nil, parent, config.template or "UICheckButtonTemplate")
+  local button = CreateFrame("Button", nil, parent, config.template or "BackdropTemplate")
+  button.checked = false
+
+  if button.SetSize then
+    button:SetSize(20, 20)
+  end
 
   if button.SetPoint then
     button:SetPoint(config.anchor or "TOPLEFT", parent, config.relativeTo or "TOPLEFT", config.x or 0, config.y or 0)
   end
 
-  button.chrome = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-  if button.chrome.SetPoint then
-    button.chrome:SetPoint(config.anchor or "TOPLEFT", parent, config.relativeTo or "TOPLEFT", config.x or 0, (config.y or 0) - 2)
-  end
-  if button.chrome.SetSize then
-    button.chrome:SetSize(20, 20)
-  end
-  applyBackdrop(button.chrome, {
+  applyBackdrop(button, {
     bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
     edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
     tile = true,
@@ -825,6 +926,37 @@ function Components.CreateCheckButton(parent, config)
       bottom = 2,
     },
   }, colors.parchment, colors.brassMuted)
+  button.chrome = button
+
+  button.checkLabel = button:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+  applyTextTreatment(button.checkLabel)
+  if button.checkLabel.SetPoint then
+    button.checkLabel:SetPoint("CENTER", button, "CENTER", 0, 0)
+  end
+  if button.checkLabel.SetText then
+    button.checkLabel:SetText("X")
+  end
+
+  function button:SetChecked(value)
+    self.checked = value == true
+    Components.SetVisible(self.checkLabel, self.checked)
+  end
+
+  function button:GetChecked()
+    return self.checked == true
+  end
+
+  if button.SetScript then
+    button:SetScript("OnClick", function(self)
+      if self.disabled then
+        return
+      end
+
+      self:SetChecked(not self:GetChecked())
+    end)
+  end
+
+  button:SetChecked(false)
 
   if config.text and config.text ~= "" then
     local text = Components.CreateLabel(parent, {
@@ -919,7 +1051,35 @@ function Components.CreateModalWindow(parent, config)
   end
 
   if dialog.SetFrameStrata then
-    dialog:SetFrameStrata("DIALOG")
+    local parentStrata = parent.GetFrameStrata and parent:GetFrameStrata() or nil
+    dialog:SetFrameStrata(config.frameStrata or parentStrata or "DIALOG")
+  end
+  if dialog.SetFrameLevel and parent.GetFrameLevel then
+    dialog:SetFrameLevel((parent:GetFrameLevel() or 0) + (config.frameLevelOffset or 100))
+  end
+
+  if config.draggable then
+    if dialog.EnableMouse then
+      dialog:EnableMouse(true)
+    end
+    if dialog.SetMovable then
+      dialog:SetMovable(true)
+    end
+    if dialog.RegisterForDrag then
+      dialog:RegisterForDrag("LeftButton")
+    end
+    if dialog.SetScript then
+      dialog:SetScript("OnDragStart", function(self)
+        if self.StartMoving then
+          self:StartMoving()
+        end
+      end)
+      dialog:SetScript("OnDragStop", function(self)
+        if self.StopMovingOrSizing then
+          self:StopMovingOrSizing()
+        end
+      end)
+    end
   end
 
   applyBackdrop(dialog, {
@@ -934,24 +1094,71 @@ function Components.CreateModalWindow(parent, config)
       top = 4,
       bottom = 4,
     },
-  }, colors.darkPanel, colors.brass)
+  }, config.backdropColor or colors.darkPanel, config.borderColor or colors.brass)
 
-  dialog.titleLabel = Components.CreateLabel(dialog, {
+  if config.backgroundTexture then
+    dialog.backgroundArt = createArtworkFrame(dialog, {
+      texture = config.backgroundTexture,
+      width = dialog.width,
+      height = dialog.height,
+      anchor = "CENTER",
+      relativeTo = "CENTER",
+      x = 0,
+      y = 0,
+    })
+    if dialog.backgroundArt.SetFrameLevel and dialog.GetFrameLevel then
+      dialog.backgroundArt:SetFrameLevel(dialog:GetFrameLevel() + 1)
+    end
+  end
+
+  if config.contentBounds then
+    dialog.contentHost = CreateFrame("Frame", nil, dialog)
+    dialog.contentHost.width = config.contentBounds.width or (dialog.width - 32)
+    dialog.contentHost.height = config.contentBounds.height or (dialog.height - 32)
+    if dialog.contentHost.SetSize then
+      dialog.contentHost:SetSize(dialog.contentHost.width, dialog.contentHost.height)
+    end
+    if dialog.contentHost.SetPoint then
+      dialog.contentHost:SetPoint(
+        "TOPLEFT",
+        dialog,
+        "TOPLEFT",
+        config.contentBounds.left or 16,
+        -(config.contentBounds.top or 16)
+      )
+    end
+    if dialog.contentHost.SetFrameLevel and dialog.GetFrameLevel then
+      dialog.contentHost:SetFrameLevel(dialog:GetFrameLevel() + 2)
+    end
+  end
+
+  local chromeParent = dialog.contentHost or dialog
+  local chromeWidth = chromeParent.width or dialog.width
+
+  dialog.titleLabel = Components.CreateLabel(chromeParent, {
     text = config.title or "",
-    x = 16,
-    y = -16,
-    font = "GameFontNormalLarge",
+    x = config.centerTitle and 24 or 16,
+    y = config.titleY or -16,
+    width = config.centerTitle and (chromeWidth - 48) or nil,
+    justifyH = config.centerTitle and "CENTER" or "LEFT",
+    font = config.titleFont or "GameFontNormalLarge",
   })
-  dialog.closeButton = Components.CreateButton(dialog, {
+  dialog.closeButton = Components.CreateButton(chromeParent, {
     text = config.closeText or "Close",
     width = 84,
-    x = dialog.width - 100,
-    y = -12,
+    x = config.closeX or (chromeWidth - 100),
+    y = config.closeY or -12,
     variant = "secondary",
     onClick = function()
       Components.SetVisible(dialog, false)
     end,
   })
+  if config.closeAnchor == "BOTTOMRIGHT" and dialog.closeButton.SetPoint then
+    if dialog.closeButton.ClearAllPoints then
+      dialog.closeButton:ClearAllPoints()
+    end
+    dialog.closeButton:SetPoint("BOTTOMRIGHT", chromeParent, "BOTTOMRIGHT", -16, config.closeBottomY or 16)
+  end
 
   Components.SetVisible(dialog, false)
 
@@ -1015,20 +1222,25 @@ function Components.AddListRow(section, config)
   section.rows = section.rows or {}
   local colors = Styles.Colors or {}
 
-  local row = CreateFrame("Frame", nil, section)
+  local row = CreateFrame("Frame", nil, section, "BackdropTemplate")
+  row.backdropTone = config.backdropTone
   local index = #section.rows
-  local offsetY = -34 - (index * (config.rowHeight or 44))
+  local offsetY = (section.rowStartY or -34) - (index * (config.rowHeight or 44))
+  local useRowHighlight = config.backdropTone == "rowHighlight"
+  local rowLeft = config.x or section.rowInsetLeft or 14
+  local defaultGutter = section.scrollBar and (section.rowScrollbarGutter or 48) or 24
+  local rowWidth = config.width or ((section.width or 100) - rowLeft - (config.rowRightGutter or defaultGutter))
 
   if row.SetSize then
-    row:SetSize(config.width or ((section.width or 100) - 20), config.rowHeight or 40)
+    row:SetSize(rowWidth, config.rowHeight or 40)
   end
 
   if row.SetPoint then
-    row:SetPoint("TOPLEFT", section, "TOPLEFT", 10, offsetY)
+    row:SetPoint("TOPLEFT", section, "TOPLEFT", rowLeft, offsetY)
   end
 
   applyBackdrop(row, {
-    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+    bgFile = useRowHighlight and "Interface\\ChatFrame\\ChatFrameBackground" or "Interface\\DialogFrame\\UI-DialogBox-Background",
     edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
     tile = true,
     tileSize = 16,
@@ -1039,7 +1251,7 @@ function Components.AddListRow(section, config)
       top = 2,
       bottom = 2,
     },
-  }, colors.parchment, config.highlight and colors.accentSoft or colors.brassMuted)
+  }, useRowHighlight and (colors.parchmentMuted or colors.parchment) or colors.parchment, config.highlight and colors.accentSoft or colors.brassMuted)
 
   if config.iconPath then
     row.iconFrame = createArtworkFrame(row, {
@@ -1049,24 +1261,49 @@ function Components.AddListRow(section, config)
       x = 10,
       y = -8,
     })
+    if row.iconFrame.SetPoint then
+      if row.iconFrame.ClearAllPoints then
+        row.iconFrame:ClearAllPoints()
+      end
+      row.iconFrame:SetPoint("LEFT", row, "LEFT", 10, 0)
+    end
   end
 
+  local labelX = row.iconFrame and ((config.iconWidth or 20) + 22) or (config.textPaddingLeft or 12)
   local label = Components.CreateLabel(row, {
     text = config.text or "",
-    x = row.iconFrame and ((config.iconWidth or 20) + 18) or 0,
-    y = -4,
-    width = config.labelWidth or ((section.width or 100) - (row.iconFrame and 198 or 180)),
+    x = labelX,
+    y = 0,
+    width = config.labelWidth or ((rowWidth or section.width or 100) - labelX - (config.labelRightPadding or 18)),
     justifyH = "LEFT",
-    justifyV = "TOP",
+    justifyV = config.justifyV or "MIDDLE",
   })
+  if label.SetPoint then
+    if label.ClearAllPoints then
+      label:ClearAllPoints()
+    end
+    label:SetPoint("LEFT", row, "LEFT", labelX, 0)
+  end
+  if useRowHighlight and label.SetTextColor then
+    local textColor = config.textColor or colors.ink or { 0, 0, 0, 1 }
+    label:SetTextColor(unpackColor(textColor))
+  end
   row.label = label
   row.actions = {}
 
-  local actionX = config.actionX or ((section.width or 100) - 150)
+  local actionX = config.actionX or math.max(0, (rowWidth or section.width or 100) - 150)
   local actionColumns = config.actionColumns or #((config.actions or {}))
   local actionSpacingX = config.actionSpacingX or 6
   local actionSpacingY = config.actionSpacingY or 4
-  local actionBaseY = config.actionBaseY or 0
+  local actionCount = #((config.actions or {}))
+  local actionRows = actionColumns > 0 and math.ceil(actionCount / actionColumns) or 0
+  local buttonHeight = config.actionButtonHeight or 22
+  local actionGroupHeight = actionRows > 0 and ((actionRows * buttonHeight) + ((actionRows - 1) * actionSpacingY)) or 0
+  local centeredActionTopY = actionGroupHeight > 0 and ((actionGroupHeight - buttonHeight) / 2) or 0
+  local actionBaseY = config.actionBaseY
+  if actionBaseY == nil then
+    actionBaseY = centeredActionTopY
+  end
   for actionIndex, action in ipairs(config.actions or {}) do
     local columnIndex = ((actionIndex - 1) % actionColumns)
     local rowIndex = math.floor((actionIndex - 1) / actionColumns)
@@ -1074,12 +1311,24 @@ function Components.AddListRow(section, config)
     local button = Components.CreateButton(row, {
       text = action.text,
       width = buttonWidth,
-      height = 22,
+      height = buttonHeight,
       x = actionX + (columnIndex * (buttonWidth + actionSpacingX)),
       y = actionBaseY - (rowIndex * (22 + actionSpacingY)),
       variant = action.variant or (action.destructive and "secondary" or "primary"),
       onClick = action.onClick,
     })
+    if button.SetPoint then
+      if button.ClearAllPoints then
+        button:ClearAllPoints()
+      end
+      button:SetPoint(
+        "LEFT",
+        row,
+        "LEFT",
+        actionX + (columnIndex * (buttonWidth + actionSpacingX)),
+        actionBaseY - (rowIndex * (buttonHeight + actionSpacingY))
+      )
+    end
 
     if action.disabled and button.Disable then
       button:Disable()
@@ -1215,9 +1464,16 @@ function Components.RenderContent(panel, content)
 end
 
 function Components.SetVisible(frame, visible)
+  if visible and frame.SetPropagateKeyboardInput then
+    frame:SetPropagateKeyboardInput(true)
+  end
+
   if frame.Show and frame.Hide then
     if visible then
       frame:Show()
+      if frame.Raise and not frame.skipRaiseOnShow then
+        frame:Raise()
+      end
     else
       frame:Hide()
     end

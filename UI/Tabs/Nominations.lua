@@ -56,12 +56,9 @@ UITabs.nominations = {
 
     panel.formSection = Components.CreateSection(panel, {
       id = "RollingPinAwardsNominationFormSection",
-      title = "Nominate A Guild Legend",
-      iconPath = media.standardPinIcon,
-      iconWidth = 24,
-      iconHeight = 24,
+      title = "Nominate A Guild Failure",
       width = 780,
-      height = 132,
+      height = 160,
       x = 0,
       y = 0,
     })
@@ -117,17 +114,24 @@ UITabs.nominations = {
       font = "GameFontNormal",
     })
     panel.reasonInput = Components.CreateEditBox(panel.formSection, {
-      width = 340,
+      width = 320,
       x = 252,
       y = -124,
       maxLetters = 180,
     })
+    panel.selectedAwardPreview = Components.CreateArtworkFrame(panel.formSection, {
+      texture = media.awardIcon,
+      width = 54,
+      height = 54,
+      x = 657,
+      y = -56,
+    })
     panel.submitButton = Components.CreateButton(panel.formSection, {
       text = "Submit Nomination",
-      width = 194,
+      width = 164,
       height = 36,
-      x = 610,
-      y = -122,
+      x = 602,
+      y = -116,
       variant = "primary",
       onClick = function()
         local nomination, err = mainFrame.uiBridge:SubmitNomination(
@@ -155,16 +159,16 @@ UITabs.nominations = {
       iconWidth = 22,
       iconHeight = 22,
       width = 780,
-      height = 214,
+      height = 280,
       x = 0,
-      y = -146,
+      y = -176,
       visibleRowCount = 3,
       rowHeight = 72,
     })
     panel.statusLabel = Components.CreateLabel(panel, {
       text = "",
       x = 0,
-      y = -372,
+      y = -468,
       width = 760,
       justifyH = "LEFT",
     })
@@ -241,11 +245,11 @@ UITabs.nominations = {
         iconHeight = 18,
         labelWidth = 422,
         rowHeight = 72,
+        backdropTone = "rowHighlight",
         actionX = 448,
         actionColumns = 2,
         actionSpacingX = 8,
         actionSpacingY = 8,
-        actionBaseY = 4,
         actions = actions,
       })
     end)
@@ -255,17 +259,13 @@ UITabs.nominations = {
     Components.SetButtonVariant(panel.typeGoldenButton, isGolden and "primary" or "secondary")
     Components.SetText(
       panel.formSection.titleText,
-      isGolden and "Praise A Guild Legend" or "Nominate A Guild Legend"
+      isGolden and "Nominate A Guild Legend" or "Nominate A Guild Failure"
     )
-    if panel.formSection.iconFrame and panel.formSection.iconFrame.texture and panel.formSection.iconFrame.texture.SetTexture then
-      panel.formSection.iconFrame.texture:SetTexture(isGolden and (Styles.Media or {}).leaderboardIcon or (Styles.Media or {}).standardPinIcon)
-      panel.formSection.iconFrame.texturePath = isGolden and (Styles.Media or {}).leaderboardIcon or (Styles.Media or {}).standardPinIcon
+    if panel.selectedAwardPreview and panel.selectedAwardPreview.texture and panel.selectedAwardPreview.texture.SetTexture then
+      local previewPath = isGolden and (Styles.Media or {}).leaderboardIcon or (Styles.Media or {}).awardIcon
+      panel.selectedAwardPreview.texture:SetTexture(previewPath)
+      panel.selectedAwardPreview.texturePath = previewPath
     end
-    Components.SetText(
-      panel.statusLabel,
-      panel.statusLabel.text ~= "" and panel.statusLabel.text
-        or "Public hype is visible to everyone. Downvotes remain an officer moderation signal."
-    )
   end,
 }
 

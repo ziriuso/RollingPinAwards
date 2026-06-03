@@ -3,7 +3,7 @@ _G.RollingPinAwards = RPA
 
 RPA.UIStyles = {
   Window = {
-    width = 920,
+    width = 884,
     height = 736,
     title = "Rolling Pin Awards",
     subtitle = "Hall of Fame & Hall of Shame",
@@ -14,7 +14,6 @@ RPA.UIStyles = {
     "nominations",
     "history",
     "leaderboard",
-    "settings",
     "admin",
   },
   Colors = {
@@ -23,6 +22,7 @@ RPA.UIStyles = {
     parchment = { 0.95, 0.91, 0.83, 0.98 },
     parchmentSoft = { 0.90, 0.85, 0.76, 0.94 },
     parchmentMuted = { 0.86, 0.79, 0.69, 0.92 },
+    bannerPanel = { 0.88, 0.72, 0.50, 0.78 },
     brass = { 0.82, 0.64, 0.45, 1.0 },
     brassMuted = { 0.62, 0.51, 0.37, 1.0 },
     accent = { 0.85, 0.47, 0.25, 1.0 },
@@ -41,9 +41,12 @@ RPA.UIStyles = {
     cardGap = 16,
   },
   Media = {
+    addonBackground = "Interface\\AddOns\\RollingPinAwards\\Media\\addon-background.png",
     headerIcon = "Interface\\AddOns\\RollingPinAwards\\Media\\flameember.png",
-    awardIcon = "Interface\\AddOns\\RollingPinAwards\\Media\\burntrollingpin.png",
-    leaderboardIcon = "Interface\\AddOns\\RollingPinAwards\\Media\\goldenrollingpin.png",
+    awardIcon = "Interface\\AddOns\\RollingPinAwards\\Media\\burnt-rolling-pin.png",
+    leaderboardIcon = "Interface\\AddOns\\RollingPinAwards\\Media\\golden-rolling-pin.png",
+    minimapIcon = "Interface\\AddOns\\RollingPinAwards\\Media\\minimap-button.png",
+    modalBackground = "Interface\\AddOns\\RollingPinAwards\\Media\\modal-background.png",
     standardPinIcon = "Interface\\AddOns\\RollingPinAwards\\Media\\rollingpin.png",
   },
   Dashboard = {

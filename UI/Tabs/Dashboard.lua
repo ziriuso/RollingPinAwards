@@ -6,15 +6,23 @@ local Components = RPA.UIComponents or {}
 local Styles = RPA.UIStyles or {}
 RPA.UITabs = UITabs
 
+local function stripRealm(name)
+  if type(name) ~= "string" then
+    return name or "Unknown"
+  end
+
+  return name:match("^([^-]+)") or name
+end
+
 local function buildRecentAwardText(award)
   if not award then
     return "No awards yet."
   end
 
   return ("%s\n%s\nAwarded by %s"):format(
-    award.recipient or "Unknown",
+    stripRealm(award.recipient),
     award.reason or "",
-    award.awardedBy or "Unknown"
+    stripRealm(award.awardedBy)
   )
 end
 
@@ -69,14 +77,6 @@ UITabs.dashboard = {
         y = 0,
         width = dash.statCardWidth or 178,
         height = dash.statCardHeight or 96,
-        iconPath = ({
-          media.awardIcon,
-          media.leaderboardIcon,
-          media.headerIcon,
-          media.standardPinIcon,
-        })[index],
-        iconWidth = index == 2 and 30 or 26,
-        iconHeight = index == 2 and 30 or 26,
       })
       panel.statCards[#panel.statCards + 1] = card
     end
@@ -84,7 +84,7 @@ UITabs.dashboard = {
     panel.leaderboardSection = Components.CreateScrollableSection(panel, {
       id = "RollingPinAwardsDashboardLeaderboard",
       title = "Top Rolling Pin Recipients",
-      width = 382,
+      width = 360,
       height = 214,
       x = 0,
       y = -162,
@@ -94,9 +94,9 @@ UITabs.dashboard = {
     panel.recentAwardsSection = Components.CreateScrollableSection(panel, {
       id = "RollingPinAwardsDashboardRecentAwards",
       title = "Recent Awards",
-      width = 382,
+      width = 404,
       height = 214,
-      x = 398,
+      x = 376,
       y = -162,
       visibleRowCount = 4,
       rowHeight = 56,
@@ -144,13 +144,13 @@ UITabs.dashboard = {
 
     Components.SetText(
       panel.permissionLabel,
-      viewModel.canManageAwards and "Guild-approved judges can award, approve, and curate the ledger."
+      viewModel.canManageAwards and "Guild-approved judges can award, approve, and curate the awards."
         or "You can nominate and vote, but guild permission is required for awards and moderation."
     )
 
     Components.SetText(panel.statCards[1].label, "Total Rolling Pins")
     Components.SetText(panel.statCards[1].value, tostring(viewModel.awardCount or 0))
-    Components.SetText(panel.statCards[1].detail, "Awarded across the guild ledger")
+    Components.SetText(panel.statCards[1].detail, "Awarded across the guild")
 
     Components.SetText(panel.statCards[2].label, "Top Recipient")
     Components.SetText(panel.statCards[2].value, topRecipient)
@@ -180,7 +180,7 @@ UITabs.dashboard = {
       end
 
       Components.AddListRow(section, {
-        text = ("%d. %s\n%d rolling pins"):format(
+        text = ("%d. %s\n    %d rolling pins"):format(
           row.rank or 0,
           row.recipient or "Unknown",
           row.pinCount or 0
@@ -191,6 +191,7 @@ UITabs.dashboard = {
         labelWidth = 260,
         rowHeight = 48,
         highlight = row.rank == 1,
+        backdropTone = "rowHighlight",
         actions = {},
       })
     end)
@@ -217,6 +218,7 @@ UITabs.dashboard = {
         iconHeight = 18,
         labelWidth = 320,
         rowHeight = 56,
+        backdropTone = "rowHighlight",
         actions = {},
       })
     end)

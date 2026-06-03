@@ -9,7 +9,7 @@ RPA.UITabs = UITabs
 local function buildModerationText(row)
   local flagText = row.moderationFlagged and "Flagged" or "Review"
 
-  return ("%s [%s]\n%s\nUpvotes: %d  Downvotes: %d  %s"):format(
+  return ("%s %s\n%s\nUpvotes: %d  Downvotes: %d  %s"):format(
     row.nominee,
     row.status,
     row.reason or "",
@@ -17,6 +17,18 @@ local function buildModerationText(row)
     row.downvotes or 0,
     flagText
   )
+end
+
+local function countPendingNominations(nominations)
+  local count = 0
+
+  for _, nomination in ipairs(nominations or {}) do
+    if nomination.status == "pending" then
+      count = count + 1
+    end
+  end
+
+  return count
 end
 
 UITabs.admin = {
@@ -41,7 +53,7 @@ UITabs.admin = {
 
     lines[#lines + 1] = ("Configured ranks: %d"):format(#((viewModel.permissions or {}).rows or {}))
     lines[#lines + 1] = ("Alias merges: %d"):format(#((viewModel.aliases or {}).rows or {}))
-    lines[#lines + 1] = ("Moderation queue: %d"):format(#(viewModel.nominations or {}))
+    lines[#lines + 1] = ("Moderation queue: %d"):format(countPendingNominations(viewModel.nominations or {}))
 
     return {
       title = "Admin",
@@ -57,7 +69,7 @@ UITabs.admin = {
     panel.rankSection = Components.CreateScrollableSection(panel, {
       id = "RollingPinAwardsRankPermissionsSection",
       title = "Guild Rank Permissions",
-      iconPath = media.goldenrollingpin or media.leaderboardIcon,
+      iconPath = media.leaderboardIcon,
       iconWidth = 22,
       iconHeight = 22,
       width = 780,
@@ -99,22 +111,15 @@ UITabs.admin = {
       justifyH = "CENTER",
       font = "GameFontNormalSmall",
     })
-    panel.gmNote = Components.CreateLabel(panel, {
-      text = "Rank 0 / Guild Master always has full access.",
-      x = 0,
-      y = -144,
-      width = 760,
-      justifyH = "LEFT",
-    })
     panel.permissionHelpLabel = Components.CreateLabel(panel, {
       text = table.concat({
-        "Manage Nominations: approve and reject pending nominations.",
-        "Create Direct Awards: issue a direct verdict with no nomination.",
-        "Delete Awards: remove awards and any linked nomination.",
-        "Manage Addon Permissions/Settings: edit this matrix and access Admin.",
+        "Nominations: approve and reject pending nominations.",
+        "Direct: issue a direct verdict with no nomination.",
+        "Delete: remove awards and any linked nomination.",
+        "Admin: edit this matrix and access Admin.",
       }, "\n"),
       x = 0,
-      y = -162,
+      y = -148,
       width = 760,
       justifyH = "LEFT",
       justifyV = "TOP",
@@ -128,7 +133,7 @@ UITabs.admin = {
       iconWidth = 20,
       iconHeight = 20,
       width = 780,
-      height = 74,
+      height = 104,
       x = 0,
       y = -236,
     })
@@ -141,7 +146,7 @@ UITabs.admin = {
     panel.aliasInput = Components.CreateEditBox(panel.aliasFormSection, {
       width = 150,
       x = 14,
-      y = -52,
+      y = -58,
     })
     panel.canonicalLabel = Components.CreateLabel(panel.aliasFormSection, {
       text = "Canonical Character",
@@ -152,14 +157,14 @@ UITabs.admin = {
     panel.canonicalInput = Components.CreateEditBox(panel.aliasFormSection, {
       width = 230,
       x = 180,
-      y = -52,
+      y = -58,
     })
     panel.aliasSaveButton = Components.CreateButton(panel.aliasFormSection, {
       text = "Add Merge",
       width = 144,
       height = 28,
       x = 426,
-      y = -50,
+      y = -56,
       variant = "primary",
     })
     panel.aliasBrowseButton = Components.CreateButton(panel.aliasFormSection, {
@@ -167,7 +172,7 @@ UITabs.admin = {
       width = 168,
       height = 28,
       x = 584,
-      y = -50,
+      y = -56,
       variant = "secondary",
       onClick = function()
         Components.SetVisible(panel.aliasDialog, true)
@@ -176,7 +181,7 @@ UITabs.admin = {
     panel.aliasSummaryLabel = Components.CreateLabel(panel, {
       text = "",
       x = 0,
-      y = -320,
+      y = -350,
       width = 760,
       justifyH = "LEFT",
       font = "GameFontHighlightSmall",
@@ -202,23 +207,71 @@ UITabs.admin = {
       rowHeight = 34,
     })
 
-    panel.moderationSection = Components.CreateScrollableSection(panel, {
-      id = "RollingPinAwardsModerationSection",
-      title = "Moderation Queue",
-      iconPath = media.headerIcon,
-      iconWidth = 20,
-      iconHeight = 20,
-      width = 780,
-      height = 96,
+    panel.moderationButton = Components.CreateButton(panel, {
+      text = "Open Moderation Queue",
+      width = 220,
+      height = 34,
       x = 0,
-      y = -350,
-      visibleRowCount = 1,
+      y = -374,
+      variant = "secondary",
+      onClick = function()
+        Components.SetVisible(panel.moderationDialog, true)
+      end,
+    })
+    panel.moderationDialog = Components.CreateModalWindow(panel, {
+      id = "RollingPinAwardsModerationDialog",
+      title = "Moderation Queue",
+      width = 700,
+      height = 430,
+      closeText = "Close",
+    })
+    panel.moderationDialog.selectedFilter = panel.moderationDialog.selectedFilter or "pending"
+    panel.moderationDialog.pendingFilterButton = Components.CreateButton(panel.moderationDialog, {
+      text = "Pending",
+      width = 92,
+      height = 26,
+      x = 16,
+      y = -50,
+      variant = "primary",
+    })
+    panel.moderationDialog.approvedFilterButton = Components.CreateButton(panel.moderationDialog, {
+      text = "Approved",
+      width = 98,
+      height = 26,
+      x = 116,
+      y = -50,
+      variant = "secondary",
+    })
+    panel.moderationDialog.rejectedFilterButton = Components.CreateButton(panel.moderationDialog, {
+      text = "Rejected",
+      width = 92,
+      height = 26,
+      x = 222,
+      y = -50,
+      variant = "secondary",
+    })
+    panel.moderationDialog.allFilterButton = Components.CreateButton(panel.moderationDialog, {
+      text = "All",
+      width = 70,
+      height = 26,
+      x = 322,
+      y = -50,
+      variant = "secondary",
+    })
+    panel.moderationDialog.listSection = Components.CreateScrollableSection(panel.moderationDialog, {
+      id = "RollingPinAwardsModerationSection",
+      title = "",
+      width = 660,
+      height = 292,
+      x = 16,
+      y = -84,
+      visibleRowCount = 4,
       rowHeight = 60,
     })
     panel.statusLabel = Components.CreateLabel(panel, {
       text = "",
       x = 0,
-      y = -392,
+      y = -420,
       width = 760,
       justifyH = "LEFT",
     })
@@ -325,6 +378,7 @@ UITabs.admin = {
         text = ("%s -> %s"):format(row.aliasDisplay or row.aliasKey or "", row.canonicalName or ""),
         labelWidth = 460,
         rowHeight = 34,
+        backdropTone = "rowHighlight",
         actions = {
           {
             text = "Remove",
@@ -346,15 +400,46 @@ UITabs.admin = {
     end)
 
     local nominations = viewModel.nominations or {}
-    if #nominations == 0 then
-      nominations = {
+    local selectedFilter = panel.moderationDialog.selectedFilter or "pending"
+    local filteredNominations = {}
+    for _, nomination in ipairs(nominations) do
+      if selectedFilter == "all" or nomination.status == selectedFilter then
+        filteredNominations[#filteredNominations + 1] = nomination
+      end
+    end
+
+    if #filteredNominations == 0 then
+      filteredNominations = {
         {
           emptyState = true,
         },
       }
     end
 
-    Components.SetScrollableItems(panel.moderationSection, nominations, function(section, row)
+    Components.SetText(panel.moderationButton, ("Open Moderation Queue (%d)"):format(countPendingNominations(viewModel.nominations or {})))
+    Components.SetButtonVariant(panel.moderationDialog.pendingFilterButton, selectedFilter == "pending" and "primary" or "secondary")
+    Components.SetButtonVariant(panel.moderationDialog.approvedFilterButton, selectedFilter == "approved" and "primary" or "secondary")
+    Components.SetButtonVariant(panel.moderationDialog.rejectedFilterButton, selectedFilter == "rejected" and "primary" or "secondary")
+    Components.SetButtonVariant(panel.moderationDialog.allFilterButton, selectedFilter == "all" and "primary" or "secondary")
+
+    Components.SetButtonHandler(panel.moderationDialog.pendingFilterButton, function()
+      panel.moderationDialog.selectedFilter = "pending"
+      mainFrame:RenderActiveTab()
+    end)
+    Components.SetButtonHandler(panel.moderationDialog.approvedFilterButton, function()
+      panel.moderationDialog.selectedFilter = "approved"
+      mainFrame:RenderActiveTab()
+    end)
+    Components.SetButtonHandler(panel.moderationDialog.rejectedFilterButton, function()
+      panel.moderationDialog.selectedFilter = "rejected"
+      mainFrame:RenderActiveTab()
+    end)
+    Components.SetButtonHandler(panel.moderationDialog.allFilterButton, function()
+      panel.moderationDialog.selectedFilter = "all"
+      mainFrame:RenderActiveTab()
+    end)
+
+    Components.SetScrollableItems(panel.moderationDialog.listSection, filteredNominations, function(section, row)
       if row.emptyState then
         Components.AddListRow(section, {
           text = "No nominations to moderate.",
@@ -371,6 +456,7 @@ UITabs.admin = {
         iconHeight = 18,
         labelWidth = 640,
         rowHeight = 60,
+        backdropTone = "rowHighlight",
         actions = {},
       })
     end)

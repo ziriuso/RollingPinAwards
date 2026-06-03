@@ -65,4 +65,49 @@ return {
     harness.assert_true(addon:HandleChatCommand("") == true)
     harness.assert_true(addon.mainFrame.frame.visible == true)
   end,
+
+  ["slash command toggles the background calibration window"] = function()
+    wow.reset({ guildName = "Raid Bakery" })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    harness.assert_true(addon:HandleChatCommand("background") == true)
+    harness.assert_true(addon.mainFrame.backgroundCalibrator ~= nil)
+    harness.assert_true(addon.mainFrame.backgroundCalibrator.visible)
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\addon-background.png", addon.mainFrame.backgroundCalibrator.backgroundArt.texturePath)
+    harness.assert_true(addon.mainFrame.backgroundCalibrator.mouseEnabled)
+    harness.assert_true(addon.mainFrame.backgroundCalibrator.movable)
+    harness.assert_true(addon.mainFrame.backgroundCalibrator.resizable)
+    harness.assert_equal("BACKGROUND", addon.mainFrame.backgroundCalibrator.frameStrata)
+    harness.assert_true((addon.mainFrame.backgroundCalibrator.frameLevel or 0) < (addon.mainFrame.frame.frameLevel or 1))
+    harness.assert_true(type(addon.mainFrame.backgroundCalibrator.resizeHandle.scripts.OnMouseDown) == "function")
+
+    addon.mainFrame.backgroundCalibrator.resizeHandle.scripts.OnMouseDown(addon.mainFrame.backgroundCalibrator.resizeHandle)
+
+    harness.assert_true(addon.mainFrame.backgroundCalibrator.sizing)
+
+    harness.assert_true(addon:HandleChatCommand("bg") == true)
+    harness.assert_false(addon.mainFrame.backgroundCalibrator.visible)
+  end,
+
+  ["minimap button uses custom icon and toggles the main frame"] = function()
+    wow.reset({ guildName = "Raid Bakery" })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    harness.assert_true(addon.minimapButton ~= nil)
+    harness.assert_true(addon.minimapButton.button ~= nil)
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\minimap-button.png", addon.minimapButton.button.iconTexture.texturePath)
+    harness.assert_false(addon.mainFrame.frame.visible)
+
+    addon.minimapButton.button:Click()
+
+    harness.assert_true(addon.mainFrame.frame.visible)
+
+    addon.minimapButton.button:Click()
+
+    harness.assert_false(addon.mainFrame.frame.visible)
+  end,
 }

@@ -6,6 +6,23 @@ local Components = RPA.UIComponents or {}
 local Styles = RPA.UIStyles or {}
 RPA.UITabs = UITabs
 
+local function stripRealm(name)
+  if type(name) ~= "string" then
+    return name or "Unknown"
+  end
+
+  return name:match("^([^-]+)") or name
+end
+
+local function getDominantAwardIcon(row)
+  local media = Styles.Media or {}
+  if (row.burntCount or 0) >= (row.goldenCount or 0) then
+    return media.awardIcon
+  end
+
+  return media.leaderboardIcon
+end
+
 UITabs.leaderboard = {
   id = "leaderboard",
   label = "Leaderboard",
@@ -49,10 +66,10 @@ UITabs.leaderboard = {
       iconWidth = 22,
       iconHeight = 22,
       width = 780,
-      height = 290,
+      height = 360,
       x = 0,
       y = 0,
-      visibleRowCount = 5,
+      visibleRowCount = 6,
       rowHeight = 56,
     })
     panel.selectedMode = panel.selectedMode or "combined"
@@ -61,7 +78,7 @@ UITabs.leaderboard = {
       width = 110,
       height = 28,
       x = 0,
-      y = -304,
+      y = -374,
       variant = "secondary",
       onClick = function()
         panel.selectedMode = "burnt"
@@ -73,7 +90,7 @@ UITabs.leaderboard = {
       width = 110,
       height = 28,
       x = 118,
-      y = -304,
+      y = -374,
       variant = "secondary",
       onClick = function()
         panel.selectedMode = "golden"
@@ -85,51 +102,84 @@ UITabs.leaderboard = {
       width = 120,
       height = 28,
       x = 236,
-      y = -304,
+      y = -374,
       variant = "primary",
       onClick = function()
         panel.selectedMode = "combined"
         panel.ownerFrame:RenderActiveTab()
       end,
     })
-    panel.summarySection = Components.CreateSection(panel, {
-      id = "RollingPinAwardsLeaderboardSummarySection",
-      title = "Click Through",
-      iconPath = media.awardIcon,
-      iconWidth = 20,
-      iconHeight = 20,
-      width = 780,
-      height = 74,
-      x = 0,
-      y = -340,
-    })
-    panel.summaryLabel = Components.CreateLabel(panel.summarySection, {
-      text = "Sorted by rolling pin count first, then by the most recent award date. Select View to inspect every approved award with reason, date, and awarded-by context.",
-      x = 14,
-      y = -38,
-      width = 736,
-      justifyH = "LEFT",
-      font = "GameFontHighlightSmall",
-    })
-    panel.detailDialog = Components.CreateModalWindow(panel, {
+    local showcaseParent = (mainFrame and mainFrame.frame) or panel
+    panel.detailDialog = Components.CreateModalWindow(showcaseParent, {
       id = "RollingPinAwardsLeaderboardDetailDialog",
       title = "Award History",
-      width = 640,
-      height = 420,
+      width = 760,
+      height = 680,
       closeText = "Close",
+      titleFont = "GameFontNormalHuge",
+      titleY = -30,
+      centerTitle = true,
+      closeAnchor = "BOTTOMRIGHT",
+      closeBottomY = 48,
+      draggable = true,
+      frameLevelOffset = 160,
+      backdropColor = { 0.10, 0.07, 0.05, 0 },
+      borderColor = { 0.10, 0.07, 0.05, 0 },
+      backgroundTexture = media.modalBackground,
+      contentBounds = {
+        left = 150,
+        top = 70,
+        width = 460,
+        height = 560,
+      },
     })
-    panel.detailDialog.listSection = Components.CreateScrollableSection(panel.detailDialog, {
+    local showcaseHost = panel.detailDialog.contentHost or panel.detailDialog
+    panel.detailDialog.goldenIcon = Components.CreateArtworkFrame(showcaseHost, {
+      texture = media.leaderboardIcon,
+      width = 102,
+      height = 102,
+      anchor = "TOP",
+      relativeTo = "TOP",
+      x = -82,
+      y = -74,
+    })
+    panel.detailDialog.burntIcon = Components.CreateArtworkFrame(showcaseHost, {
+      texture = media.awardIcon,
+      width = 102,
+      height = 102,
+      anchor = "TOP",
+      relativeTo = "TOP",
+      x = 82,
+      y = -74,
+    })
+    panel.detailDialog.goldenCountLabel = Components.CreateLabel(showcaseHost, {
+      text = "0",
+      x = 100,
+      y = -190,
+      width = 96,
+      justifyH = "CENTER",
+      font = "GameFontNormalHuge",
+    })
+    panel.detailDialog.burntCountLabel = Components.CreateLabel(showcaseHost, {
+      text = "0",
+      x = 264,
+      y = -190,
+      width = 96,
+      justifyH = "CENTER",
+      font = "GameFontNormalHuge",
+    })
+    panel.detailDialog.listSection = Components.CreateScrollableSection(showcaseHost, {
       id = "RollingPinAwardsLeaderboardDetailList",
-      title = "Approved Awards",
-      iconPath = media.awardIcon,
-      iconWidth = 20,
-      iconHeight = 20,
-      width = 600,
-      height = 320,
-      x = 16,
-      y = -48,
-      visibleRowCount = 5,
+      title = "",
+      width = 424,
+      height = 190,
+      x = 18,
+      y = -240,
+      visibleRowCount = 3,
       rowHeight = 56,
+      rowStartY = -12,
+      scrollBarTop = 12,
+      scrollBarBottom = 18,
     })
 
     return panel
@@ -174,18 +224,21 @@ UITabs.leaderboard = {
             row.mostRecentAwardText or "Unknown date"
           ),
         iconPath = mode == "combined"
-            and ((row.goldenCount or 0) >= (row.burntCount or 0) and (Styles.Media or {}).leaderboardIcon or (Styles.Media or {}).awardIcon)
+            and getDominantAwardIcon(row)
           or (mode == "golden" and (Styles.Media or {}).leaderboardIcon or (Styles.Media or {}).awardIcon),
         iconWidth = 18,
         iconHeight = 18,
         labelWidth = 548,
         rowHeight = 56,
+        backdropTone = "rowHighlight",
         actions = {
           {
             text = "View",
             width = 62,
             onClick = function()
-              Components.SetText(panel.detailDialog.titleLabel, row.recipient)
+              Components.SetText(panel.detailDialog.titleLabel, row.shortRecipient or stripRealm(row.recipient))
+              Components.SetText(panel.detailDialog.goldenCountLabel, tostring(row.goldenCount or 0))
+              Components.SetText(panel.detailDialog.burntCountLabel, tostring(row.burntCount or 0))
               local entries = row.entries or {}
               if #entries == 0 then
                 entries = {
@@ -216,6 +269,7 @@ UITabs.leaderboard = {
                   iconHeight = 18,
                   labelWidth = 540,
                   rowHeight = 56,
+                  backdropTone = "rowHighlight",
                   actions = {},
                 })
               end)
@@ -225,14 +279,6 @@ UITabs.leaderboard = {
         },
       })
     end)
-    Components.SetText(
-      panel.summaryLabel,
-      mode == "combined"
-          and "Combined view keeps praise and shame separate: golden count, burnt count, and total awards are all visible."
-        or (mode == "golden"
-          and "Golden view highlights praise and fame only."
-          or "Burnt view highlights hall-of-shame records only.")
-    )
   end,
 }
 

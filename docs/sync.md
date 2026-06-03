@@ -13,8 +13,8 @@ Privileged payload mapping:
 
 - direct award updates require `Create Direct Awards`
 - moderated nomination updates require `Manage Nominations`
-- rank permission matrix updates require `Manage Addon Permissions/Settings`
-- alias merge updates require `Manage Addon Permissions/Settings`
+- rank permission matrix updates require `Manage Addon Permissions`
+- alias merge updates require `Manage Addon Permissions`
 
 ## Transport Notes
 

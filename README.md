@@ -14,8 +14,9 @@ Rolling Pin Awards is a guild-only World of Warcraft addon for managing nominati
 - Direct awards, nomination approval/rejection, and award deletion gated by separate rank permissions
 - Guild-shared alias merges for canonical nominee and recipient display without rewriting stored records
 - Custom Lua UI with reusable tab and component modules
-- Interactive tabs for dashboard, nominations, direct awards, history, leaderboard, settings, and rank-based admin management
-- Embedded custom artwork under `Media/` for the polished shell, header, stat cards, and primary action treatments
+- Interactive tabs for dashboard, nominations, direct awards, history, leaderboard, and rank-based admin management
+- Embedded custom artwork under `Media/` for the polished parchment shell, award-type previews, rows, showcase modal, and primary action treatments
+- Custom minimap button artwork for toggling the addon window open and closed
 - Conservative guild-scoped sync validation helpers
 
 ## Slash Command
@@ -27,6 +28,8 @@ Current command support:
 - `/rpa`
 - `/rpa show`
 - `/rpa toggle`
+- `/rpa background`
+- `/rpa bg`
 - `/rpa nominate Name-Realm "Reason"`
 
 ## UI Surface
@@ -34,20 +37,24 @@ Current command support:
 The current MVP ships a functional in-game window with:
 
 - a movable framed window
-- a recomposed parchment-and-brass shell with embedded custom rolling pin and ember artwork
+- a calibrated parchment background shell with the Rolling Pin Awards banner built into the main artwork
+- high-strata window layering so the full addon shell sits above Blizzard action bars and other UI elements
+- Escape closes the addon while its main window is focused
+- the parchment background overhang can be used to drag the addon, not just the logical inner frame
+- a custom minimap button that toggles the addon window
 - a close button
 - nomination submission and voting controls
 - nomination and direct-award type selection for Burnt or Golden rolling pins
 - rank-gated approve/reject controls inside the nominations view
 - rank-gated direct award controls
 - public award history with human-readable award dates and type icons
-- a leaderboard with Burnt, Golden, and Combined views plus click-through award-history popups
+- a leaderboard with Burnt, Golden, and Combined views plus draggable screenshot-friendly parchment showcase popups
 - confirmed award deletion for ranks that have delete permission
-- local settings toggles
 - admin-only rank permission matrix with checkbox editing by guild rank name
 - admin alias merge management with a modal alias list for collapsing nicknames and alternate typed names into one canonical character
 - scrollable long-list sections for nominations, history, leaderboard, and admin queues
 - dashboard shortcuts between the main participation flows
+- thin native WoW outline treatment on addon text for readability over parchment artwork
 
 ## Runtime Notes
 

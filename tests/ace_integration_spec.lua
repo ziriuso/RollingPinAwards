@@ -48,9 +48,7 @@ return {
       savedVariables = {
         profiles = {
           Default = {
-            settings = {
-              debug = true,
-            },
+            guildDatasets = {},
           },
         },
       },
@@ -61,6 +59,6 @@ return {
 
     harness.assert_true(type(addon.aceDb) == "table")
     harness.assert_true(addon.db.storage.profile == addon.aceDb.profile)
-    harness.assert_true(addon.aceDb.profile.settings.debug == true)
+    harness.assert_nil(addon.aceDb.profile.settings)
   end,
 }

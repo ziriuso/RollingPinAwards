@@ -291,16 +291,6 @@ function Bridge:CanCurrentPlayerManageAddonPermissions()
   return self.addon.permissions and self.addon.permissions:CanManageAddonPermissions() or false
 end
 
-function Bridge:GetSettingsViewModel()
-  local settings = self.addon.db.storage.profile.settings or {}
-
-  return {
-    tooltipEnabled = settings.tooltipEnabled == true,
-    announceAwards = settings.announceAwards == true,
-    debug = settings.debug == true,
-  }
-end
-
 function Bridge:GetDashboardViewModel()
   local nominations = self:GetPendingNominationsViewModel()
   local history = self:GetPublicHistoryViewModel()
@@ -484,25 +474,6 @@ function Bridge:SaveRankPermissions(rankIndex, rankName, permissions)
   end
 
   return self.addon.permissions:SetRankPermissions(rankIndex, rankName, permissions)
-end
-
-function Bridge:SaveSettings(updatedSettings)
-  local settings = self.addon.db.storage.profile.settings or {}
-  self.addon.db.storage.profile.settings = settings
-
-  if updatedSettings.tooltipEnabled ~= nil then
-    settings.tooltipEnabled = updatedSettings.tooltipEnabled == true
-  end
-
-  if updatedSettings.announceAwards ~= nil then
-    settings.announceAwards = updatedSettings.announceAwards == true
-  end
-
-  if updatedSettings.debug ~= nil then
-    settings.debug = updatedSettings.debug == true
-  end
-
-  return true
 end
 
 return RPA.UIBridge

@@ -49,26 +49,20 @@ local Constants = RPA.Constants or {
 }
 local Defaults = RPA.Defaults or {
   profile = {
-    settings = {
-      tooltipEnabled = true,
-      announceAwards = true,
-      debug = false,
-    },
     guildDatasets = {},
   },
 }
 local GuildContext = RPA.GuildContext or {}
 local Awards = RPA.Awards or {}
-local Announcements = RPA.Announcements or {}
 local Commands = RPA.Commands or {}
 local Database = RPA.Database
 local MainFrame = RPA.MainFrame or {}
+local MinimapButton = RPA.MinimapButton or {}
 local Nominations = RPA.Nominations or {}
 local Permissions = RPA.Permissions or {}
 local RosterPermissions = RPA.RosterPermissions or {}
 local Sync = RPA.Sync or {}
 local Time = RPA.Time or {}
-local Tooltip = RPA.Tooltip or {}
 local Bridge = RPA.UIBridge or {}
 local Utils = RPA.Utils
 
@@ -76,15 +70,14 @@ RPA.Constants = Constants
 RPA.Defaults = Defaults
 RPA.GuildContext = GuildContext
 RPA.Awards = Awards
-RPA.Announcements = Announcements
 RPA.Commands = Commands
 RPA.Nominations = Nominations
 RPA.MainFrame = MainFrame
+RPA.MinimapButton = MinimapButton
 RPA.Permissions = Permissions
 RPA.RosterPermissions = RosterPermissions
 RPA.Sync = Sync
 RPA.Time = Time
-RPA.Tooltip = Tooltip
 RPA.UIBridge = Bridge
 
 RPA.ADDON_NAME = Constants.ADDON_NAME
@@ -179,22 +172,16 @@ function RPA:OnInitialize()
     self.mainFrame = nil
   end
 
+  if type(MinimapButton.New) == "function" then
+    self.minimapButton = MinimapButton:New(self)
+  else
+    self.minimapButton = nil
+  end
+
   if type(Sync.New) == "function" then
     self.sync = Sync:New(self)
   else
     self.sync = nil
-  end
-
-  if type(Announcements.New) == "function" then
-    self.announcements = Announcements:New(self)
-  else
-    self.announcements = nil
-  end
-
-  if type(Tooltip.New) == "function" then
-    self.tooltip = Tooltip:New(self)
-  else
-    self.tooltip = nil
   end
 
   if self.commands then

@@ -29,7 +29,7 @@ return {
 
     harness.assert_true(addon.db.storage == savedVariables)
     harness.assert_true(_G.RollingPinAwardsDB == savedVariables)
-    harness.assert_true(addon.db.storage.profile.settings ~= nil)
+    harness.assert_nil(addon.db.storage.profile.settings)
     harness.assert_true(addon.db.storage.profile.guildDatasets ~= addon.defaults.profile.guildDatasets)
   end,
 

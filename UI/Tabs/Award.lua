@@ -43,7 +43,7 @@ UITabs.award = {
       iconWidth = 24,
       iconHeight = 24,
       width = 504,
-      height = 246,
+      height = 296,
       x = 0,
       y = 0,
     })
@@ -109,7 +109,7 @@ UITabs.award = {
       width = 280,
       height = 40,
       x = 14,
-      y = -224,
+      y = -234,
       variant = "primary",
       iconPath = media.awardIcon,
       iconWidth = 20,
@@ -132,6 +132,14 @@ UITabs.award = {
         mainFrame:RenderActiveTab()
       end,
     })
+    panel.statusLabel = Components.CreateLabel(panel.formSection, {
+      text = "",
+      x = 14,
+      y = -278,
+      width = 470,
+      justifyH = "LEFT",
+      font = "GameFontHighlightSmall",
+    })
 
     panel.briefSection = Components.CreateSection(panel, {
       id = "RollingPinAwardsAwardBriefSection",
@@ -140,7 +148,7 @@ UITabs.award = {
       iconWidth = 22,
       iconHeight = 22,
       width = 260,
-      height = 246,
+      height = 296,
       x = 520,
       y = 0,
     })
@@ -162,26 +170,6 @@ UITabs.award = {
       justifyH = "LEFT",
       justifyV = "TOP",
       font = "GameFontHighlightSmall",
-    })
-
-    panel.statusSection = Components.CreateSection(panel, {
-      id = "RollingPinAwardsAwardStatusSection",
-      title = "Award Desk",
-      iconPath = media.standardPinIcon,
-      iconWidth = 20,
-      iconHeight = 20,
-      width = 780,
-      height = 104,
-      x = 0,
-      y = -260,
-    })
-    panel.statusLabel = Components.CreateLabel(panel.statusSection, {
-      text = "",
-      x = 14,
-      y = -40,
-      width = 748,
-      justifyH = "LEFT",
-      justifyV = "TOP",
     })
 
     return panel

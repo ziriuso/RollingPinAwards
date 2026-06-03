@@ -45,27 +45,16 @@ UITabs.history = {
       iconWidth = 22,
       iconHeight = 22,
       width = 780,
-      height = 290,
+      height = 420,
       x = 0,
       y = 0,
-      visibleRowCount = 5,
+      visibleRowCount = 7,
       rowHeight = 56,
     })
-    panel.statusSection = Components.CreateSection(panel, {
-      id = "RollingPinAwardsHistoryStatusSection",
-      title = "Archive Notes",
-      iconPath = media.standardPinIcon,
-      iconWidth = 20,
-      iconHeight = 20,
-      width = 780,
-      height = 74,
-      x = 0,
-      y = -304,
-    })
-    panel.statusLabel = Components.CreateLabel(panel.statusSection, {
+    panel.statusLabel = Components.CreateLabel(panel, {
       text = "",
-      x = 14,
-      y = -38,
+      x = 0,
+      y = -430,
       width = 736,
       justifyH = "LEFT",
     })
@@ -139,15 +128,10 @@ UITabs.history = {
         iconHeight = 18,
         labelWidth = 620,
         rowHeight = 56,
+        backdropTone = "rowHighlight",
         actions = actions,
       })
     end)
-
-      Components.SetText(
-        panel.statusLabel,
-        panel.statusLabel.text ~= "" and panel.statusLabel.text
-        or "This archive is visible to the guild and sorted by latest approved awards. Deleting an award also removes its linked nomination."
-      )
   end,
 }
 

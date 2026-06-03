@@ -66,6 +66,18 @@ return {
       playerName = "Guildmaster",
       guildRankName = "Guild Master",
       guildRankIndex = 0,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+      },
     })
 
     local addon = wow.loadAddon()
@@ -158,7 +170,7 @@ return {
     harness.assert_true(type(entries[1].dateText) == "string" and #entries[1].dateText > 0)
   end,
 
-  ["leaderboard tab appears between history and settings"] = function()
+  ["admin tab replaces settings after leaderboard"] = function()
     local MainFrame = dofile("UI/MainFrame.lua")
     local frame = MainFrame:New({
       uiBridge = {
@@ -170,10 +182,11 @@ return {
 
     harness.assert_equal("history", frame.tabs[4].id)
     harness.assert_equal("leaderboard", frame.tabs[5].id)
-    harness.assert_equal("settings", frame.tabs[6].id)
+    harness.assert_equal("admin", frame.tabs[6].id)
+    harness.assert_nil(frame.tabs[7])
   end,
 
-  ["leaderboard view button opens a popup for the selected player"] = function()
+  ["leaderboard view button opens a showcase modal for the selected player"] = function()
     wow.reset({
       guildName = "Raid Bakery",
       playerName = "Guildmaster",
@@ -184,7 +197,8 @@ return {
 
     local addon = wow.loadAddon()
     addon:OnInitialize()
-    addon.awards:CreateDirectAward("Burny-Stormrage", "Set the oven to lava")
+    addon.awards:CreateDirectAward("Moonrustle-Moonguard", "Set the oven to lava", "burnt")
+    addon.awards:CreateDirectAward("Moonrustle-Moonguard", "Saved the raid", "golden")
 
     addon.mainFrame:EnsureRendered()
     addon.mainFrame:SelectTab("leaderboard")
@@ -193,7 +207,52 @@ return {
     panel.listSection.rows[1].actions[1]:Click()
 
     harness.assert_true(panel.detailDialog.visible)
-    harness.assert_true(panel.detailDialog.titleLabel.text:match("Burny%-Stormrage") ~= nil)
+    harness.assert_equal(addon.mainFrame.frame, panel.detailDialog.parent)
+    harness.assert_equal("TOOLTIP", panel.detailDialog.frameStrata)
+    harness.assert_true((panel.detailDialog.frameLevel or 0) > (addon.mainFrame.contentPanel.contentHost.frameLevel or 0))
+    harness.assert_equal("Moonrustle", panel.detailDialog.titleLabel.text)
+    harness.assert_equal("CENTER", panel.detailDialog.titleLabel.justifyH)
+    harness.assert_equal("GameFontNormalHuge", panel.detailDialog.titleLabel.template)
+    harness.assert_true((panel.detailDialog.width or 0) >= 720)
+    harness.assert_true((panel.detailDialog.height or 0) >= 620)
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\modal-background.png", panel.detailDialog.backgroundArt.texturePath)
+    harness.assert_true(panel.detailDialog.contentHost ~= nil)
+    harness.assert_true((panel.detailDialog.contentHost.point[4] or 0) >= 130)
+    harness.assert_true(math.abs(panel.detailDialog.contentHost.point[5] or 0) <= 100)
+    harness.assert_true((panel.detailDialog.contentHost.width or 0) <= (panel.detailDialog.width or 0) - 240)
+    harness.assert_true((panel.detailDialog.contentHost.height or 0) >= 540)
+    harness.assert_equal(panel.detailDialog.contentHost, panel.detailDialog.titleLabel.parent)
+    harness.assert_equal(panel.detailDialog.contentHost, panel.detailDialog.goldenIcon.parent)
+    harness.assert_equal(panel.detailDialog.contentHost, panel.detailDialog.burntIcon.parent)
+    harness.assert_equal(panel.detailDialog.contentHost, panel.detailDialog.goldenCountLabel.parent)
+    harness.assert_equal(panel.detailDialog.contentHost, panel.detailDialog.burntCountLabel.parent)
+    harness.assert_equal(panel.detailDialog.contentHost, panel.detailDialog.listSection.parent)
+    harness.assert_equal(panel.detailDialog.contentHost, panel.detailDialog.closeButton.parent)
+    harness.assert_true(panel.detailDialog.mouseEnabled)
+    harness.assert_true(panel.detailDialog.movable)
+    harness.assert_equal("LeftButton", panel.detailDialog.dragButtons[1])
+    harness.assert_true(type(panel.detailDialog.scripts.OnDragStart) == "function")
+    harness.assert_true(type(panel.detailDialog.scripts.OnDragStop) == "function")
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\golden-rolling-pin.png", panel.detailDialog.goldenIcon.texturePath)
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\burnt-rolling-pin.png", panel.detailDialog.burntIcon.texturePath)
+    harness.assert_equal(-30, panel.detailDialog.titleLabel.point[5])
+    harness.assert_equal(-74, panel.detailDialog.goldenIcon.point[5])
+    harness.assert_equal(-74, panel.detailDialog.burntIcon.point[5])
+    harness.assert_true((panel.detailDialog.goldenIcon.width or 0) > 88)
+    harness.assert_true((panel.detailDialog.burntIcon.width or 0) > 88)
+    harness.assert_equal("1", panel.detailDialog.goldenCountLabel.text)
+    harness.assert_equal("1", panel.detailDialog.burntCountLabel.text)
+    harness.assert_true((panel.detailDialog.goldenCountLabel.point[5] or 0) < (panel.detailDialog.goldenIcon.point[5] or 0) - (panel.detailDialog.goldenIcon.height or 0))
+    harness.assert_equal(-240, panel.detailDialog.listSection.point[5])
+    harness.assert_equal("GameFontNormalHuge", panel.detailDialog.goldenCountLabel.template)
+    harness.assert_equal("BOTTOMRIGHT", panel.detailDialog.closeButton.point[1])
+    harness.assert_equal(48, panel.detailDialog.closeButton.point[5])
+    harness.assert_equal("", panel.detailDialog.listSection.titleText.text)
+    harness.assert_true(panel.detailDialog.listSection.iconFrame == nil)
+    harness.assert_true(math.abs(panel.detailDialog.listSection.rows[1].point[5] or 0) <= 18)
+    harness.assert_true((panel.detailDialog.listSection.height or 0) >= 188)
+    harness.assert_true(panel.detailDialog.listSection.scrollBar ~= nil)
+    harness.assert_equal(2, #panel.detailDialog.listSection.rows)
   end,
 
   ["bridge exposes public nomination rows with public upvote totals"] = function()
@@ -290,7 +349,61 @@ return {
 
     local panel = addon.mainFrame.tabPanels.admin
 
-    harness.assert_true(panel.moderationSection.rows[1].label.text:match("Pulled the boss while fishing") ~= nil)
+    panel.moderationButton:Click()
+
+    harness.assert_true(panel.moderationDialog.visible)
+    harness.assert_true(panel.moderationDialog.listSection.rows[1].label.text:match("Pulled the boss while fishing") ~= nil)
+  end,
+
+  ["admin moderation queue filters statuses and removes bracketed status text"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    local approved = addon.nominations:Create("Mara-Stormrage", "Approved reason")
+    local rejected = addon.nominations:Create("Shaka-Stormrage", "Rejected reason")
+    addon.nominations:Create("Ziri-Stormrage", "Pending reason")
+    addon.nominations:Approve(approved.nominationId)
+    addon.nominations:Reject(rejected.nominationId)
+
+    addon.mainFrame:EnsureRendered()
+    addon.mainFrame:SelectTab("admin")
+
+    local panel = addon.mainFrame.tabPanels.admin
+    panel.moderationButton:Click()
+
+    harness.assert_equal("Open Moderation Queue (1)", panel.moderationButton.label.text)
+    harness.assert_true(panel.moderationDialog.pendingFilterButton ~= nil)
+    harness.assert_true(panel.moderationDialog.approvedFilterButton ~= nil)
+    harness.assert_true(panel.moderationDialog.rejectedFilterButton ~= nil)
+    harness.assert_true(panel.moderationDialog.allFilterButton ~= nil)
+    harness.assert_equal("", panel.moderationDialog.listSection.titleText.text)
+    harness.assert_true(panel.moderationDialog.listSection.iconFrame == nil)
+    harness.assert_true(panel.moderationDialog.listSection.rows[1].label.text:match("%[") == nil)
+    harness.assert_true(panel.moderationDialog.listSection.rows[1].label.text:match("Pending reason") ~= nil)
+
+    panel.moderationDialog.approvedFilterButton:Click()
+
+    harness.assert_equal(1, #panel.moderationDialog.listSection.rows)
+    harness.assert_true(panel.moderationDialog.listSection.rows[1].label.text:match("approved") ~= nil)
+    harness.assert_true(panel.moderationDialog.listSection.rows[1].label.text:match("%[approved%]") == nil)
+    harness.assert_true(panel.moderationDialog.listSection.rows[1].label.text:match("Approved reason") ~= nil)
+
+    panel.moderationDialog.rejectedFilterButton:Click()
+
+    harness.assert_equal(1, #panel.moderationDialog.listSection.rows)
+    harness.assert_true(panel.moderationDialog.listSection.rows[1].label.text:match("rejected") ~= nil)
+    harness.assert_true(panel.moderationDialog.listSection.rows[1].label.text:match("%[rejected%]") == nil)
+    harness.assert_true(panel.moderationDialog.listSection.rows[1].label.text:match("Rejected reason") ~= nil)
+
+    panel.moderationDialog.allFilterButton:Click()
+
+    harness.assert_equal(3, #panel.moderationDialog.listSection.rows)
   end,
 
   ["main frame registers the expected tab ids"] = function()
@@ -305,7 +418,7 @@ return {
 
     harness.assert_equal("dashboard", frame.tabs[1].id)
     harness.assert_equal("leaderboard", frame.tabs[5].id)
-    harness.assert_equal("admin", frame.tabs[7].id)
+    harness.assert_equal("admin", frame.tabs[6].id)
   end,
 
   ["main frame renders the active tab summary into the content panel"] = function()
@@ -329,19 +442,56 @@ return {
     addon:OnInitialize()
     addon.mainFrame:EnsureRendered()
 
-    harness.assert_true(addon.mainFrame.frame.headerBand ~= nil)
+    harness.assert_true(addon.mainFrame.frame.backgroundArt ~= nil)
+    harness.assert_equal("TOOLTIP", addon.mainFrame.frame.frameStrata)
+    harness.assert_true((addon.mainFrame.frame.frameLevel or 0) >= 100)
+    harness.assert_true(addon.mainFrame.frame.toplevel)
+    harness.assert_true(addon.mainFrame.frame.keyboardEnabled)
+    harness.assert_true(addon.mainFrame.frame.propagateKeyboardInput)
+    harness.assert_equal(-52, addon.mainFrame.frame.hitRectInsets.left)
+    harness.assert_equal(-112, addon.mainFrame.frame.hitRectInsets.right)
+    harness.assert_equal(-92, addon.mainFrame.frame.hitRectInsets.top)
+    harness.assert_equal(-44, addon.mainFrame.frame.hitRectInsets.bottom)
+    harness.assert_equal("RollingPinAwardsMainFrame", _G.UISpecialFrames[1])
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\addon-background.png", addon.mainFrame.frame.backgroundArt.texturePath)
+    harness.assert_equal(addon.mainFrame.frame, addon.mainFrame.frame.backgroundArt.parent)
+    harness.assert_equal("TOOLTIP", addon.mainFrame.frame.backgroundArt.frameStrata)
+    harness.assert_true(addon.mainFrame.frame.backgroundArt.visible)
+    harness.assert_equal(1048, addon.mainFrame.frame.backgroundArt.width)
+    harness.assert_equal(872, addon.mainFrame.frame.backgroundArt.height)
+    harness.assert_equal("TOPLEFT", addon.mainFrame.frame.backgroundArt.point[1])
+    harness.assert_equal("TOPLEFT", addon.mainFrame.frame.backgroundArt.point[3])
+    harness.assert_equal(-52, addon.mainFrame.frame.backgroundArt.point[4])
+    harness.assert_equal(92, addon.mainFrame.frame.backgroundArt.point[5])
+    harness.assert_nil(addon.mainFrame.frame.shadowFrame)
+    harness.assert_nil(addon.mainFrame.frame.headerBand)
+    harness.assert_nil(addon.mainFrame.frame.headerAccent)
+    harness.assert_nil(addon.mainFrame.frame.headerLogo)
     harness.assert_true(addon.mainFrame.frame.tabRail ~= nil)
+    harness.assert_equal("TOOLTIP", addon.mainFrame.frame.tabRail.frameStrata)
+    harness.assert_nil(addon.mainFrame.frame.tabRail.backdrop)
+    harness.assert_true(addon.mainFrame.frame.closeButton ~= nil)
+    harness.assert_equal("TOPRIGHT", addon.mainFrame.frame.closeButton.point[1])
+    harness.assert_equal("TOPRIGHT", addon.mainFrame.frame.closeButton.point[3])
+    harness.assert_equal(106, addon.mainFrame.frame.closeButton.point[4])
+    harness.assert_equal(86, addon.mainFrame.frame.closeButton.point[5])
     harness.assert_true(addon.mainFrame.contentPanel ~= nil)
+    harness.assert_equal("TOOLTIP", addon.mainFrame.contentPanel.frameStrata)
+    harness.assert_nil(addon.mainFrame.contentPanel.backdrop)
     harness.assert_true(addon.mainFrame.contentPanel.contentHost ~= nil)
+    harness.assert_equal("TOOLTIP", addon.mainFrame.contentPanel.contentHost.frameStrata)
+    harness.assert_true(addon.mainFrame.contentPanel.contentHost.parent == addon.mainFrame.frame)
     harness.assert_true(addon.mainFrame.contentPanel.clipsChildren == true)
-    harness.assert_true((addon.mainFrame.contentPanel.contentHost.frameLevel or 0) > (addon.mainFrame.contentPanel.innerShade.frameLevel or 0))
-    harness.assert_equal("BACKGROUND", addon.mainFrame.contentPanel.innerShade.frameStrata)
-    harness.assert_equal("MEDIUM", addon.mainFrame.contentPanel.contentHost.frameStrata)
-    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\flameember.png", addon.mainFrame.frame.titleIcon.texturePath)
-    harness.assert_true(addon.mainFrame.frame.titleIcon.texture ~= nil)
+    harness.assert_nil(addon.mainFrame.contentPanel.innerShade)
+    harness.assert_nil(addon.mainFrame.contentPanel.innerShadeTexture)
+    harness.assert_true((addon.mainFrame.contentPanel.contentHost.frameLevel or 0) > (addon.mainFrame.contentPanel.frameLevel or 0))
+    harness.assert_equal("", addon.mainFrame.frame.titleText.text)
+    harness.assert_equal("", addon.mainFrame.frame.subtitleText.text)
+    harness.assert_equal("OUTLINE", addon.mainFrame.frame.subtitleText.fontFlags)
+    harness.assert_equal("OUTLINE", addon.mainFrame.contentPanel.bodyText.fontFlags)
   end,
 
-  ["tab rail layout keeps the admin button inside the rail width"] = function()
+  ["tab rail layout centers nav buttons inside a tighter rail"] = function()
     wow.reset({ guildName = "Raid Bakery" })
 
     local addon = wow.loadAddon()
@@ -349,11 +499,18 @@ return {
     addon.mainFrame:EnsureRendered()
 
     local tabRail = addon.mainFrame.frame.tabRail
+    local firstButton = addon.mainFrame.tabButtons[1]
     local lastButton = addon.mainFrame.tabButtons[#addon.mainFrame.tabButtons]
-    local leftOffset = lastButton.point and lastButton.point[4] or 0
-    local rightEdge = leftOffset + (lastButton.width or 0)
+    local firstLeft = firstButton.point and firstButton.point[4] or 0
+    local lastLeft = lastButton.point and lastButton.point[4] or 0
+    local rightGap = (tabRail.width or 0) - (lastLeft + (lastButton.width or 0))
 
-    harness.assert_true(rightEdge <= (tabRail.width or 0))
+    harness.assert_true((tabRail.width or 0) < ((addon.mainFrame.frame.width or 0) - 100))
+    harness.assert_true(firstLeft > 10)
+    harness.assert_true(math.abs(firstLeft - rightGap) <= 1)
+    harness.assert_nil(firstButton.label.textColor)
+    harness.assert_equal("OUTLINE", firstButton.label.fontFlags)
+    harness.assert_nil(firstButton.label.outlineLabels)
   end,
 
   ["dashboard renders stats, content sections, and footer actions after recomposition"] = function()
@@ -380,12 +537,56 @@ return {
     harness.assert_true(panel.quickActionsSection ~= nil)
     harness.assert_true(panel.nominationButton ~= nil)
     harness.assert_true(panel.awardButton ~= nil)
-    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\burntrollingpin.png", panel.statCards[1].iconFrame.texturePath)
-    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\goldenrollingpin.png", panel.statCards[2].iconFrame.texturePath)
-    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\flameember.png", panel.statCards[3].iconFrame.texturePath)
-    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\rollingpin.png", panel.statCards[4].iconFrame.texturePath)
+    harness.assert_true(panel.statCards[1].iconFrame == nil)
+    harness.assert_true(panel.statCards[2].iconFrame == nil)
+    harness.assert_true(panel.statCards[3].iconFrame == nil)
+    harness.assert_true(panel.statCards[4].iconFrame == nil)
     harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\rollingpin.png", panel.nominationButton.iconFrame.texturePath)
-    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\burntrollingpin.png", panel.awardButton.iconFrame.texturePath)
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\burnt-rolling-pin.png", panel.awardButton.iconFrame.texturePath)
+    harness.assert_equal(panel.nominationButton.width, panel.leaderboardSection.width)
+    harness.assert_equal(panel.awardButton.width, panel.recentAwardsSection.width)
+    harness.assert_equal("CENTER", panel.statCards[1].label.justifyH)
+    harness.assert_equal("CENTER", panel.statCards[1].value.justifyH)
+    harness.assert_equal("CENTER", panel.statCards[1].value.point[1])
+    harness.assert_equal("CENTER", panel.statCards[1].value.point[3])
+    harness.assert_equal("Interface\\ChatFrame\\ChatFrameBackground", panel.statCards[1].backdrop.bgFile)
+    harness.assert_true((panel.statCards[1].backdropColor.red or 0) >= 0.80)
+    harness.assert_nil(panel.statCards[1].label.textColor)
+    harness.assert_equal(0, panel.statCards[1].label.shadowColor.alpha)
+    harness.assert_equal(0, panel.statCards[1].label.shadowOffset.x)
+    harness.assert_equal(0, panel.statCards[1].label.shadowOffset.y)
+    harness.assert_equal("OUTLINE", panel.statCards[1].label.fontFlags)
+    harness.assert_nil(panel.statCards[1].label.outlineLabels)
+    harness.assert_nil(panel.statCards[1].label.outlineColor)
+    harness.assert_equal("Interface\\ChatFrame\\ChatFrameBackground", panel.leaderboardSection.backdrop.bgFile)
+    harness.assert_true((panel.leaderboardSection.backdropColor.red or 0) >= 0.80)
+    harness.assert_true(panel.statCards[1].detail.text:match("ledger") == nil)
+    harness.assert_equal("MIDDLE", panel.nominationButton.label.justifyV)
+  end,
+
+  ["dashboard list polish removes realms and indents recipient totals"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.awards:CreateDirectAward("Moonrustle-Moonguard", "Baiting Fae")
+
+    addon.mainFrame:EnsureRendered()
+
+    local panel = addon.mainFrame.tabPanels.dashboard
+
+    harness.assert_true(panel.leaderboardSection.rows[1].label.text:match("\n    1 rolling pins") ~= nil)
+    harness.assert_true(panel.recentAwardsSection.rows[1].label.text:match("Moonrustle%-Moonguard") == nil)
+    harness.assert_true(panel.recentAwardsSection.rows[1].label.text:match("Guildmaster%-Stormrage") == nil)
+    harness.assert_equal("rowHighlight", panel.leaderboardSection.rows[1].backdropTone)
+    harness.assert_equal("rowHighlight", panel.recentAwardsSection.rows[1].backdropTone)
+    harness.assert_equal("MIDDLE", panel.leaderboardSection.rows[1].label.justifyV)
+    harness.assert_true((panel.leaderboardSection.rows[1].width or 0) <= (panel.leaderboardSection.width or 0) - 48)
   end,
 
   ["dashboard footer actions remain clickable after recomposition"] = function()
@@ -615,23 +816,15 @@ return {
     harness.assert_equal("Burny-Stormrage", rows[1].nominee)
   end,
 
-  ["bridge can save settings and return updated values"] = function()
+  ["settings bridge APIs are removed with the settings tab"] = function()
     wow.reset({ guildName = "Raid Bakery" })
 
     local addon = wow.loadAddon()
     addon:OnInitialize()
 
-    local saved = addon.uiBridge:SaveSettings({
-      tooltipEnabled = false,
-      announceAwards = false,
-      debug = true,
-    })
-    local settings = addon.uiBridge:GetSettingsViewModel()
-
-    harness.assert_true(saved)
-    harness.assert_false(settings.tooltipEnabled)
-    harness.assert_false(settings.announceAwards)
-    harness.assert_true(settings.debug)
+    harness.assert_nil(addon.uiBridge.GetSettingsViewModel)
+    harness.assert_nil(addon.uiBridge.SaveSettings)
+    harness.assert_nil(addon.db.storage.profile.settings)
   end,
 
   ["bridge exposes guild rank permissions by rank name for the admin view"] = function()
@@ -750,19 +943,29 @@ return {
     addon:OnInitialize()
     addon.mainFrame:EnsureRendered()
 
-    harness.assert_false(addon.mainFrame.tabButtons[7].visible)
+    harness.assert_false(addon.mainFrame.tabButtons[6].visible)
   end,
 
-  ["main window provides a close button and backdrop"] = function()
+  ["main window provides a close button and background artwork"] = function()
     wow.reset({ guildName = "Raid Bakery" })
 
     local addon = wow.loadAddon()
     addon:OnInitialize()
     addon.mainFrame:Toggle()
 
-    harness.assert_true(addon.mainFrame.frame.backdrop ~= nil)
+    harness.assert_true(addon.mainFrame.frame.backgroundArt ~= nil)
+    harness.assert_true(addon.mainFrame.frame.backgroundArt.visible)
     harness.assert_true(addon.mainFrame.frame.closeButton ~= nil)
 
+    harness.assert_true(type(addon.mainFrame.frame.scripts.OnKeyDown) == "function")
+    addon.mainFrame.frame.scripts.OnKeyDown(addon.mainFrame.frame, "SPACE")
+    harness.assert_true(addon.mainFrame.frame.visible)
+    harness.assert_true(addon.mainFrame.frame.propagateKeyboardInput)
+
+    addon.mainFrame.frame.scripts.OnKeyDown(addon.mainFrame.frame, "ESCAPE")
+    harness.assert_false(addon.mainFrame.frame.visible)
+
+    addon.mainFrame.frame:Show()
     addon.mainFrame.frame.closeButton:Click()
 
     harness.assert_false(addon.mainFrame.frame.visible)
@@ -806,27 +1009,6 @@ return {
     panel.listSection.rows[1].actions[1]:Click()
 
     harness.assert_true(panel.listSection.rows[1].label.text:match("Upvotes: 1") ~= nil)
-  end,
-
-  ["settings tab save button persists checkboxes"] = function()
-    wow.reset({ guildName = "Raid Bakery" })
-
-    local addon = wow.loadAddon()
-    addon:OnInitialize()
-    addon.mainFrame:EnsureRendered()
-    addon.mainFrame:SelectTab("settings")
-
-    local panel = addon.mainFrame.tabPanels.settings
-    panel.tooltipCheck:SetChecked(false)
-    panel.announceCheck:SetChecked(false)
-    panel.debugCheck:SetChecked(true)
-    panel.saveButton:Click()
-
-    local settings = addon.uiBridge:GetSettingsViewModel()
-
-    harness.assert_false(settings.tooltipEnabled)
-    harness.assert_false(settings.announceAwards)
-    harness.assert_true(settings.debug)
   end,
 
   ["admin tab save button persists rank permissions for the selected guild rank"] = function()
@@ -884,10 +1066,13 @@ return {
 
     local panel = addon.mainFrame.tabPanels.admin
 
-    harness.assert_true(panel.permissionHelpLabel.text:match("Manage Nominations") ~= nil)
-    harness.assert_true(panel.permissionHelpLabel.text:match("Create Direct Awards") ~= nil)
-    harness.assert_true(panel.permissionHelpLabel.text:match("Delete Awards") ~= nil)
-    harness.assert_true(panel.permissionHelpLabel.text:match("Manage Addon Permissions/Settings") ~= nil)
+    harness.assert_true(panel.gmNote == nil)
+    harness.assert_true(panel.permissionHelpLabel.text:match("Nominations:") ~= nil)
+    harness.assert_true(panel.permissionHelpLabel.text:match("Direct:") ~= nil)
+    harness.assert_true(panel.permissionHelpLabel.text:match("Delete:") ~= nil)
+    harness.assert_true(panel.permissionHelpLabel.text:match("Admin:") ~= nil)
+    harness.assert_true(panel.permissionHelpLabel.text:match("Manage Nominations:") == nil)
+    harness.assert_true(panel.permissionHelpLabel.text:match("Rank 0") == nil)
   end,
 
   ["admin rank permissions list exposes a scrollbar for many guild ranks"] = function()
@@ -945,6 +1130,10 @@ return {
 
     harness.assert_true(section.scrollBar ~= nil)
     harness.assert_true(section.scrollBar.maxValue > 0)
+    harness.assert_equal("rowHighlight", section.rows[1].backdropTone)
+    harness.assert_equal("MIDDLE", section.rows[1].label.justifyV)
+    harness.assert_true((section.rows[1].point[4] or 0) >= 14)
+    harness.assert_true((section.rows[1].width or 0) <= (section.width or 0) - 48)
   end,
 
   ["award and nomination tabs support selecting golden rolling pin mode"] = function()
@@ -963,11 +1152,95 @@ return {
     local awardPanel = addon.mainFrame.tabPanels.award
     awardPanel.typeGoldenButton:Click()
     harness.assert_equal("golden", awardPanel.selectedAwardType)
+    harness.assert_true(awardPanel.statusSection == nil)
+    harness.assert_true((awardPanel.submitButton.point[5] or 0) - (awardPanel.submitButton.height or 0) >= -(awardPanel.formSection.height or 0))
 
     addon.mainFrame:SelectTab("nominations")
     local nominationsPanel = addon.mainFrame.tabPanels.nominations
+    harness.assert_equal("Nominate A Guild Failure", nominationsPanel.formSection.titleText.text)
+    harness.assert_true(nominationsPanel.formSection.iconFrame == nil)
+    harness.assert_true(nominationsPanel.selectedAwardPreview ~= nil)
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\burnt-rolling-pin.png", nominationsPanel.selectedAwardPreview.texturePath)
+    harness.assert_equal("", nominationsPanel.statusLabel.text)
+    harness.assert_equal(-116, nominationsPanel.submitButton.point[5])
+    harness.assert_true((nominationsPanel.submitButton.point[4] or 0) + (nominationsPanel.submitButton.width or 0) <= (nominationsPanel.formSection.width or 0) - 14)
     nominationsPanel.typeGoldenButton:Click()
     harness.assert_equal("golden", nominationsPanel.selectedAwardType)
+    harness.assert_equal("Nominate A Guild Legend", nominationsPanel.formSection.titleText.text)
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\golden-rolling-pin.png", nominationsPanel.selectedAwardPreview.texturePath)
+  end,
+
+  ["history and leaderboard use expanded row-backed tables without helper boxes"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.awards:CreateDirectAward("Moonrustle-Stormrage", "Baiting Fae", "golden")
+    addon.awards:CreateDirectAward("Moonrustle-Stormrage", "Pulled the boss", "burnt")
+
+    addon.mainFrame:EnsureRendered()
+    addon.mainFrame:SelectTab("history")
+
+    local historyPanel = addon.mainFrame.tabPanels.history
+    harness.assert_true(historyPanel.statusSection == nil)
+    harness.assert_true((historyPanel.listSection.height or 0) > 360)
+    harness.assert_equal("rowHighlight", historyPanel.listSection.rows[1].backdropTone)
+    harness.assert_equal("BackdropTemplate", historyPanel.listSection.rows[1].template)
+
+    addon.mainFrame:SelectTab("leaderboard")
+
+    local leaderboardPanel = addon.mainFrame.tabPanels.leaderboard
+    harness.assert_true(leaderboardPanel.summarySection == nil)
+    harness.assert_true((leaderboardPanel.listSection.height or 0) > 330)
+    harness.assert_equal("rowHighlight", leaderboardPanel.listSection.rows[1].backdropTone)
+    harness.assert_equal("BackdropTemplate", leaderboardPanel.listSection.rows[1].template)
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\burnt-rolling-pin.png", leaderboardPanel.listSection.rows[1].iconFrame.texturePath)
+    harness.assert_true((leaderboardPanel.burntModeButton.point[5] or 0) < -330)
+    harness.assert_equal("MIDDLE", leaderboardPanel.listSection.rows[1].label.justifyV)
+    harness.assert_true((leaderboardPanel.listSection.rows[1].width or 0) <= (leaderboardPanel.listSection.width or 0) - 48)
+    harness.assert_true((leaderboardPanel.listSection.rows[1].label.textColor.red or 1) < 0.3)
+    harness.assert_equal("LEFT", leaderboardPanel.listSection.rows[1].actions[1].point[1])
+  end,
+
+  ["admin controls stay inside their chrome"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.mainFrame:EnsureRendered()
+    addon.mainFrame:SelectTab("admin")
+
+    local adminPanel = addon.mainFrame.tabPanels.admin
+    local officerRow = adminPanel.rankSection.rows[2]
+    officerRow.manageNominationsCheck:Click()
+    harness.assert_true(officerRow.manageNominationsCheck:GetChecked())
+    harness.assert_true(officerRow.manageNominationsCheck.checkLabel.visible)
+    harness.assert_true((adminPanel.aliasInput.point[5] or 0) - (adminPanel.aliasInput.height or 0) >= -(adminPanel.aliasFormSection.height or 0))
+    harness.assert_true(adminPanel.moderationSection == nil)
+    harness.assert_true(adminPanel.moderationButton ~= nil)
+    harness.assert_true(adminPanel.moderationDialog ~= nil)
   end,
 
   ["reopening the addon keeps tab buttons interactive"] = function()
@@ -1001,6 +1274,15 @@ return {
 
     harness.assert_true(section.scrollBar ~= nil)
     harness.assert_true(section.scrollBar.maxValue > 0)
+    harness.assert_equal("BackdropTemplate", section.rows[1].template)
+    harness.assert_equal("rowHighlight", section.rows[1].backdropTone)
+    harness.assert_equal("MIDDLE", section.rows[1].label.justifyV)
+    harness.assert_true((section.rows[1].label.textColor.red or 1) < 0.3)
+    harness.assert_true((section.rows[1].width or 0) <= (section.width or 0) - 48)
+    harness.assert_equal("LEFT", section.rows[1].actions[1].point[1])
+    local thirdRow = section.rows[3]
+    local thirdRowBottom = math.abs(thirdRow.point[5] or 0) + (thirdRow.height or 0)
+    harness.assert_true(thirdRowBottom <= (section.height or 0))
   end,
 
   ["history tab delete action confirms and removes an award"] = function()

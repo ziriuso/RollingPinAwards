@@ -81,6 +81,10 @@ local function createFrameObject(frameType, name, parent, template)
       self.point = { ... }
     end
 
+    function texture:ClearAllPoints()
+      self.point = nil
+    end
+
     function texture:SetAllPoints(target)
       self.allPointsTarget = target or self.parent
     end
@@ -116,6 +120,10 @@ local function createFrameObject(frameType, name, parent, template)
       self.point = { ... }
     end
 
+    function fontString:ClearAllPoints()
+      self.point = nil
+    end
+
     function fontString:SetJustifyH(value)
       self.justifyH = value
     end
@@ -130,6 +138,41 @@ local function createFrameObject(frameType, name, parent, template)
 
     function fontString:SetText(value)
       self.text = value
+    end
+
+    function fontString:SetTextColor(red, green, blue, alpha)
+      self.textColor = {
+        red = red,
+        green = green,
+        blue = blue,
+        alpha = alpha,
+      }
+    end
+
+    function fontString:GetFont()
+      return self.fontFile or "Fonts\\FRIZQT__.TTF", self.fontHeight or 12, self.fontFlags
+    end
+
+    function fontString:SetFont(file, height, flags)
+      self.fontFile = file
+      self.fontHeight = height
+      self.fontFlags = flags
+    end
+
+    function fontString:SetShadowColor(red, green, blue, alpha)
+      self.shadowColor = {
+        red = red,
+        green = green,
+        blue = blue,
+        alpha = alpha,
+      }
+    end
+
+    function fontString:SetShadowOffset(x, y)
+      self.shadowOffset = {
+        x = x,
+        y = y,
+      }
     end
 
     self.children[#self.children + 1] = fontString
@@ -162,6 +205,19 @@ local function createFrameObject(frameType, name, parent, template)
     self.point = { ... }
   end
 
+  function frame:ClearAllPoints()
+    self.point = nil
+  end
+
+  function frame:SetHitRectInsets(left, right, top, bottom)
+    self.hitRectInsets = {
+      left = left,
+      right = right,
+      top = top,
+      bottom = bottom,
+    }
+  end
+
   function frame:SetFrameLevel(value)
     self.frameLevel = value
   end
@@ -176,6 +232,23 @@ local function createFrameObject(frameType, name, parent, template)
 
   function frame:GetFrameStrata()
     return self.frameStrata or "MEDIUM"
+  end
+
+  function frame:SetToplevel(value)
+    self.toplevel = value == true
+  end
+
+  function frame:EnableKeyboard(value)
+    self.keyboardEnabled = value == true
+  end
+
+  function frame:SetPropagateKeyboardInput(value)
+    self.propagateKeyboardInput = value == true
+  end
+
+  function frame:Raise()
+    self.raised = true
+    self.frameLevel = (self.frameLevel or 0) + 1
   end
 
   function frame:SetClipsChildren(value)
@@ -260,6 +333,19 @@ local function createFrameObject(frameType, name, parent, template)
     self.movable = value == true
   end
 
+  function frame:SetResizable(value)
+    self.resizable = value == true
+  end
+
+  function frame:SetResizeBounds(minWidth, minHeight, maxWidth, maxHeight)
+    self.resizeBounds = {
+      minWidth = minWidth,
+      minHeight = minHeight,
+      maxWidth = maxWidth,
+      maxHeight = maxHeight,
+    }
+  end
+
   function frame:RegisterForDrag(...)
     self.dragButtons = { ... }
   end
@@ -268,8 +354,14 @@ local function createFrameObject(frameType, name, parent, template)
     self.moving = true
   end
 
+  function frame:StartSizing(point)
+    self.sizing = true
+    self.sizingPoint = point
+  end
+
   function frame:StopMovingOrSizing()
     self.moving = false
+    self.sizing = false
   end
 
   function frame:SetAutoFocus(value)
@@ -554,6 +646,7 @@ function wow.reset(seed)
 
   _G.SlashCmdList = {}
   _G.SLASH_ROLLINGPINAWARDS1 = nil
+  _G.UISpecialFrames = {}
   _G.os = originalOs
   _G.CreateFrame = createFrameObject
   _G.UIParent = {}
