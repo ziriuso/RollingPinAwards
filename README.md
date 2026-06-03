@@ -65,7 +65,7 @@ Use `/rpa syncdebug` or `/rpa sync debug` in game to print copy-friendly sync st
 
 ## Runtime Notes
 
-- The addon now prefers an Ace3-backed runtime when `LibStub` and the Ace3 libraries are available in-game.
+- The addon now directly embeds AceComm/AceSerializer through `LibStub`, matching the proven GBankManager pattern, when the Ace3 libraries are available in-game.
 - The repo now vendors the required Ace3 libraries under `Libs/` and also includes `.pkgmeta` externals so packager-driven releases stay reproducible.
 - When `AceDB-3.0` is available, the domain database is backed by the active Ace profile instead of the plain SavedVariables fallback table.
 - When AceComm/AceSerializer are unavailable in-game, sync falls back to native `C_ChatInfo` addon messages with a flat guild-scoped payload serializer.

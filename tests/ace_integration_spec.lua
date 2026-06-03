@@ -12,6 +12,25 @@ return {
 
     harness.assert_true(type(addon.RegisterChatCommand) == "function")
     harness.assert_true(type(addon.RegisterComm) == "function")
+    harness.assert_true(type(addon.SendCommMessage) == "function")
+    harness.assert_true(type(addon.Serialize) == "function")
+    harness.assert_true(addon.__rpaUsesAce3 == true)
+  end,
+
+  ["core bootstrap embeds ace comm and serializer without ace addon"] = function()
+    wow.reset({
+      ace3 = true,
+      noAceAddon = true,
+      guildName = "Raid Bakery",
+    })
+
+    local addon = wow.loadAddon()
+
+    harness.assert_nil(addon.NewModule)
+    harness.assert_true(type(addon.RegisterComm) == "function")
+    harness.assert_true(type(addon.SendCommMessage) == "function")
+    harness.assert_true(type(addon.Serialize) == "function")
+    harness.assert_true(type(addon.Deserialize) == "function")
     harness.assert_true(addon.__rpaUsesAce3 == true)
   end,
 

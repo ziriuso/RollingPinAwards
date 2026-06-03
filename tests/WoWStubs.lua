@@ -554,6 +554,10 @@ local function buildAceLibStub()
     end,
   }
 
+  if state.noAceAddon then
+    libraries["AceAddon-3.0"] = nil
+  end
+
   return function(libraryName, silent)
     local library = libraries[libraryName]
     if library or silent then
@@ -592,6 +596,7 @@ function wow.reset(seed)
     playerName = seed.playerName or "Ziri",
     savedVariables = seed.savedVariables,
     ace3 = seed.ace3,
+    noAceAddon = seed.noAceAddon,
     nativeComm = seed.nativeComm,
     loggedIn = seed.loggedIn == true,
     serializedPayloads = {},

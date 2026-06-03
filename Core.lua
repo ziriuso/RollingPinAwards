@@ -8,25 +8,31 @@ local function createAddonObject()
     return existing
   end
 
-  local aceAddon = libStub("AceAddon-3.0", true)
-  if not aceAddon or type(aceAddon.NewAddon) ~= "function" then
-    existing.__rpaUsesAce3 = false
+  local embedded = {}
+  local function embedLibrary(libraryName)
+    local library = libStub(libraryName, true)
+    if library and type(library.Embed) == "function" then
+      library:Embed(existing)
+      embedded[libraryName] = true
+      return true
+    end
 
-    return existing
+    embedded[libraryName] = false
+    return false
   end
 
-  local addon = aceAddon:NewAddon(
-    existing,
-    "RollingPinAwards",
-    "AceEvent-3.0",
-    "AceConsole-3.0",
-    "AceComm-3.0",
-    "AceSerializer-3.0"
-  )
+  embedLibrary("AceEvent-3.0")
+  embedLibrary("AceConsole-3.0")
+  embedLibrary("AceComm-3.0")
+  embedLibrary("AceSerializer-3.0")
 
-  addon.__rpaUsesAce3 = true
+  existing.__rpaAceLibraries = embedded
+  existing.__rpaUsesAce3 = embedded["AceComm-3.0"] == true
+    or embedded["AceSerializer-3.0"] == true
+    or embedded["AceConsole-3.0"] == true
+    or embedded["AceEvent-3.0"] == true
 
-  return addon
+  return existing
 end
 
 local function getOptionalLibrary(libraryName)

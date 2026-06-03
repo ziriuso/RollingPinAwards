@@ -24,6 +24,7 @@ The addon also needs a small chat diagnostic command so live testing can capture
 - Inbound accepted payloads rerender the active tab when the main frame has already rendered.
 - `/rpa syncdebug` and `/rpa sync debug` print copy-friendly chat diagnostics.
 - If AceComm/AceSerializer are unavailable, sync registers the same prefix through native `C_ChatInfo` and sends flat serialized sync envelopes over the guild addon channel.
+- AceComm and AceSerializer are embedded directly through LibStub, following GBankManager's transport pattern, so sync does not depend on AceAddon successfully constructing the addon object.
 
 ## Verification
 
@@ -32,3 +33,4 @@ The addon also needs a small chat diagnostic command so live testing can capture
 - Regression tests cover authorized remote award deletion.
 - Regression tests cover the sync diagnostic slash command output.
 - Regression tests cover native comm fallback registration, outbound serialization, and inbound deserialization when Ace3 is unavailable.
+- Regression tests cover direct AceComm/AceSerializer embedding even when AceAddon is unavailable.

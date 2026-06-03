@@ -427,6 +427,12 @@ function Sync:GetDebugLines()
       tostring(type(self.addon.SendCommMessage) == "function"),
       tostring(type(self.addon.Serialize) == "function")
     ),
+    ("Ace libs: Comm=%s Serializer=%s Console=%s Event=%s"):format(
+      tostring((self.addon.__rpaAceLibraries or {})["AceComm-3.0"] == true),
+      tostring((self.addon.__rpaAceLibraries or {})["AceSerializer-3.0"] == true),
+      tostring((self.addon.__rpaAceLibraries or {})["AceConsole-3.0"] == true),
+      tostring((self.addon.__rpaAceLibraries or {})["AceEvent-3.0"] == true)
+    ),
     ("Native comm: registered=%s SendAddon=%s"):format(
       tostring(self.addon.__rpaNativeCommPrefix or "none"),
       tostring((_G.C_ChatInfo and type(_G.C_ChatInfo.SendAddonMessage) == "function")

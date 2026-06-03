@@ -79,6 +79,7 @@
 - Real in-game sync testing was attempted before this slice, and no sync occurred between clients.
 - Current local code now broadcasts local mutations for awards, nominations, nomination votes, alias mappings, and rank permission saves, and includes `/rpa syncdebug` / `/rpa sync debug` chat diagnostics for live transport checks.
 - Live diagnostics showed both clients had `Ace3=false SendComm=false Serialize=false`, so sync now falls back to native `C_ChatInfo` addon messages when AceComm/AceSerializer are unavailable.
+- After comparing GBankManager, Rolling Pin now directly embeds AceComm/AceSerializer through LibStub instead of requiring AceAddon to construct the addon object first.
 - The updated sync/debug/dashboard build has been copied to both documented local Retail and PTR AddOns folders.
 
 ## Priority Blocker
@@ -92,6 +93,7 @@
 - Likely failure areas to inspect first:
   - Inbound live AceComm may still differ from the local harness even though the stub now serializes outbound messages as strings and exercises `OnCommReceived` deserialization.
   - Native `C_ChatInfo` fallback now has local test coverage, but still needs live two-client verification.
+  - `/rpa syncdebug` now reports individual AceComm/AceSerializer embed state.
   - Self-sent messages may need to be ignored intentionally, while other same-guild senders must be accepted and rerender the UI.
   - Authorized sender validation depends on active guild context and rank permissions; a receiving client may reject a legitimate sender if the rank matrix/guild roster state has not converged.
   - `/rpa syncdebug` and `/rpa sync debug` now print copy-friendly sync diagnostics to chat.

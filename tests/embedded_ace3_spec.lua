@@ -30,15 +30,15 @@ return {
   ["toc embeds required ace3 library files in load order"] = function()
     local lines = readLines("RollingPinAwards.toc")
 
-    local libStubIndex = indexOf(lines, "Libs\\LibStub\\LibStub.lua")
-    local callbackIndex = indexOf(lines, "Libs\\CallbackHandler-1.0\\CallbackHandler-1.0.lua")
-    local aceAddonIndex = indexOf(lines, "Libs\\AceAddon-3.0\\AceAddon-3.0.lua")
-    local aceDBIndex = indexOf(lines, "Libs\\AceDB-3.0\\AceDB-3.0.lua")
-    local aceEventIndex = indexOf(lines, "Libs\\AceEvent-3.0\\AceEvent-3.0.lua")
-    local aceConsoleIndex = indexOf(lines, "Libs\\AceConsole-3.0\\AceConsole-3.0.lua")
-    local aceCommIndex = indexOf(lines, "Libs\\AceComm-3.0\\AceComm-3.0.lua")
-    local aceSerializerIndex = indexOf(lines, "Libs\\AceSerializer-3.0\\AceSerializer-3.0.lua")
-    local chatThrottleIndex = indexOf(lines, "Libs\\AceComm-3.0\\ChatThrottleLib.lua")
+    local libStubIndex = indexOf(lines, "Libs/LibStub/LibStub.lua")
+    local callbackIndex = indexOf(lines, "Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua")
+    local aceAddonIndex = indexOf(lines, "Libs/AceAddon-3.0/AceAddon-3.0.lua")
+    local aceDBIndex = indexOf(lines, "Libs/AceDB-3.0/AceDB-3.0.lua")
+    local aceEventIndex = indexOf(lines, "Libs/AceEvent-3.0/AceEvent-3.0.lua")
+    local aceConsoleIndex = indexOf(lines, "Libs/AceConsole-3.0/AceConsole-3.0.lua")
+    local aceCommIndex = indexOf(lines, "Libs/AceComm-3.0/AceComm-3.0.lua")
+    local aceSerializerIndex = indexOf(lines, "Libs/AceSerializer-3.0/AceSerializer-3.0.lua")
+    local chatThrottleIndex = indexOf(lines, "Libs/AceComm-3.0/ChatThrottleLib.lua")
     local constantsIndex = indexOf(lines, "Constants.lua")
 
     harness.assert_true(libStubIndex ~= nil)
@@ -64,15 +64,15 @@ return {
 
   ["embedded ace3 library directories exist"] = function()
     local requiredFiles = {
-      "Libs\\LibStub\\LibStub.lua",
-      "Libs\\CallbackHandler-1.0\\CallbackHandler-1.0.lua",
-      "Libs\\AceAddon-3.0\\AceAddon-3.0.lua",
-      "Libs\\AceDB-3.0\\AceDB-3.0.lua",
-      "Libs\\AceEvent-3.0\\AceEvent-3.0.lua",
-      "Libs\\AceConsole-3.0\\AceConsole-3.0.lua",
-      "Libs\\AceComm-3.0\\AceComm-3.0.lua",
-      "Libs\\AceComm-3.0\\ChatThrottleLib.lua",
-      "Libs\\AceSerializer-3.0\\AceSerializer-3.0.lua",
+      "Libs/LibStub/LibStub.lua",
+      "Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua",
+      "Libs/AceAddon-3.0/AceAddon-3.0.lua",
+      "Libs/AceDB-3.0/AceDB-3.0.lua",
+      "Libs/AceEvent-3.0/AceEvent-3.0.lua",
+      "Libs/AceConsole-3.0/AceConsole-3.0.lua",
+      "Libs/AceComm-3.0/AceComm-3.0.lua",
+      "Libs/AceComm-3.0/ChatThrottleLib.lua",
+      "Libs/AceSerializer-3.0/AceSerializer-3.0.lua",
     }
 
     for _, path in ipairs(requiredFiles) do
