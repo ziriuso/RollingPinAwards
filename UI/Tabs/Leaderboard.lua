@@ -1,0 +1,285 @@
+local RPA = _G.RollingPinAwards or {}
+_G.RollingPinAwards = RPA
+
+local UITabs = RPA.UITabs or {}
+local Components = RPA.UIComponents or {}
+local Styles = RPA.UIStyles or {}
+RPA.UITabs = UITabs
+
+local function stripRealm(name)
+  if type(name) ~= "string" then
+    return name or "Unknown"
+  end
+
+  return name:match("^([^-]+)") or name
+end
+
+local function getDominantAwardIcon(row)
+  local media = Styles.Media or {}
+  if (row.burntCount or 0) >= (row.goldenCount or 0) then
+    return media.awardIcon
+  end
+
+  return media.leaderboardIcon
+end
+
+UITabs.leaderboard = {
+  id = "leaderboard",
+  label = "Leaderboard",
+  BuildViewModel = function(bridge)
+    return {
+      rows = bridge:GetLeaderboardViewModel("combined"),
+    }
+  end,
+  DescribeViewModel = function(viewModel)
+    local lines = {
+      ("Award recipients: %d"):format(#(viewModel.rows or {})),
+    }
+
+    for index, row in ipairs(viewModel.rows or {}) do
+      if index > 5 then
+        break
+      end
+      lines[#lines + 1] = ("%s - %d pins"):format(row.recipient, row.pinCount)
+    end
+
+    if #lines == 1 then
+      lines[#lines + 1] = "No approved awards yet."
+    end
+
+    return {
+      title = "Leaderboard",
+      lines = lines,
+    }
+  end,
+  BuildPanel = function(parent, mainFrame)
+    local media = Styles.Media or {}
+    local panel = CreateFrame("Frame", nil, parent)
+    panel.ownerFrame = mainFrame
+    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 14, -42)
+    panel:SetSize((parent.width or 820) - 28, (parent.height or 520) - 56)
+
+    panel.listSection = Components.CreateScrollableSection(panel, {
+      id = "RollingPinAwardsLeaderboardList",
+      title = "Rolling Pin Leaders",
+      iconPath = media.leaderboardIcon,
+      iconWidth = 22,
+      iconHeight = 22,
+      width = 780,
+      height = 360,
+      x = 0,
+      y = 0,
+      visibleRowCount = 6,
+      rowHeight = 56,
+    })
+    panel.selectedMode = panel.selectedMode or "combined"
+    panel.burntModeButton = Components.CreateButton(panel, {
+      text = "Burnt",
+      width = 110,
+      height = 28,
+      x = 0,
+      y = -374,
+      variant = "secondary",
+      onClick = function()
+        panel.selectedMode = "burnt"
+        panel.ownerFrame:RenderActiveTab()
+      end,
+    })
+    panel.goldenModeButton = Components.CreateButton(panel, {
+      text = "Golden",
+      width = 110,
+      height = 28,
+      x = 118,
+      y = -374,
+      variant = "secondary",
+      onClick = function()
+        panel.selectedMode = "golden"
+        panel.ownerFrame:RenderActiveTab()
+      end,
+    })
+    panel.combinedModeButton = Components.CreateButton(panel, {
+      text = "Combined",
+      width = 120,
+      height = 28,
+      x = 236,
+      y = -374,
+      variant = "primary",
+      onClick = function()
+        panel.selectedMode = "combined"
+        panel.ownerFrame:RenderActiveTab()
+      end,
+    })
+    local showcaseParent = (mainFrame and mainFrame.frame) or panel
+    panel.detailDialog = Components.CreateModalWindow(showcaseParent, {
+      id = "RollingPinAwardsLeaderboardDetailDialog",
+      title = "Award History",
+      width = 760,
+      height = 680,
+      closeText = "Close",
+      titleFont = "GameFontNormalHuge",
+      titleY = -30,
+      centerTitle = true,
+      closeAnchor = "BOTTOMRIGHT",
+      closeBottomY = 48,
+      draggable = true,
+      frameLevelOffset = 160,
+      backdropColor = { 0.10, 0.07, 0.05, 0 },
+      borderColor = { 0.10, 0.07, 0.05, 0 },
+      backgroundTexture = media.modalBackground,
+      contentBounds = {
+        left = 150,
+        top = 70,
+        width = 460,
+        height = 560,
+      },
+    })
+    local showcaseHost = panel.detailDialog.contentHost or panel.detailDialog
+    panel.detailDialog.goldenIcon = Components.CreateArtworkFrame(showcaseHost, {
+      texture = media.leaderboardIcon,
+      width = 102,
+      height = 102,
+      anchor = "TOP",
+      relativeTo = "TOP",
+      x = -82,
+      y = -74,
+    })
+    panel.detailDialog.burntIcon = Components.CreateArtworkFrame(showcaseHost, {
+      texture = media.awardIcon,
+      width = 102,
+      height = 102,
+      anchor = "TOP",
+      relativeTo = "TOP",
+      x = 82,
+      y = -74,
+    })
+    panel.detailDialog.goldenCountLabel = Components.CreateLabel(showcaseHost, {
+      text = "0",
+      x = 100,
+      y = -190,
+      width = 96,
+      justifyH = "CENTER",
+      font = "GameFontNormalHuge",
+    })
+    panel.detailDialog.burntCountLabel = Components.CreateLabel(showcaseHost, {
+      text = "0",
+      x = 264,
+      y = -190,
+      width = 96,
+      justifyH = "CENTER",
+      font = "GameFontNormalHuge",
+    })
+    panel.detailDialog.listSection = Components.CreateScrollableSection(showcaseHost, {
+      id = "RollingPinAwardsLeaderboardDetailList",
+      title = "",
+      width = 424,
+      height = 190,
+      x = 18,
+      y = -240,
+      visibleRowCount = 3,
+      rowHeight = 56,
+      rowStartY = -12,
+      scrollBarTop = 12,
+      scrollBarBottom = 18,
+    })
+
+    return panel
+  end,
+  RefreshPanel = function(panel, viewModel, bridge)
+    local mode = panel.selectedMode or "combined"
+    local rows = bridge:GetLeaderboardViewModel(mode) or {}
+    if #rows == 0 then
+      rows = {
+        {
+          emptyState = true,
+        },
+      }
+    end
+
+    Components.SetButtonVariant(panel.burntModeButton, mode == "burnt" and "primary" or "secondary")
+    Components.SetButtonVariant(panel.goldenModeButton, mode == "golden" and "primary" or "secondary")
+    Components.SetButtonVariant(panel.combinedModeButton, mode == "combined" and "primary" or "secondary")
+
+    Components.SetScrollableItems(panel.listSection, rows, function(section, row)
+      if row.emptyState then
+        Components.AddListRow(section, {
+          text = "No approved awards yet.",
+          rowHeight = 40,
+          actions = {},
+        })
+        return
+      end
+
+      Components.AddListRow(section, {
+        text = mode == "combined"
+            and ("%s\nGolden: %d  Burnt: %d  Total: %d\nMost Recent: %s"):format(
+              row.recipient,
+              row.goldenCount or 0,
+              row.burntCount or 0,
+              row.totalCount or row.pinCount or 0,
+              row.mostRecentAwardText or "Unknown date"
+            )
+          or ("%s\nPins: %d\nMost Recent: %s"):format(
+            row.recipient,
+            row.pinCount,
+            row.mostRecentAwardText or "Unknown date"
+          ),
+        iconPath = mode == "combined"
+            and getDominantAwardIcon(row)
+          or (mode == "golden" and (Styles.Media or {}).leaderboardIcon or (Styles.Media or {}).awardIcon),
+        iconWidth = 18,
+        iconHeight = 18,
+        labelWidth = 548,
+        rowHeight = 56,
+        backdropTone = "rowHighlight",
+        actions = {
+          {
+            text = "View",
+            width = 62,
+            onClick = function()
+              Components.SetText(panel.detailDialog.titleLabel, row.shortRecipient or stripRealm(row.recipient))
+              Components.SetText(panel.detailDialog.goldenCountLabel, tostring(row.goldenCount or 0))
+              Components.SetText(panel.detailDialog.burntCountLabel, tostring(row.burntCount or 0))
+              local entries = row.entries or {}
+              if #entries == 0 then
+                entries = {
+                  {
+                    emptyState = true,
+                  },
+                }
+              end
+
+              Components.SetScrollableItems(panel.detailDialog.listSection, entries, function(detailSection, entry)
+                if entry.emptyState then
+                  Components.AddListRow(detailSection, {
+                    text = "No approved awards found.",
+                    rowHeight = 40,
+                    actions = {},
+                  })
+                  return
+                end
+
+                Components.AddListRow(detailSection, {
+                  text = ("%s\n%s\nAwarded By: %s"):format(
+                    entry.dateText or "Unknown date",
+                    entry.reason or "",
+                    entry.displayAwardedBy or "Unknown"
+                  ),
+                  iconPath = entry.awardIconPath,
+                  iconWidth = 18,
+                  iconHeight = 18,
+                  labelWidth = 540,
+                  rowHeight = 56,
+                  backdropTone = "rowHighlight",
+                  actions = {},
+                })
+              end)
+              Components.SetVisible(panel.detailDialog, true)
+            end,
+          },
+        },
+      })
+    end)
+  end,
+}
+
+return UITabs.leaderboard
