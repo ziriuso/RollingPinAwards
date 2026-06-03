@@ -213,6 +213,12 @@ function Permissions:SetRankPermissions(rankIndex, rankName, permissions)
 
   self.addon.db:UpsertRankPermission(guild.guildKey, rankIndex, row)
 
+  if self.addon.sync then
+    local payload = copyRow(row)
+    payload.guildKey = guild.guildKey
+    self.addon.sync:Broadcast("rank_permissions", payload, "GUILD")
+  end
+
   return true
 end
 

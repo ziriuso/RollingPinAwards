@@ -30,6 +30,8 @@ Current command support:
 - `/rpa toggle`
 - `/rpa background`
 - `/rpa bg`
+- `/rpa syncdebug`
+- `/rpa sync debug`
 - `/rpa nominate Name-Realm "Reason"`
 
 ## UI Surface
@@ -55,12 +57,18 @@ The current MVP ships a functional in-game window with:
 - scrollable long-list sections for nominations, history, leaderboard, and admin queues
 - dashboard shortcuts between the main participation flows
 - thin native WoW outline treatment on addon text for readability over parchment artwork
+- outline-free dark text on lighter scroll-list rows, with larger Admin helper/status text for readability
+
+## Sync Diagnostics
+
+Use `/rpa syncdebug` or `/rpa sync debug` in game to print copy-friendly sync state to chat, including the active guild key, comm prefix registration, Ace3 transport availability, and the last inbound/outbound sync result.
 
 ## Runtime Notes
 
 - The addon now prefers an Ace3-backed runtime when `LibStub` and the Ace3 libraries are available in-game.
 - The repo now vendors the required Ace3 libraries under `Libs/` and also includes `.pkgmeta` externals so packager-driven releases stay reproducible.
 - When `AceDB-3.0` is available, the domain database is backed by the active Ace profile instead of the plain SavedVariables fallback table.
+- Awards, nominations, alias mappings, and rank permissions broadcast guild-scoped sync payloads when local user actions mutate them.
 - The TOC continues to advertise `Ace3` as an optional dependency.
 
 ## Testing

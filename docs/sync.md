@@ -12,6 +12,7 @@ Rolling Pin Awards keeps all synced data scoped to the active guild dataset.
 Privileged payload mapping:
 
 - direct award updates require `Create Direct Awards`
+- award deletion updates require `Delete Awards`
 - moderated nomination updates require `Manage Nominations`
 - rank permission matrix updates require `Manage Addon Permissions`
 - alias merge updates require `Manage Addon Permissions`
@@ -22,6 +23,18 @@ Privileged payload mapping:
 - When Ace3 is available, sync envelopes flow through `AceComm-3.0` and `AceSerializer-3.0`.
 - `Core.lua` owns comm registration and inbound dispatch.
 - `Sync.lua` owns envelope construction, outbound broadcast, and payload-type routing.
+- Local mutations broadcast immediately for awards, nominations, nomination votes, rank permission changes, and alias mapping changes.
+- Inbound accepted payloads rerender the active tab when the main window has already been rendered.
+
+## Diagnostics
+
+Use `/rpa syncdebug` or `/rpa sync debug` to print copy-friendly chat diagnostics:
+
+- active guild key
+- comm prefix and registration state
+- Ace3 transport and serializer availability
+- last outbound payload result
+- last inbound payload result
 
 ## Persistence Notes
 
@@ -33,6 +46,7 @@ Privileged payload mapping:
 `Sync.lua` currently provides conservative acceptance helpers for:
 
 - award updates
+- award deletion updates
 - nomination upserts
 - nomination vote updates
 - rank permission matrix updates

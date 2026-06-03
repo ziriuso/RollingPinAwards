@@ -252,6 +252,15 @@ function RPA:OnCommReceived(prefix, message, distribution, sender)
   if type(self.Deserialize) == "function" then
     local ok, decoded = self:Deserialize(message)
     if not ok then
+      if self.sync and type(self.sync.RecordInbound) == "function" then
+        self.sync:RecordInbound({
+          sender = sender,
+          distribution = distribution,
+          ok = false,
+          error = "deserialize failed",
+        })
+      end
+
       return false
     end
 

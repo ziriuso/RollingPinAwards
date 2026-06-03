@@ -91,6 +91,23 @@ return {
     harness.assert_false(addon.mainFrame.backgroundCalibrator.visible)
   end,
 
+  ["slash command prints copy-friendly sync diagnostics"] = function()
+    wow.reset({
+      ace3 = true,
+      guildName = "Raid Bakery",
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon:OnEnable()
+
+    harness.assert_true(addon:HandleChatCommand("syncdebug") == true)
+    harness.assert_true(addon.__rpaLastChatOutput ~= nil)
+    harness.assert_true(addon.__rpaLastChatOutput[1]:match("Rolling Pin Awards sync diagnostics") ~= nil)
+    harness.assert_true(addon.__rpaLastChatOutput[2]:match("Guild:") ~= nil)
+    harness.assert_true(addon.__rpaLastChatOutput[3]:match("Comm prefix:") ~= nil)
+  end,
+
   ["minimap button uses custom icon and toggles the main frame"] = function()
     wow.reset({ guildName = "Raid Bakery" })
 

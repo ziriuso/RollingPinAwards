@@ -4,6 +4,22 @@ _G.RollingPinAwards = RPA
 local Commands = RPA.Commands or {}
 RPA.Commands = Commands
 
+local function printChatLines(addon, lines)
+  addon.__rpaLastChatOutput = {}
+
+  for _, line in ipairs(lines or {}) do
+    addon.__rpaLastChatOutput[#addon.__rpaLastChatOutput + 1] = line
+
+    if type(addon.Print) == "function" then
+      addon:Print(line)
+    elseif _G.DEFAULT_CHAT_FRAME and type(_G.DEFAULT_CHAT_FRAME.AddMessage) == "function" then
+      _G.DEFAULT_CHAT_FRAME:AddMessage(line)
+    elseif type(print) == "function" then
+      print(line)
+    end
+  end
+end
+
 function Commands:New(addon)
   local obj = {
     addon = addon,
@@ -45,6 +61,13 @@ function Commands:Handle(message)
     end
 
     return nil, "ui unavailable"
+  elseif command == "syncdebug" or (command == "sync" and rest == "debug") then
+    if self.addon.sync and type(self.addon.sync.GetDebugLines) == "function" then
+      printChatLines(self.addon, self.addon.sync:GetDebugLines())
+      return true
+    end
+
+    return nil, "sync unavailable"
   end
 
   return nil, "unknown command"

@@ -124,6 +124,7 @@ UITabs.admin = {
       justifyH = "LEFT",
       justifyV = "TOP",
       font = "GameFontHighlightSmall",
+      fontSizeDelta = 2,
     })
 
     panel.aliasFormSection = Components.CreateSection(panel, {
@@ -185,6 +186,7 @@ UITabs.admin = {
       width = 760,
       justifyH = "LEFT",
       font = "GameFontHighlightSmall",
+      fontSizeDelta = 2,
     })
     panel.aliasDialog = Components.CreateModalWindow(panel, {
       id = "RollingPinAwardsAliasMappingsDialog",
@@ -274,6 +276,7 @@ UITabs.admin = {
       y = -420,
       width = 760,
       justifyH = "LEFT",
+      fontSizeDelta = 2,
     })
 
     return panel
@@ -305,6 +308,7 @@ UITabs.admin = {
         canCreateDirectAwards = row.rankIndex == 0 or row.canCreateDirectAwards,
         canDeleteAwards = row.rankIndex == 0 or row.canDeleteAwards,
         canManageAddonPermissions = row.rankIndex == 0 or row.canManageAddonPermissions,
+        rankFontSizeDelta = 2,
       })
 
       Components.SetButtonHandler(permissionRow.saveButton, function()

@@ -46,7 +46,7 @@ UITabs.dashboard = {
     local dash = Styles.Dashboard or {}
     local media = Styles.Media or {}
     local panel = CreateFrame("Frame", nil, parent)
-    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 14, -42)
+    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 59, -42)
     panel:SetSize((parent.width or 820) - 28, (parent.height or 520) - 56)
 
     panel.heroLabel = Components.CreateLabel(panel, {
@@ -94,7 +94,7 @@ UITabs.dashboard = {
     panel.recentAwardsSection = Components.CreateScrollableSection(panel, {
       id = "RollingPinAwardsDashboardRecentAwards",
       title = "Recent Awards",
-      width = 404,
+      width = 386,
       height = 214,
       x = 376,
       y = -162,
@@ -104,7 +104,7 @@ UITabs.dashboard = {
 
     panel.quickActionsSection = CreateFrame("Frame", nil, panel)
     panel.quickActionsSection:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, -384)
-    panel.quickActionsSection:SetSize(780, 54)
+    panel.quickActionsSection:SetSize(762, 54)
     panel.nominationButton = Components.CreateButton(panel.quickActionsSection, {
       text = "Nominate Player",
       width = 360,
@@ -121,7 +121,7 @@ UITabs.dashboard = {
     })
     panel.awardButton = Components.CreateButton(panel.quickActionsSection, {
       text = "Award Rolling Pin",
-      width = 404,
+      width = 386,
       height = dash.footerButtonHeight or 42,
       x = 376,
       y = 0,

@@ -91,6 +91,10 @@ function Awards:CreateDirectAward(recipient, reason, awardType)
 
   self.addon.db:UpsertAward(award.guildKey, award)
 
+  if self.addon.sync then
+    self.addon.sync:Broadcast("award", award, "GUILD")
+  end
+
   return award
 end
 
@@ -122,6 +126,18 @@ function Awards:DeleteAward(awardId)
     if not deletedNomination and nominationErr ~= "missing nomination" then
       return false, nominationErr
     end
+  end
+
+  if self.addon.sync then
+    self.addon.sync:Broadcast("award", {
+      guildKey = guild.guildKey,
+      awardId = award.awardId,
+      source = award.source,
+      nominationId = award.nominationId,
+      deleted = true,
+      lastModifiedAt = currentTimestamp(self.addon),
+      lastModifiedBy = self.addon:GetCurrentPlayerFullName(),
+    }, "GUILD")
   end
 
   return true

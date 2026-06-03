@@ -89,6 +89,10 @@ function Nominations:Create(nominee, reason, awardType)
 
   self.addon.db:UpsertNomination(guild.guildKey, nomination)
 
+  if self.addon.sync then
+    self.addon.sync:Broadcast("nomination", nomination, "GUILD")
+  end
+
   return nomination
 end
 
@@ -116,14 +120,19 @@ function Nominations:CastVote(nominationId, voteType)
     return false, "vote already cast"
   end
 
-  self.addon.db:StoreVote(guild.guildKey, nominationId, {
+  local vote = self.addon.db:StoreVote(guild.guildKey, nominationId, {
     nominationId = nominationId,
+    guildKey = guild.guildKey,
     voter = voter,
     voteType = voteType,
     createdAt = currentTimestamp(self.addon),
   })
 
   self:RefreshVoteSummary(nomination)
+
+  if self.addon.sync then
+    self.addon.sync:Broadcast("vote", vote, "GUILD")
+  end
 
   return true
 end
@@ -158,6 +167,11 @@ function Nominations:Approve(nominationId)
   nomination.awardId = award.awardId
   self.addon.db:UpsertNomination(guild.guildKey, nomination)
 
+  if self.addon.sync then
+    self.addon.sync:Broadcast("nomination", nomination, "GUILD")
+    self.addon.sync:Broadcast("award", award, "GUILD")
+  end
+
   return award
 end
 
@@ -188,6 +202,10 @@ function Nominations:Reject(nominationId)
   nomination.lastModifiedBy = nomination.resolvedBy
 
   self.addon.db:UpsertNomination(guild.guildKey, nomination)
+
+  if self.addon.sync then
+    self.addon.sync:Broadcast("nomination", nomination, "GUILD")
+  end
 
   return true
 end

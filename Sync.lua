@@ -36,13 +36,31 @@ function Sync:BuildEnvelope(payloadType, payload)
   }, nil
 end
 
+function Sync:RecordInbound(result)
+  self.lastInbound = result or {}
+end
+
 function Sync:Broadcast(payloadType, payload, distribution, target, priority)
   if type(self.addon.SendCommMessage) ~= "function" or type(self.addon.Serialize) ~= "function" then
+    self.lastBroadcast = {
+      payloadType = payloadType,
+      distribution = distribution or "GUILD",
+      ok = false,
+      error = "comm unavailable",
+    }
+
     return false, "comm unavailable"
   end
 
   local envelope, err = self:BuildEnvelope(payloadType, payload)
   if not envelope then
+    self.lastBroadcast = {
+      payloadType = payloadType,
+      distribution = distribution or "GUILD",
+      ok = false,
+      error = err,
+    }
+
     return false, err
   end
 
@@ -55,39 +73,61 @@ function Sync:Broadcast(payloadType, payload, distribution, target, priority)
     priority or "NORMAL"
   )
 
+  self.lastBroadcast = {
+    payloadType = payloadType,
+    distribution = distribution or "GUILD",
+    target = target,
+    priority = priority or "NORMAL",
+    ok = true,
+  }
+
   return true
 end
 
 function Sync:DispatchEnvelope(envelope, distribution, sender)
   if type(envelope) ~= "table" or isMissingString(envelope.payloadType) then
+    self:RecordInbound({
+      sender = sender,
+      distribution = distribution,
+      ok = false,
+      error = "missing envelope",
+    })
+
     return false, "missing envelope"
   end
 
   local payload = type(envelope.payload) == "table" and envelope.payload or {}
   payload.sender = payload.sender or sender
   payload.distribution = payload.distribution or distribution
+  local ok, err
 
   if envelope.payloadType == "award" then
-    return self:AcceptAward(payload)
+    ok, err = self:AcceptAward(payload)
+  elseif envelope.payloadType == "nomination" then
+    ok, err = self:AcceptNomination(payload)
+  elseif envelope.payloadType == "vote" then
+    ok, err = self:AcceptNominationVote(payload)
+  elseif envelope.payloadType == "rank_permissions" or envelope.payloadType == "permission_roster" then
+    ok, err = self:AcceptRankPermission(payload)
+  elseif envelope.payloadType == "alias_mapping" then
+    ok, err = self:AcceptAliasMapping(payload)
+  else
+    ok, err = false, "unknown payloadType"
   end
 
-  if envelope.payloadType == "nomination" then
-    return self:AcceptNomination(payload)
+  self:RecordInbound({
+    payloadType = envelope.payloadType,
+    sender = sender,
+    distribution = distribution,
+    ok = ok == true,
+    error = err,
+  })
+
+  if ok and self.addon.mainFrame and self.addon.mainFrame.rendered then
+    self.addon.mainFrame:RenderActiveTab()
   end
 
-  if envelope.payloadType == "vote" then
-    return self:AcceptNominationVote(payload)
-  end
-
-  if envelope.payloadType == "rank_permissions" or envelope.payloadType == "permission_roster" then
-    return self:AcceptRankPermission(payload)
-  end
-
-  if envelope.payloadType == "alias_mapping" then
-    return self:AcceptAliasMapping(payload)
-  end
-
-  return false, "unknown payloadType"
+  return ok, err
 end
 
 function Sync:AcceptAward(award)
@@ -114,6 +154,25 @@ function Sync:AcceptAward(award)
 
   if not isAuthorized then
     return false, "unauthorized"
+  end
+
+  if award.deleted == true then
+    local deleted, deleteErr = self.addon.db:DeleteAward(award.guildKey, award.awardId)
+    if not deleted then
+      return false, deleteErr
+    end
+
+    if award.nominationId then
+      local deletedNomination, nominationErr = self.addon.db:DeleteNomination(
+        award.guildKey,
+        award.nominationId
+      )
+      if not deletedNomination and nominationErr ~= "missing nomination" then
+        return false, nominationErr
+      end
+    end
+
+    return true
   end
 
   self.addon.db:UpsertAward(award.guildKey, award)
@@ -223,6 +282,48 @@ function Sync:AcceptAliasMapping(update)
   })
 
   return true
+end
+
+function Sync:GetDebugLines()
+  local guild = self.addon:GetActiveGuildContext()
+  local lines = {
+    "Rolling Pin Awards sync diagnostics",
+    ("Guild: %s"):format(guild and guild.guildKey or "none"),
+    ("Comm prefix: %s registered=%s"):format(
+      self.addon.Constants and self.addon.Constants.COMM_PREFIX or "unknown",
+      tostring(self.addon.__aceCommPrefix or "fallback")
+    ),
+    ("Ace3: %s SendComm=%s Serialize=%s"):format(
+      tostring(self.addon.__rpaUsesAce3 == true),
+      tostring(type(self.addon.SendCommMessage) == "function"),
+      tostring(type(self.addon.Serialize) == "function")
+    ),
+  }
+
+  if self.lastBroadcast then
+    lines[#lines + 1] = ("Last outbound: type=%s distribution=%s ok=%s error=%s"):format(
+      tostring(self.lastBroadcast.payloadType),
+      tostring(self.lastBroadcast.distribution),
+      tostring(self.lastBroadcast.ok),
+      tostring(self.lastBroadcast.error or "none")
+    )
+  else
+    lines[#lines + 1] = "Last outbound: none"
+  end
+
+  if self.lastInbound then
+    lines[#lines + 1] = ("Last inbound: type=%s sender=%s distribution=%s ok=%s error=%s"):format(
+      tostring(self.lastInbound.payloadType),
+      tostring(self.lastInbound.sender),
+      tostring(self.lastInbound.distribution),
+      tostring(self.lastInbound.ok),
+      tostring(self.lastInbound.error or "none")
+    )
+  else
+    lines[#lines + 1] = "Last inbound: none"
+  end
+
+  return lines
 end
 
 return RPA.Sync

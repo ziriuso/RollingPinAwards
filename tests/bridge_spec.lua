@@ -386,6 +386,7 @@ return {
     harness.assert_true(panel.moderationDialog.listSection.iconFrame == nil)
     harness.assert_true(panel.moderationDialog.listSection.rows[1].label.text:match("%[") == nil)
     harness.assert_true(panel.moderationDialog.listSection.rows[1].label.text:match("Pending reason") ~= nil)
+    harness.assert_nil(panel.moderationDialog.listSection.rows[1].label.fontFlags)
 
     panel.moderationDialog.approvedFilterButton:Click()
 
@@ -393,6 +394,7 @@ return {
     harness.assert_true(panel.moderationDialog.listSection.rows[1].label.text:match("approved") ~= nil)
     harness.assert_true(panel.moderationDialog.listSection.rows[1].label.text:match("%[approved%]") == nil)
     harness.assert_true(panel.moderationDialog.listSection.rows[1].label.text:match("Approved reason") ~= nil)
+    harness.assert_nil(panel.moderationDialog.listSection.rows[1].label.fontFlags)
 
     panel.moderationDialog.rejectedFilterButton:Click()
 
@@ -400,6 +402,7 @@ return {
     harness.assert_true(panel.moderationDialog.listSection.rows[1].label.text:match("rejected") ~= nil)
     harness.assert_true(panel.moderationDialog.listSection.rows[1].label.text:match("%[rejected%]") == nil)
     harness.assert_true(panel.moderationDialog.listSection.rows[1].label.text:match("Rejected reason") ~= nil)
+    harness.assert_nil(panel.moderationDialog.listSection.rows[1].label.fontFlags)
 
     panel.moderationDialog.allFilterButton:Click()
 
@@ -562,6 +565,22 @@ return {
     harness.assert_true((panel.leaderboardSection.backdropColor.red or 0) >= 0.80)
     harness.assert_true(panel.statCards[1].detail.text:match("ledger") == nil)
     harness.assert_equal("MIDDLE", panel.nominationButton.label.justifyV)
+
+    local frame = addon.mainFrame.frame
+    local contentPanel = addon.mainFrame.contentPanel
+    local dashboardLeft = (contentPanel.point[4] or 0)
+      + (contentPanel.contentHost.point[4] or 0)
+      + (panel.point[4] or 0)
+    local backgroundLeft = frame.backgroundArt.point[4] or 0
+    local backgroundRight = backgroundLeft + (frame.backgroundArt.width or 0)
+    local dashboardWidth = (panel.statCards[4].point[4] or 0) + (panel.statCards[4].width or 0)
+    local leftMargin = dashboardLeft - backgroundLeft
+    local rightMargin = backgroundRight - (dashboardLeft + dashboardWidth)
+
+    harness.assert_equal(143, leftMargin)
+    harness.assert_equal(143, rightMargin)
+    harness.assert_equal(dashboardWidth, panel.leaderboardSection.width + 16 + panel.recentAwardsSection.width)
+    harness.assert_equal(dashboardWidth, panel.nominationButton.width + 16 + panel.awardButton.width)
   end,
 
   ["dashboard list polish removes realms and indents recipient totals"] = function()
@@ -586,6 +605,8 @@ return {
     harness.assert_equal("rowHighlight", panel.leaderboardSection.rows[1].backdropTone)
     harness.assert_equal("rowHighlight", panel.recentAwardsSection.rows[1].backdropTone)
     harness.assert_equal("MIDDLE", panel.leaderboardSection.rows[1].label.justifyV)
+    harness.assert_nil(panel.leaderboardSection.rows[1].label.fontFlags)
+    harness.assert_nil(panel.recentAwardsSection.rows[1].label.fontFlags)
     harness.assert_true((panel.leaderboardSection.rows[1].width or 0) <= (panel.leaderboardSection.width or 0) - 48)
   end,
 
@@ -1073,6 +1094,12 @@ return {
     harness.assert_true(panel.permissionHelpLabel.text:match("Admin:") ~= nil)
     harness.assert_true(panel.permissionHelpLabel.text:match("Manage Nominations:") == nil)
     harness.assert_true(panel.permissionHelpLabel.text:match("Rank 0") == nil)
+    harness.assert_equal(14, panel.permissionHelpLabel.fontHeight)
+    harness.assert_equal("OUTLINE", panel.permissionHelpLabel.fontFlags)
+    harness.assert_equal(14, panel.aliasSummaryLabel.fontHeight)
+    harness.assert_equal("OUTLINE", panel.aliasSummaryLabel.fontFlags)
+    harness.assert_equal(14, panel.statusLabel.fontHeight)
+    harness.assert_equal("OUTLINE", panel.statusLabel.fontFlags)
   end,
 
   ["admin rank permissions list exposes a scrollbar for many guild ranks"] = function()
@@ -1132,6 +1159,7 @@ return {
     harness.assert_true(section.scrollBar.maxValue > 0)
     harness.assert_equal("rowHighlight", section.rows[1].backdropTone)
     harness.assert_equal("MIDDLE", section.rows[1].label.justifyV)
+    harness.assert_nil(section.rows[1].label.fontFlags)
     harness.assert_true((section.rows[1].point[4] or 0) >= 14)
     harness.assert_true((section.rows[1].width or 0) <= (section.width or 0) - 48)
   end,
@@ -1191,6 +1219,7 @@ return {
     harness.assert_true((historyPanel.listSection.height or 0) > 360)
     harness.assert_equal("rowHighlight", historyPanel.listSection.rows[1].backdropTone)
     harness.assert_equal("BackdropTemplate", historyPanel.listSection.rows[1].template)
+    harness.assert_nil(historyPanel.listSection.rows[1].label.fontFlags)
 
     addon.mainFrame:SelectTab("leaderboard")
 
@@ -1199,6 +1228,7 @@ return {
     harness.assert_true((leaderboardPanel.listSection.height or 0) > 330)
     harness.assert_equal("rowHighlight", leaderboardPanel.listSection.rows[1].backdropTone)
     harness.assert_equal("BackdropTemplate", leaderboardPanel.listSection.rows[1].template)
+    harness.assert_nil(leaderboardPanel.listSection.rows[1].label.fontFlags)
     harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\burnt-rolling-pin.png", leaderboardPanel.listSection.rows[1].iconFrame.texturePath)
     harness.assert_true((leaderboardPanel.burntModeButton.point[5] or 0) < -330)
     harness.assert_equal("MIDDLE", leaderboardPanel.listSection.rows[1].label.justifyV)
@@ -1277,6 +1307,7 @@ return {
     harness.assert_equal("BackdropTemplate", section.rows[1].template)
     harness.assert_equal("rowHighlight", section.rows[1].backdropTone)
     harness.assert_equal("MIDDLE", section.rows[1].label.justifyV)
+    harness.assert_nil(section.rows[1].label.fontFlags)
     harness.assert_true((section.rows[1].label.textColor.red or 1) < 0.3)
     harness.assert_true((section.rows[1].width or 0) <= (section.width or 0) - 48)
     harness.assert_equal("LEFT", section.rows[1].actions[1].point[1])

@@ -38,7 +38,7 @@ RPA.UIStyles = {
     tabWidth = 108,
     tabGap = 10,
     contentInset = 22,
-    cardGap = 16,
+    cardGap = 14,
   },
   Media = {
     addonBackground = "Interface\\AddOns\\RollingPinAwards\\Media\\addon-background.png",
@@ -50,7 +50,7 @@ RPA.UIStyles = {
     standardPinIcon = "Interface\\AddOns\\RollingPinAwards\\Media\\rollingpin.png",
   },
   Dashboard = {
-    statCardWidth = 178,
+    statCardWidth = 180,
     statCardHeight = 96,
     footerButtonHeight = 42,
   },

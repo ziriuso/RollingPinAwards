@@ -30,10 +30,11 @@ local function applyBackdrop(frame, backdrop, color, borderColor)
   end
 end
 
-local function applyTextTreatment(label)
+local function applyTextTreatment(label, options)
   if not label then
     return
   end
+  options = options or {}
 
   if label.SetShadowColor then
     label:SetShadowColor(0, 0, 0, 0)
@@ -58,14 +59,23 @@ local function applyTextTreatment(label)
   if label.GetFont and label.SetFont then
     local fontFile, fontHeight = label:GetFont()
     if fontFile and fontHeight then
-      label:SetFont(fontFile, fontHeight, "OUTLINE")
+      local fontFlags = "OUTLINE"
+      if options.outline == false then
+        fontFlags = nil
+      end
+      label:SetFont(fontFile, fontHeight + (options.fontSizeDelta or 0), fontFlags)
     end
   else
-    label.fontFlags = "OUTLINE"
+    label.fontHeight = (label.fontHeight or 12) + (options.fontSizeDelta or 0)
+    if options.outline == false then
+      label.fontFlags = nil
+    else
+      label.fontFlags = "OUTLINE"
+    end
   end
 end
 
-local function createFontString(parent, font, x, y, width, justifyH, justifyV, text)
+local function createFontString(parent, font, x, y, width, justifyH, justifyV, text, options)
   local fontTemplate = font or "GameFontHighlight"
   local label = parent.CreateFontString and parent:CreateFontString(nil, "OVERLAY", fontTemplate) or {
     text = "",
@@ -93,7 +103,7 @@ local function createFontString(parent, font, x, y, width, justifyH, justifyV, t
     label.text = text or ""
   end
 
-  applyTextTreatment(label)
+  applyTextTreatment(label, options)
 
   return label
 end
@@ -770,7 +780,11 @@ function Components.CreateLabel(parent, config)
     config.width,
     config.justifyH,
     config.justifyV,
-    config.text or ""
+    config.text or "",
+    {
+      outline = config.outline,
+      fontSizeDelta = config.fontSizeDelta,
+    }
   )
 end
 
@@ -1270,6 +1284,10 @@ function Components.AddListRow(section, config)
   end
 
   local labelX = row.iconFrame and ((config.iconWidth or 20) + 22) or (config.textPaddingLeft or 12)
+  local labelOutline = config.outline
+  if labelOutline == nil then
+    labelOutline = not useRowHighlight
+  end
   local label = Components.CreateLabel(row, {
     text = config.text or "",
     x = labelX,
@@ -1277,6 +1295,7 @@ function Components.AddListRow(section, config)
     width = config.labelWidth or ((rowWidth or section.width or 100) - labelX - (config.labelRightPadding or 18)),
     justifyH = "LEFT",
     justifyV = config.justifyV or "MIDDLE",
+    outline = labelOutline,
   })
   if label.SetPoint then
     if label.ClearAllPoints then
@@ -1378,6 +1397,7 @@ function Components.AddPermissionMatrixRow(section, config)
     y = -8,
     width = config.rankLabelWidth or 180,
     justifyH = "LEFT",
+    fontSizeDelta = config.rankFontSizeDelta,
   })
   row.manageNominationsCheck = Components.CreateCheckButton(row, {
     text = config.nominationText or "",

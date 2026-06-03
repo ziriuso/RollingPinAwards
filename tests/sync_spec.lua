@@ -1,6 +1,49 @@
 local harness = require("tests.TestHarness")
 local wow = require("tests.WoWStubs")
 
+local function setupAceGuild(seed)
+  seed = seed or {}
+  seed.ace3 = true
+  seed.guildName = seed.guildName or "Raid Bakery"
+  seed.playerName = seed.playerName or "Guildmaster"
+  seed.guildRankName = seed.guildRankName or "Guild Master"
+  seed.guildRankIndex = seed.guildRankIndex or 0
+  seed.guildMembers = seed.guildMembers or {
+    {
+      name = "Guildmaster-Stormrage",
+      rankName = "Guild Master",
+      rankIndex = 0,
+    },
+    {
+      name = "Officerone-Stormrage",
+      rankName = "Officer",
+      rankIndex = 1,
+    },
+    {
+      name = "Bakerone-Stormrage",
+      rankName = "Member",
+      rankIndex = 5,
+    },
+  }
+
+  wow.reset(seed)
+
+  local addon = wow.loadAddon()
+  addon:OnInitialize()
+  addon:OnEnable()
+
+  return addon
+end
+
+local function decodeLastMessage(addon)
+  local message = addon.__lastCommMessage and addon.__lastCommMessage.message
+  local ok, envelope = addon:Deserialize(message)
+
+  harness.assert_true(ok)
+
+  return envelope
+end
+
 return {
   ["sync rejects a privileged award update from the wrong guild"] = function()
     wow.reset({ guildName = "Raid Bakery" })
@@ -275,14 +318,7 @@ return {
   end,
 
   ["sync broadcasts envelopes through ace comm when available"] = function()
-    wow.reset({
-      ace3 = true,
-      guildName = "Raid Bakery",
-    })
-
-    local addon = wow.loadAddon()
-    addon:OnInitialize()
-    addon:OnEnable()
+    local addon = setupAceGuild()
 
     local ok = addon.sync:Broadcast("nomination", {
       guildKey = addon:GetActiveGuildContext().guildKey,
@@ -291,19 +327,15 @@ return {
 
     harness.assert_true(ok)
     harness.assert_equal(addon.Constants.COMM_PREFIX, addon.__lastCommMessage.prefix)
-    harness.assert_equal("nomination", addon.__lastCommMessage.message.payloadType)
-    harness.assert_equal("nom:42", addon.__lastCommMessage.message.payload.nominationId)
+    harness.assert_equal("string", type(addon.__lastCommMessage.message))
+
+    local envelope = decodeLastMessage(addon)
+    harness.assert_equal("nomination", envelope.payloadType)
+    harness.assert_equal("nom:42", envelope.payload.nominationId)
   end,
 
-  ["ace comm payloads route through the sync dispatcher"] = function()
-    wow.reset({
-      ace3 = true,
-      guildName = "Raid Bakery",
-    })
-
-    local addon = wow.loadAddon()
-    addon:OnInitialize()
-    addon:OnEnable()
+  ["ace comm serialized payloads route through the sync dispatcher"] = function()
+    local addon = setupAceGuild()
 
     local called = false
     addon.sync.AcceptAward = function(_, payload)
@@ -312,13 +344,118 @@ return {
       return true
     end
 
-    addon:OnCommReceived(addon.Constants.COMM_PREFIX, {
+    local serialized = addon:Serialize({
       payloadType = "award",
       payload = {
         awardId = "award:5",
       },
-    }, "GUILD", "Officerone-Stormrage")
+    })
+
+    addon:OnCommReceived(addon.Constants.COMM_PREFIX, serialized, "GUILD", "Officerone-Stormrage")
 
     harness.assert_true(called)
+  end,
+
+  ["local award nomination vote permission and delete actions broadcast sync payloads"] = function()
+    local addon = setupAceGuild()
+
+    local directAward = addon.awards:CreateDirectAward(
+      "Burny-Stormrage",
+      "Set the oven to lava",
+      "burnt"
+    )
+    local directEnvelope = decodeLastMessage(addon)
+
+    harness.assert_true(directAward ~= nil)
+    harness.assert_equal("award", directEnvelope.payloadType)
+    harness.assert_equal(directAward.awardId, directEnvelope.payload.awardId)
+    harness.assert_equal("direct", directEnvelope.payload.source)
+
+    wow.setPlayer("Bakerone", "Member", 5)
+    local nomination = addon.nominations:Create(
+      "Moonrustle-Stormrage",
+      "Baiting Fae",
+      "golden"
+    )
+    local nominationEnvelope = decodeLastMessage(addon)
+
+    harness.assert_equal("nomination", nominationEnvelope.payloadType)
+    harness.assert_equal(nomination.nominationId, nominationEnvelope.payload.nominationId)
+    harness.assert_equal("pending", nominationEnvelope.payload.status)
+
+    addon.nominations:CastVote(nomination.nominationId, "upvote")
+    local voteEnvelope = decodeLastMessage(addon)
+
+    harness.assert_equal("vote", voteEnvelope.payloadType)
+    harness.assert_equal(nomination.nominationId, voteEnvelope.payload.nominationId)
+    harness.assert_equal("Bakerone-Stormrage", voteEnvelope.payload.voter)
+
+    wow.setPlayer("Guildmaster", "Guild Master", 0)
+    local messageCountBeforeApprove = #addon.__commMessages
+    local approvedAward = addon.nominations:Approve(nomination.nominationId)
+
+    harness.assert_true(approvedAward ~= nil)
+    harness.assert_equal(messageCountBeforeApprove + 2, #addon.__commMessages)
+    harness.assert_equal("award", decodeLastMessage(addon).payloadType)
+    local ok, approvedNominationEnvelope = addon:Deserialize(addon.__commMessages[#addon.__commMessages - 1].message)
+    harness.assert_true(ok)
+    harness.assert_equal("nomination", approvedNominationEnvelope.payloadType)
+    harness.assert_equal("approved", approvedNominationEnvelope.payload.status)
+
+    local rejected = addon.nominations:Create("Shaka-Stormrage", "Rejected reason")
+    addon.nominations:Reject(rejected.nominationId)
+    local rejectedEnvelope = decodeLastMessage(addon)
+
+    harness.assert_equal("nomination", rejectedEnvelope.payloadType)
+    harness.assert_equal("rejected", rejectedEnvelope.payload.status)
+
+    addon.permissions:SetRankPermissions(1, "Officer", {
+      canManageNominations = true,
+      canCreateDirectAwards = true,
+    })
+    local permissionEnvelope = decodeLastMessage(addon)
+
+    harness.assert_equal("rank_permissions", permissionEnvelope.payloadType)
+    harness.assert_equal(1, permissionEnvelope.payload.rankIndex)
+    harness.assert_true(permissionEnvelope.payload.canManageNominations)
+
+    local alias = addon.uiBridge:SaveAliasMapping("Moon", "Moonrustle-Stormrage")
+    local aliasEnvelope = decodeLastMessage(addon)
+
+    harness.assert_true(alias ~= nil)
+    harness.assert_equal("alias_mapping", aliasEnvelope.payloadType)
+    harness.assert_equal("moon", aliasEnvelope.payload.aliasKey)
+    harness.assert_equal("Moonrustle-Stormrage", aliasEnvelope.payload.canonicalName)
+
+    local aliasDeleted = addon.uiBridge:DeleteAliasMapping("moon")
+    local aliasDeleteEnvelope = decodeLastMessage(addon)
+
+    harness.assert_true(aliasDeleted)
+    harness.assert_equal("alias_mapping", aliasDeleteEnvelope.payloadType)
+    harness.assert_equal("moon", aliasDeleteEnvelope.payload.aliasKey)
+    harness.assert_true(aliasDeleteEnvelope.payload.deleted)
+
+    addon.awards:DeleteAward(directAward.awardId)
+    local deleteEnvelope = decodeLastMessage(addon)
+
+    harness.assert_equal("award", deleteEnvelope.payloadType)
+    harness.assert_equal(directAward.awardId, deleteEnvelope.payload.awardId)
+    harness.assert_true(deleteEnvelope.payload.deleted)
+  end,
+
+  ["sync accepts authorized award deletion payloads"] = function()
+    local addon = setupAceGuild()
+    local award = addon.awards:CreateDirectAward("Burny-Stormrage", "Set the oven to lava")
+
+    local accepted = addon.sync:AcceptAward({
+      guildKey = addon:GetActiveGuildContext().guildKey,
+      awardId = award.awardId,
+      source = "direct",
+      deleted = true,
+      lastModifiedBy = "Guildmaster-Stormrage",
+    })
+
+    harness.assert_true(accepted)
+    harness.assert_equal(0, #addon.awards:GetPublicHistory())
   end,
 }

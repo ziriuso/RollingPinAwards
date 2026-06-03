@@ -3,6 +3,13 @@
 ## Repo
 - Path: `C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards`
 - Branch: `codex/rolling-pin-awards-mvp`
+- Pushed checkpoint: `2ac947cf87f2e5881b408f9956497bbbcced2c9d` (`feat: polish rolling pin awards ui shell`)
+- Current working tree has uncommitted follow-up text-readability polish:
+  - `README.md`
+  - `UI/Components.lua`
+  - `UI/Tabs/Admin.lua`
+  - `docs/superpowers/handoffs/latest-handoff.md`
+  - `tests/bridge_spec.lua`
 
 ## Current State
 - UI polish pass is largely implemented and deployed locally to both Retail and PTR.
@@ -63,11 +70,32 @@
   - Nominations form title no longer has a small left icon.
   - Nominations form shows a larger selected Burnt/Golden pin preview above the submit button and the submit button is raised slightly.
   - Admin moderation queue button count now reflects only pending nominations, not approved/rejected history.
+- Latest text readability pass is implemented:
+  - reusable light row backdrops now render their dark row text without WoW outline flags, so Dashboard, Nominations, History, Leaderboard, Admin alias rows, and the moderation modal avoid heavy black-on-light outlines.
+  - Admin helper/status text and rank names are bumped by two font points while retaining the thin outline for readability over the parchment background.
 - The updated build has been copied to both documented local Retail and PTR AddOns folders.
 - Test suite is green.
+- Live visual inspection after the readability pass looked better.
+- Real in-game sync testing was attempted before this slice, and no sync occurred between clients.
+- Current local code now broadcasts local mutations for awards, nominations, nomination votes, alias mappings, and rank permission saves, and includes `/rpa syncdebug` / `/rpa sync debug` chat diagnostics for live transport checks.
+- The updated sync/debug/dashboard build has been copied to both documented local Retail and PTR AddOns folders.
 
 ## Priority Blocker
-- User confirmed the original live layering issue is better after the content-host fix; current polish focus is validating the baked parchment shell alignment and modal layering in the live WoW client.
+- Top priority remains live sync validation. Real in-game testing previously showed no client-to-client sync despite the local Lua harness being green.
+- The local action-broadcast audit is now implemented, but live two-client validation is still required before treating sync as fixed in game.
+- Current tests prove validation helpers, envelope construction, AceComm registration, and dispatcher routing, but they may not prove the full live transport path or that every local mutation broadcasts:
+  - `Sync.lua` owns `BuildEnvelope`, `Broadcast`, `DispatchEnvelope`, and `Accept*` merge/validation helpers.
+  - `Core.lua` registers `Constants.COMM_PREFIX` in `OnEnable` and deserializes/routes inbound comms in `OnCommReceived`.
+  - `tests/sync_spec.lua` includes broadcast and dispatcher tests using the stubbed AceComm/AceSerializer path.
+  - Local direct awards, nominations, votes, approvals/rejections, rank-permission saves, alias changes, and award deletes now broadcast sync payloads in the Lua test harness.
+- Likely failure areas to inspect first:
+  - Inbound live AceComm may still differ from the local harness even though the stub now serializes outbound messages as strings and exercises `OnCommReceived` deserialization.
+  - Self-sent messages may need to be ignored intentionally, while other same-guild senders must be accepted and rerender the UI.
+  - Authorized sender validation depends on active guild context and rank permissions; a receiving client may reject a legitimate sender if the rank matrix/guild roster state has not converged.
+  - `/rpa syncdebug` and `/rpa sync debug` now print copy-friendly sync diagnostics to chat.
+- Former visual layering status:
+  - User confirmed the original live layering issue is better after the content-host fix.
+  - Continue only small visual validation after sync is moving data in live clients.
 - The current local shell removes the visible content-panel backdrop and inner shade entirely; interactive tab content lives in `contentHost`, parented to the main frame and clipped above the empty content panel.
 - The leaderboard showcase modal is now parented above the main frame rather than inside the leaderboard tab panel, with a higher frame level so dragging it does not slide under clipped addon content.
 - The main background art is visible again; the close X is offset to the parchment's top-right corner.
@@ -84,20 +112,31 @@
   - main shell, background art, tab rail, content panel, and content host use the raised strata
   - the frame hit rect expands over the parchment overhang for dragging
   - Esc closes the focused main window while non-Esc keys propagate
+  - light row text opts out of outline while Admin helper/status text is two points larger
 - Continue validating all visual polish in the live WoW client because the harness cannot fully reproduce Blizzard frame/backdrop draw ordering.
 
 ## Most Relevant Files
+- `Sync.lua`
+- `Core.lua`
+- `UI/Bridge.lua`
+- `Awards.lua`
+- `Nominations.lua`
+- `Permissions.lua`
+- `Database.lua`
+- `tests/sync_spec.lua`
+- `tests/WoWStubs.lua`
+- `docs/sync.md`
 - `UI/Components.lua`
 - `UI/MainFrame.lua`
 - `UI/Styles.lua`
 - `MinimapButton.lua`
-- `tests/WoWStubs.lua`
 - `tests/bridge_spec.lua`
 
 ## Likely Next Investigation
-1. Reload Retail and inspect the latest card/form polish pass in game.
-2. If any row/backdrop colors still read too dark or too light, tune the reusable `backdropTone = "rowHighlight"` branch in `UI/Components.lua`.
-3. If the nomination selected-pin preview needs a small position adjustment in live, update `UI/Tabs/Nominations.lua` and add/update the bridge spec assertion before patching.
+1. Reproduce the live sync failure with two same-guild clients and record the exact action tested: nomination create, vote, approve/reject, direct award, delete, rank permission save, or alias merge.
+2. Use `/rpa syncdebug` on both clients before and after a tested action and capture the chat output.
+3. Verify receiving-client merge behavior rerenders the visible tab after accepted inbound sync.
+4. Deploy to Retail/PTR and re-test sync in the live client before returning to broader polish.
 
 ## Verification
 - Full suite command:
@@ -117,7 +156,9 @@
 
 ## Resume Order
 1. Read this handoff.
-2. Inspect `UI/Components.lua` and the latest `CreateContentPanel` layering fix.
+2. Run `git status --short` and note the uncommitted readability polish plus `.figma-make-inspect/` and `.research/`.
 3. Run the full test suite.
-4. Fix the live overlay bug in game.
-5. Only after that, continue any remaining UI polish cleanup.
+4. Run the full test suite.
+5. Deploy to Retail/PTR if live validation is next.
+6. Validate sync in the real WoW client with two clients, using `/rpa syncdebug` before and after each action.
+7. Only after real sync works, continue any remaining UI polish cleanup.

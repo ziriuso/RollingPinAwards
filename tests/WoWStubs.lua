@@ -1,6 +1,7 @@
 local state = {}
 local wow = {}
 local originalOs = _G.os
+local serializedSequence = 0
 
 local function copyTable(input)
   local output = {}
@@ -469,6 +470,7 @@ local function buildAceLibStub()
       end
 
       function target:SendCommMessage(prefix, message, distribution, targetPlayer, priority)
+        self.__commMessages = self.__commMessages or {}
         self.__lastCommMessage = {
           prefix = prefix,
           message = message,
@@ -476,6 +478,7 @@ local function buildAceLibStub()
           target = targetPlayer,
           priority = priority,
         }
+        self.__commMessages[#self.__commMessages + 1] = self.__lastCommMessage
       end
     end,
   }
@@ -483,11 +486,23 @@ local function buildAceLibStub()
   libraries["AceSerializer-3.0"] = {
     Embed = function(_, target)
       function target:Serialize(payload)
-        return payload
+        serializedSequence = serializedSequence + 1
+        local token = ("RPA_SERIALIZED:%d"):format(serializedSequence)
+        state.serializedPayloads[token] = copyTable(payload)
+
+        return token
       end
 
       function target:Deserialize(payload)
-        return true, payload
+        if type(payload) == "string" and state.serializedPayloads[payload] then
+          return true, copyTable(state.serializedPayloads[payload])
+        end
+
+        if type(payload) == "table" then
+          return true, payload
+        end
+
+        return false, nil
       end
     end,
   }
@@ -578,6 +593,8 @@ function wow.reset(seed)
     savedVariables = seed.savedVariables,
     ace3 = seed.ace3,
     loggedIn = seed.loggedIn == true,
+    serializedPayloads = {},
+    chatMessages = {},
   }
 
   _G.__RPA_TEST_STATE = state
@@ -650,6 +667,11 @@ function wow.reset(seed)
   _G.os = originalOs
   _G.CreateFrame = createFrameObject
   _G.UIParent = {}
+  _G.DEFAULT_CHAT_FRAME = {
+    AddMessage = function(_, line)
+      state.chatMessages[#state.chatMessages + 1] = line
+    end,
+  }
   _G.IsLoggedIn = function()
     return state.loggedIn == true
   end
