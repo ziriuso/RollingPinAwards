@@ -23,6 +23,7 @@ The addon also needs a small chat diagnostic command so live testing can capture
 - Alias saves and deletes continue to broadcast `alias_mapping` payloads.
 - Inbound accepted payloads rerender the active tab when the main frame has already rendered.
 - `/rpa syncdebug` and `/rpa sync debug` print copy-friendly chat diagnostics.
+- If AceComm/AceSerializer are unavailable, sync registers the same prefix through native `C_ChatInfo` and sends flat serialized sync envelopes over the guild addon channel.
 
 ## Verification
 
@@ -30,3 +31,4 @@ The addon also needs a small chat diagnostic command so live testing can capture
 - Regression tests cover mutation broadcasts for awards, nominations, aliases, and permissions.
 - Regression tests cover authorized remote award deletion.
 - Regression tests cover the sync diagnostic slash command output.
+- Regression tests cover native comm fallback registration, outbound serialization, and inbound deserialization when Ace3 is unavailable.

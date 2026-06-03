@@ -21,6 +21,7 @@ Privileged payload mapping:
 
 - Comm payloads use the addon prefix `RPAAwardsSync`.
 - When Ace3 is available, sync envelopes flow through `AceComm-3.0` and `AceSerializer-3.0`.
+- When Ace3 comm/serializer APIs are unavailable, sync falls back to native `C_ChatInfo.RegisterAddonMessagePrefix` and `C_ChatInfo.SendAddonMessage` with a small flat-field serializer for the existing payload shapes.
 - `Core.lua` owns comm registration and inbound dispatch.
 - `Sync.lua` owns envelope construction, outbound broadcast, and payload-type routing.
 - Local mutations broadcast immediately for awards, nominations, nomination votes, rank permission changes, and alias mapping changes.
@@ -33,6 +34,7 @@ Use `/rpa syncdebug` or `/rpa sync debug` to print copy-friendly chat diagnostic
 - active guild key
 - comm prefix and registration state
 - Ace3 transport and serializer availability
+- native addon-message fallback availability
 - last outbound payload result
 - last inbound payload result
 

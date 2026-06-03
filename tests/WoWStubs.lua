@@ -592,6 +592,7 @@ function wow.reset(seed)
     playerName = seed.playerName or "Ziri",
     savedVariables = seed.savedVariables,
     ace3 = seed.ace3,
+    nativeComm = seed.nativeComm,
     loggedIn = seed.loggedIn == true,
     serializedPayloads = {},
     chatMessages = {},
@@ -634,6 +635,24 @@ function wow.reset(seed)
       return state.guildRankIndex ~= nil and state.guildRankIndex <= 1
     end,
   }
+
+  _G.C_ChatInfo = state.nativeComm and {
+    RegisterAddonMessagePrefix = function(prefix)
+      state.nativeCommPrefix = prefix
+    end,
+    SendAddonMessage = function(prefix, message, distribution, target)
+      state.nativeCommMessages = state.nativeCommMessages or {}
+      state.lastNativeCommMessage = {
+        prefix = prefix,
+        message = message,
+        distribution = distribution,
+        target = target,
+      }
+      state.nativeCommMessages[#state.nativeCommMessages + 1] = state.lastNativeCommMessage
+
+      return true
+    end,
+  } or nil
 
   _G.GetNumGuildMembers = function()
     return #state.guildMembers

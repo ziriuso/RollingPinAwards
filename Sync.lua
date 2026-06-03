@@ -8,6 +8,71 @@ local function isMissingString(value)
   return type(value) ~= "string" or value == ""
 end
 
+local function escapeValue(value)
+  value = tostring(value or "")
+  value = value:gsub("%%", "%%25")
+  value = value:gsub("|", "%%7C")
+  value = value:gsub("&", "%%26")
+  value = value:gsub("=", "%%3D")
+  value = value:gsub("\n", "%%0A")
+
+  return value
+end
+
+local function unescapeValue(value)
+  value = tostring(value or "")
+  value = value:gsub("%%0A", "\n")
+  value = value:gsub("%%3D", "=")
+  value = value:gsub("%%26", "&")
+  value = value:gsub("%%7C", "|")
+  value = value:gsub("%%25", "%%")
+
+  return value
+end
+
+local function encodeField(value)
+  if type(value) == "boolean" then
+    return value and "b:1" or "b:0"
+  end
+
+  if type(value) == "number" then
+    return "n:" .. tostring(value)
+  end
+
+  return "s:" .. escapeValue(value)
+end
+
+local function decodeField(value)
+  local tag = value:sub(1, 2)
+  local body = value:sub(3)
+
+  if tag == "b:" then
+    return body == "1"
+  end
+
+  if tag == "n:" then
+    return tonumber(body)
+  end
+
+  if tag == "s:" then
+    return unescapeValue(body)
+  end
+
+  return unescapeValue(value)
+end
+
+local function sendNativeAddonMessage(prefix, message, distribution, target)
+  if _G.C_ChatInfo and type(_G.C_ChatInfo.SendAddonMessage) == "function" then
+    return _G.C_ChatInfo.SendAddonMessage(prefix, message, distribution, target)
+  end
+
+  if type(_G.SendAddonMessage) == "function" then
+    return _G.SendAddonMessage(prefix, message, distribution, target)
+  end
+
+  return false
+end
+
 function Sync:New(addon)
   local obj = {
     addon = addon,
@@ -16,6 +81,49 @@ function Sync:New(addon)
   self.__index = self
 
   return setmetatable(obj, self)
+end
+
+function Sync:SerializeEnvelope(envelope)
+  if type(envelope) ~= "table" or isMissingString(envelope.payloadType) then
+    return nil, "missing envelope"
+  end
+
+  local fields = {}
+  for key, value in pairs(envelope.payload or {}) do
+    local valueType = type(value)
+    if valueType == "string" or valueType == "number" or valueType == "boolean" then
+      fields[#fields + 1] = ("%s=%s"):format(escapeValue(key), encodeField(value))
+    end
+  end
+
+  table.sort(fields)
+
+  return ("RPA1|%s|%s"):format(escapeValue(envelope.payloadType), table.concat(fields, "&"))
+end
+
+function Sync:DeserializeEnvelope(message)
+  if type(message) ~= "string" then
+    return nil, "missing message"
+  end
+
+  local version, payloadType, fieldText = message:match("^(RPA1)|([^|]*)|(.*)$")
+  if version ~= "RPA1" or isMissingString(payloadType) then
+    return nil, "invalid envelope"
+  end
+
+  local payload = {}
+  for pair in (fieldText or ""):gmatch("[^&]+") do
+    local key, value = pair:match("^([^=]*)=(.*)$")
+    if key and value then
+      payload[unescapeValue(key)] = decodeField(value)
+    end
+  end
+
+  return {
+    protocolVersion = self.addon.Constants.PROTOCOL_VERSION,
+    payloadType = unescapeValue(payloadType),
+    payload = payload,
+  }
 end
 
 function Sync:IsActiveGuildPayload(guildKey)
@@ -41,7 +149,11 @@ function Sync:RecordInbound(result)
 end
 
 function Sync:Broadcast(payloadType, payload, distribution, target, priority)
-  if type(self.addon.SendCommMessage) ~= "function" or type(self.addon.Serialize) ~= "function" then
+  local hasAceComm = type(self.addon.SendCommMessage) == "function" and type(self.addon.Serialize) == "function"
+  local hasNativeComm = (_G.C_ChatInfo and type(_G.C_ChatInfo.SendAddonMessage) == "function")
+    or type(_G.SendAddonMessage) == "function"
+
+  if not hasAceComm and not hasNativeComm then
     self.lastBroadcast = {
       payloadType = payloadType,
       distribution = distribution or "GUILD",
@@ -64,14 +176,30 @@ function Sync:Broadcast(payloadType, payload, distribution, target, priority)
     return false, err
   end
 
-  local serialized = self.addon:Serialize(envelope)
-  self.addon:SendCommMessage(
-    self.addon.Constants.COMM_PREFIX,
-    serialized,
-    distribution or "GUILD",
-    target,
-    priority or "NORMAL"
-  )
+  if hasAceComm then
+    local serialized = self.addon:Serialize(envelope)
+    self.addon:SendCommMessage(
+      self.addon.Constants.COMM_PREFIX,
+      serialized,
+      distribution or "GUILD",
+      target,
+      priority or "NORMAL"
+    )
+  else
+    local serialized, serializeErr = self:SerializeEnvelope(envelope)
+    if not serialized then
+      self.lastBroadcast = {
+        payloadType = payloadType,
+        distribution = distribution or "GUILD",
+        ok = false,
+        error = serializeErr,
+      }
+
+      return false, serializeErr
+    end
+
+    sendNativeAddonMessage(self.addon.Constants.COMM_PREFIX, serialized, distribution or "GUILD", target)
+  end
 
   self.lastBroadcast = {
     payloadType = payloadType,
@@ -79,6 +207,7 @@ function Sync:Broadcast(payloadType, payload, distribution, target, priority)
     target = target,
     priority = priority or "NORMAL",
     ok = true,
+    transport = hasAceComm and "ace" or "native",
   }
 
   return true
@@ -298,12 +427,18 @@ function Sync:GetDebugLines()
       tostring(type(self.addon.SendCommMessage) == "function"),
       tostring(type(self.addon.Serialize) == "function")
     ),
+    ("Native comm: registered=%s SendAddon=%s"):format(
+      tostring(self.addon.__rpaNativeCommPrefix or "none"),
+      tostring((_G.C_ChatInfo and type(_G.C_ChatInfo.SendAddonMessage) == "function")
+        or type(_G.SendAddonMessage) == "function")
+    ),
   }
 
   if self.lastBroadcast then
-    lines[#lines + 1] = ("Last outbound: type=%s distribution=%s ok=%s error=%s"):format(
+    lines[#lines + 1] = ("Last outbound: type=%s distribution=%s transport=%s ok=%s error=%s"):format(
       tostring(self.lastBroadcast.payloadType),
       tostring(self.lastBroadcast.distribution),
+      tostring(self.lastBroadcast.transport or "unknown"),
       tostring(self.lastBroadcast.ok),
       tostring(self.lastBroadcast.error or "none")
     )

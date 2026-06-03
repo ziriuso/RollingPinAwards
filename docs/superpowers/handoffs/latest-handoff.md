@@ -78,6 +78,7 @@
 - Live visual inspection after the readability pass looked better.
 - Real in-game sync testing was attempted before this slice, and no sync occurred between clients.
 - Current local code now broadcasts local mutations for awards, nominations, nomination votes, alias mappings, and rank permission saves, and includes `/rpa syncdebug` / `/rpa sync debug` chat diagnostics for live transport checks.
+- Live diagnostics showed both clients had `Ace3=false SendComm=false Serialize=false`, so sync now falls back to native `C_ChatInfo` addon messages when AceComm/AceSerializer are unavailable.
 - The updated sync/debug/dashboard build has been copied to both documented local Retail and PTR AddOns folders.
 
 ## Priority Blocker
@@ -90,6 +91,7 @@
   - Local direct awards, nominations, votes, approvals/rejections, rank-permission saves, alias changes, and award deletes now broadcast sync payloads in the Lua test harness.
 - Likely failure areas to inspect first:
   - Inbound live AceComm may still differ from the local harness even though the stub now serializes outbound messages as strings and exercises `OnCommReceived` deserialization.
+  - Native `C_ChatInfo` fallback now has local test coverage, but still needs live two-client verification.
   - Self-sent messages may need to be ignored intentionally, while other same-guild senders must be accepted and rerender the UI.
   - Authorized sender validation depends on active guild context and rank permissions; a receiving client may reject a legitimate sender if the rank matrix/guild roster state has not converged.
   - `/rpa syncdebug` and `/rpa sync debug` now print copy-friendly sync diagnostics to chat.
@@ -143,6 +145,7 @@
   - `powershell -ExecutionPolicy Bypass -File .\tests\run.ps1`
 - Last known result:
   - full suite passed after setting `RPA_LUA=C:\Users\Ziri\Documents\Codex\2026-05-11\GBankManager\.worktrees\gbankmanager-v1\tools\lua\lua.exe`
+  - native comm fallback slice passed with the same `RPA_LUA`
 
 ## Local Deploy Targets
 - Retail:

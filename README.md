@@ -61,13 +61,14 @@ The current MVP ships a functional in-game window with:
 
 ## Sync Diagnostics
 
-Use `/rpa syncdebug` or `/rpa sync debug` in game to print copy-friendly sync state to chat, including the active guild key, comm prefix registration, Ace3 transport availability, and the last inbound/outbound sync result.
+Use `/rpa syncdebug` or `/rpa sync debug` in game to print copy-friendly sync state to chat, including the active guild key, comm prefix registration, Ace3 transport availability, native addon-message fallback state, and the last inbound/outbound sync result.
 
 ## Runtime Notes
 
 - The addon now prefers an Ace3-backed runtime when `LibStub` and the Ace3 libraries are available in-game.
 - The repo now vendors the required Ace3 libraries under `Libs/` and also includes `.pkgmeta` externals so packager-driven releases stay reproducible.
 - When `AceDB-3.0` is available, the domain database is backed by the active Ace profile instead of the plain SavedVariables fallback table.
+- When AceComm/AceSerializer are unavailable in-game, sync falls back to native `C_ChatInfo` addon messages with a flat guild-scoped payload serializer.
 - Awards, nominations, alias mappings, and rank permissions broadcast guild-scoped sync payloads when local user actions mutate them.
 - The TOC continues to advertise `Ace3` as an optional dependency.
 

@@ -44,6 +44,35 @@ local function decodeLastMessage(addon)
   return envelope
 end
 
+local function setupNativeGuild(seed)
+  seed = seed or {}
+  seed.nativeComm = true
+  seed.guildName = seed.guildName or "Raid Bakery"
+  seed.playerName = seed.playerName or "Guildmaster"
+  seed.guildRankName = seed.guildRankName or "Guild Master"
+  seed.guildRankIndex = seed.guildRankIndex or 0
+  seed.guildMembers = seed.guildMembers or {
+    {
+      name = "Guildmaster-Stormrage",
+      rankName = "Guild Master",
+      rankIndex = 0,
+    },
+    {
+      name = "Officerone-Stormrage",
+      rankName = "Officer",
+      rankIndex = 1,
+    },
+  }
+
+  wow.reset(seed)
+
+  local addon = wow.loadAddon()
+  addon:OnInitialize()
+  addon:OnEnable()
+
+  return addon
+end
+
 return {
   ["sync rejects a privileged award update from the wrong guild"] = function()
     wow.reset({ guildName = "Raid Bakery" })
@@ -457,5 +486,51 @@ return {
 
     harness.assert_true(accepted)
     harness.assert_equal(0, #addon.awards:GetPublicHistory())
+  end,
+
+  ["native comm fallback registers and broadcasts when ace is unavailable"] = function()
+    local addon = setupNativeGuild()
+
+    harness.assert_true(addon.__rpaUsesAce3 == false)
+    harness.assert_equal(addon.Constants.COMM_PREFIX, addon.__rpaNativeCommPrefix)
+    harness.assert_equal(addon.Constants.COMM_PREFIX, _G.__RPA_TEST_STATE.nativeCommPrefix)
+
+    local award = addon.awards:CreateDirectAward("Burny-Stormrage", "Set the oven to lava")
+    local sent = _G.__RPA_TEST_STATE.lastNativeCommMessage
+    local envelope = addon.sync:DeserializeEnvelope(sent.message)
+
+    harness.assert_true(award ~= nil)
+    harness.assert_equal(addon.Constants.COMM_PREFIX, sent.prefix)
+    harness.assert_equal("GUILD", sent.distribution)
+    harness.assert_equal("string", type(sent.message))
+    harness.assert_equal("award", envelope.payloadType)
+    harness.assert_equal(award.awardId, envelope.payload.awardId)
+    harness.assert_equal("direct", envelope.payload.source)
+  end,
+
+  ["native comm fallback inbound messages deserialize and dispatch"] = function()
+    local addon = setupNativeGuild()
+
+    local called = false
+    addon.sync.AcceptNomination = function(_, payload)
+      called = payload.nominationId == "nom:77"
+
+      return true
+    end
+
+    local message = addon.sync:SerializeEnvelope({
+      payloadType = "nomination",
+      payload = {
+        guildKey = addon:GetActiveGuildContext().guildKey,
+        nominationId = "nom:77",
+        status = "pending",
+      },
+    })
+
+    addon:OnCommReceived(addon.Constants.COMM_PREFIX, message, "GUILD", "Officerone-Stormrage")
+
+    harness.assert_true(called)
+    harness.assert_equal("nomination", addon.sync.lastInbound.payloadType)
+    harness.assert_true(addon.sync.lastInbound.ok)
   end,
 }

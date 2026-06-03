@@ -235,10 +235,35 @@ function RPA:OnEnable()
 
   if self.sync and type(self.RegisterComm) == "function" then
     self:RegisterComm(self.Constants.COMM_PREFIX)
+  elseif self.sync then
+    self:RegisterNativeComm()
   end
 
   self.__rpaEnabling = nil
   self.__rpaEnabled = true
+
+  return true
+end
+
+function RPA:RegisterNativeComm()
+  if _G.C_ChatInfo and type(_G.C_ChatInfo.RegisterAddonMessagePrefix) == "function" then
+    _G.C_ChatInfo.RegisterAddonMessagePrefix(self.Constants.COMM_PREFIX)
+  elseif type(_G.RegisterAddonMessagePrefix) == "function" then
+    _G.RegisterAddonMessagePrefix(self.Constants.COMM_PREFIX)
+  else
+    return false
+  end
+
+  if type(CreateFrame) == "function" and not self.__rpaNativeCommFrame then
+    local frame = CreateFrame("Frame", "RollingPinAwardsNativeCommFrame")
+    frame:RegisterEvent("CHAT_MSG_ADDON")
+    frame:SetScript("OnEvent", function(_, _, prefix, message, distribution, sender)
+      self:OnCommReceived(prefix, message, distribution, sender)
+    end)
+    self.__rpaNativeCommFrame = frame
+  end
+
+  self.__rpaNativeCommPrefix = self.Constants.COMM_PREFIX
 
   return true
 end
@@ -258,6 +283,22 @@ function RPA:OnCommReceived(prefix, message, distribution, sender)
           distribution = distribution,
           ok = false,
           error = "deserialize failed",
+        })
+      end
+
+      return false
+    end
+
+    envelope = decoded
+  elseif self.sync and type(self.sync.DeserializeEnvelope) == "function" and type(message) == "string" then
+    local decoded, decodeErr = self.sync:DeserializeEnvelope(message)
+    if not decoded then
+      if type(self.sync.RecordInbound) == "function" then
+        self.sync:RecordInbound({
+          sender = sender,
+          distribution = distribution,
+          ok = false,
+          error = decodeErr or "deserialize failed",
         })
       end
 
