@@ -3,15 +3,16 @@
 ## Repo
 - Path: `C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards`
 - Branch: `codex/rolling-pin-awards-mvp`
-- Pushed checkpoint before the current sync-catchup slice: `04089b24a813c56307254e341764c74985da07ef` (`fix: embed ace comm like gbankmanager`)
-- Current working tree has uncommitted sync protocol follow-up:
-  - `Commands.lua`
-  - `Core.lua`
+- Pushed checkpoint before the current sync hardening slice: `cadb99b` (`fix: add sync hello catchup`)
+- Current working tree has uncommitted sync hardening follow-up:
+  - `Awards.lua`
+  - `Database.lua`
+  - `Nominations.lua`
   - `README.md`
   - `Sync.lua`
   - `docs/superpowers/handoffs/latest-handoff.md`
-  - `docs/superpowers/specs/2026-06-03-sync-broadcast-debug-design.md`
   - `docs/sync.md`
+  - `tests/database_spec.lua`
   - `tests/sync_spec.lua`
 
 ## Current State
@@ -89,11 +90,19 @@
   - the snapshot stream ends with `sync_snapshot_complete`.
   - `/rpa sync now` and `/rpa sync all` force hello plus full snapshot for live testing.
   - `/rpa syncdebug` now reports last hello and last snapshot counts in addition to transport state and last inbound/outbound.
+- Follow-up live testing showed packets moving, aliases syncing, but history was still missing and nominations could be overwritten by a less-complete client.
+- Root cause identified locally: award and nomination ids were plain per-client counters (`award:1`, `nom:1`), so same-id snapshot rows from another client could replace newer local records.
+- Current local hardening slice:
+  - new award ids use `award:<Character-Realm>:<timestamp>:<sequence>`.
+  - new nomination ids use `nom:<Character-Realm>:<timestamp>:<sequence>`.
+  - inbound nominations reject stale same-id rows that would downgrade resolved rows or overwrite different same-timestamp rows.
+  - inbound awards reject stale same-id rows that would replace newer local history.
+  - legacy untimestamped authorized award deletes remain accepted.
 - The updated sync/debug/dashboard build has been copied to both documented local Retail and PTR AddOns folders.
 
 ## Priority Blocker
 - Top priority remains live sync validation. Real in-game testing previously showed no client-to-client sync despite the local Lua harness being green.
-- The local action-broadcast audit and hello/snapshot catch-up flow are now implemented locally, but live two-client validation is still required before treating sync as fixed in game.
+- The local action-broadcast audit, hello/snapshot catch-up flow, and same-id stale snapshot guards are now implemented locally, but live two-client validation is still required before treating sync as fixed in game.
 - Current tests prove validation helpers, envelope construction, AceComm registration, and dispatcher routing, but they may not prove the full live transport path or that every local mutation broadcasts:
   - `Sync.lua` owns `BuildEnvelope`, `Broadcast`, `DispatchEnvelope`, and `Accept*` merge/validation helpers.
   - `Core.lua` registers `Constants.COMM_PREFIX` in `OnEnable` and deserializes/routes inbound comms in `OnCommReceived`.
@@ -101,7 +110,7 @@
   - Local direct awards, nominations, votes, approvals/rejections, rank-permission saves, alias changes, and award deletes now broadcast sync payloads in the Lua test harness.
 - Likely failure areas to inspect first:
   - Inbound live AceComm may still differ from the local harness even though the stub now serializes outbound messages as strings and exercises `OnCommReceived` deserialization.
-  - Native `C_ChatInfo` fallback now has local test coverage for mutation broadcasts, startup/manual hello, and hello-triggered snapshot streaming, but still needs live two-client verification.
+  - Native `C_ChatInfo` fallback now has local test coverage for mutation broadcasts, startup/manual hello, hello-triggered snapshot streaming, actor-stamped ids, and stale award/nomination rejection, but still needs live two-client verification.
   - `/rpa syncdebug` now reports individual AceComm/AceSerializer embed state.
   - Self-sent messages may need to be ignored intentionally, while other same-guild senders must be accepted and rerender the UI.
   - Authorized sender validation depends on active guild context and rank permissions; a receiving client may reject a legitimate sender if the rank matrix/guild roster state has not converged.
@@ -146,7 +155,7 @@
 - `tests/bridge_spec.lua`
 
 ## Likely Next Investigation
-1. Deploy the current sync-catchup slice to Retail/PTR.
+1. Deploy the current sync hardening slice to Retail/PTR.
 2. In two same-guild clients, run `/rpa syncdebug` on both clients immediately after reload/login and confirm `Last outbound` shows `sync_hello`.
 3. Run `/rpa sync now` on one client, then `/rpa syncdebug` on both clients and confirm snapshot counts/inbound status update.
 4. Test a normal local mutation afterward: nomination create, vote, approve/reject, direct award, delete, rank permission save, or alias merge.
@@ -159,6 +168,7 @@
   - full suite passed after setting `RPA_LUA=C:\Users\Ziri\Documents\Codex\2026-05-11\GBankManager\.worktrees\gbankmanager-v1\tools\lua\lua.exe`
   - native comm fallback slice passed with the same `RPA_LUA`
   - sync-filtered tests passed after adding startup/manual hello and hello-triggered snapshot streaming
+  - full suite passed after adding actor-stamped ids and stale same-id award/nomination guards
 
 ## Local Deploy Targets
 - Retail:
@@ -172,7 +182,7 @@
 
 ## Resume Order
 1. Read this handoff.
-2. Run `git status --short` and note the uncommitted sync protocol slice plus `.figma-make-inspect/` and `.research/`.
+2. Run `git status --short` and note the uncommitted sync hardening slice plus `.figma-make-inspect/` and `.research/`.
 3. Run the full test suite.
 4. Deploy to Retail/PTR if live validation is next.
 5. Validate sync in the real WoW client with two clients, using `/rpa syncdebug` and `/rpa sync now`.

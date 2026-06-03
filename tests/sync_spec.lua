@@ -242,6 +242,81 @@ return {
     harness.assert_true(accepted)
   end,
 
+  ["sync ignores stale nominations that would downgrade an existing resolved row"] = function()
+    local addon = setupAceGuild()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+
+    addon.db:UpsertNomination(guildKey, {
+      nominationId = "nom:shared",
+      guildKey = guildKey,
+      nominee = "Moonrustle-Stormrage",
+      reason = "Already resolved",
+      status = "approved",
+      awardId = "award:shared",
+      nominatedBy = "Bakerone-Stormrage",
+      resolvedBy = "Guildmaster-Stormrage",
+      lastModifiedAt = 200,
+      lastModifiedBy = "Guildmaster-Stormrage",
+    })
+
+    local accepted, err = addon.sync:AcceptNomination({
+      nominationId = "nom:shared",
+      guildKey = guildKey,
+      nominee = "Moonrustle-Stormrage",
+      reason = "Old pending copy",
+      status = "pending",
+      nominatedBy = "Officerone-Stormrage",
+      lastModifiedAt = 100,
+      lastModifiedBy = "Officerone-Stormrage",
+    })
+    local stored = addon.db:GetNomination(guildKey, "nom:shared")
+
+    harness.assert_false(accepted)
+    harness.assert_equal("stale nomination", err)
+    harness.assert_equal("approved", stored.status)
+    harness.assert_equal("award:shared", stored.awardId)
+  end,
+
+  ["sync ignores stale awards that would replace existing history"] = function()
+    local addon = setupAceGuild()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+
+    addon.permissions:SetRankPermissions(1, "Officer", {
+      canCreateDirectAwards = true,
+    })
+    addon.db:UpsertAward(guildKey, {
+      awardId = "award:shared",
+      guildKey = guildKey,
+      awardName = "The Burnt Rolling Pin",
+      recipient = "Mara-Stormrage",
+      player = "Mara-Stormrage",
+      reason = "Current local history",
+      awardedBy = "Guildmaster-Stormrage",
+      source = "direct",
+      lastModifiedAt = 200,
+      lastModifiedBy = "Guildmaster-Stormrage",
+    })
+
+    local accepted, err = addon.sync:AcceptAward({
+      awardId = "award:shared",
+      guildKey = guildKey,
+      awardName = "The Burnt Rolling Pin",
+      recipient = "Moonrustle-Stormrage",
+      player = "Moonrustle-Stormrage",
+      reason = "Old remote history",
+      awardedBy = "Officerone-Stormrage",
+      source = "direct",
+      lastModifiedAt = 100,
+      lastModifiedBy = "Officerone-Stormrage",
+    })
+    local stored = addon.db:GetAward(guildKey, "award:shared")
+
+    harness.assert_false(accepted)
+    harness.assert_equal("stale award", err)
+    harness.assert_equal("Mara-Stormrage", stored.recipient)
+    harness.assert_equal("Current local history", stored.reason)
+  end,
+
   ["sync accepts a rank permission update from an authorized rank manager"] = function()
     wow.reset({
       guildName = "Raid Bakery",

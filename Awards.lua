@@ -37,8 +37,9 @@ function Awards:BuildAward(recipient, reason, source, nominationId, awardType)
     return nil, "missing guild context"
   end
 
-  local awardId = self.addon.db:NextAwardId(guild.guildKey)
   local now = currentTimestamp(self.addon)
+  local actor = self.addon:GetCurrentPlayerFullName()
+  local awardId = self.addon.db:NextAwardId(guild.guildKey, actor, now)
   local normalizedAwardType = Utils.NormalizeAwardType(awardType)
 
   return {
@@ -49,12 +50,12 @@ function Awards:BuildAward(recipient, reason, source, nominationId, awardType)
     recipient = recipient,
     player = recipient,
     reason = reason,
-    awardedBy = self.addon:GetCurrentPlayerFullName(),
+    awardedBy = actor,
     source = source,
     nominationId = nominationId,
     createdAt = now,
     lastModifiedAt = now,
-    lastModifiedBy = self.addon:GetCurrentPlayerFullName(),
+    lastModifiedBy = actor,
   }, nil
 end
 

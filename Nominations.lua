@@ -70,21 +70,22 @@ function Nominations:Create(nominee, reason, awardType)
   end
 
   local now = currentTimestamp(self.addon)
-  local nominationId = self.addon.db:NextNominationId(guild.guildKey)
+  local actor = self.addon:GetCurrentPlayerFullName()
+  local nominationId = self.addon.db:NextNominationId(guild.guildKey, actor, now)
   local nomination = {
     nominationId = nominationId,
     guildKey = guild.guildKey,
     nominee = nominee,
     reason = reason,
     awardType = Utils.NormalizeAwardType(awardType),
-    nominatedBy = self.addon:GetCurrentPlayerFullName(),
+    nominatedBy = actor,
     status = "pending",
     upvoteCount = 0,
     downvoteCount = 0,
     moderationFlagged = false,
     createdAt = now,
     lastModifiedAt = now,
-    lastModifiedBy = self.addon:GetCurrentPlayerFullName(),
+    lastModifiedBy = actor,
   }
 
   self.addon.db:UpsertNomination(guild.guildKey, nomination)

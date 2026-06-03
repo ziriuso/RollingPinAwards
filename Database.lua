@@ -14,12 +14,23 @@ local function seedNextSequence(recordsById, prefix)
 
   for objectId in pairs(recordsById or {}) do
     local sequence = tonumber(string.match(objectId, "^" .. prefix .. ":(%d+)$"))
+      or tonumber(string.match(objectId, "^" .. prefix .. ":.*:(%d+)$"))
     if sequence and sequence > maxSequence then
       maxSequence = sequence
     end
   end
 
   return maxSequence
+end
+
+local function idPart(value)
+  local text = tostring(value or "local")
+  text = text:gsub("[^%w%-_]", "_")
+  if text == "" then
+    return "local"
+  end
+
+  return text
 end
 
 local function ensureGuildDatasetShape(dataset, guildKey)
@@ -425,7 +436,7 @@ function Database:DeleteAliasMapping(guildKey, aliasKey)
   return true
 end
 
-function Database:NextNominationId(guildKey)
+function Database:NextNominationId(guildKey, actorKey, timestamp)
   local dataset, err = self:GetGuildDataset(guildKey)
   if not dataset then
     return nil, err
@@ -433,10 +444,14 @@ function Database:NextNominationId(guildKey)
 
   dataset.meta.nextNominationSequence = dataset.meta.nextNominationSequence + 1
 
-  return ("nom:%d"):format(dataset.meta.nextNominationSequence), nil
+  return ("nom:%s:%d:%d"):format(
+    idPart(actorKey),
+    tonumber(timestamp or 0) or 0,
+    dataset.meta.nextNominationSequence
+  ), nil
 end
 
-function Database:NextAwardId(guildKey)
+function Database:NextAwardId(guildKey, actorKey, timestamp)
   local dataset, err = self:GetGuildDataset(guildKey)
   if not dataset then
     return nil, err
@@ -444,7 +459,11 @@ function Database:NextAwardId(guildKey)
 
   dataset.meta.nextAwardSequence = dataset.meta.nextAwardSequence + 1
 
-  return ("award:%d"):format(dataset.meta.nextAwardSequence), nil
+  return ("award:%s:%d:%d"):format(
+    idPart(actorKey),
+    tonumber(timestamp or 0) or 0,
+    dataset.meta.nextAwardSequence
+  ), nil
 end
 
 function Database:UpsertAward(guildKey, award)

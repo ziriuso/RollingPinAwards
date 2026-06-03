@@ -73,6 +73,7 @@ Use `/rpa syncdebug` or `/rpa sync debug` in game to print copy-friendly sync st
 - When AceComm/AceSerializer are unavailable in-game, sync falls back to native `C_ChatInfo` addon messages with a flat guild-scoped payload serializer.
 - Awards, nominations, alias mappings, and rank permissions broadcast guild-scoped sync payloads when local user actions mutate them.
 - On startup the addon sends a `sync_hello` message, and receiving a hello answers with a full guild snapshot stream for rank permissions, aliases, nominations, votes, and awards.
+- New award and nomination ids include the local character and timestamp, and inbound award/nomination rows reject stale same-id snapshots so a less-complete client cannot overwrite newer local history or resolved nominations.
 - The TOC continues to advertise `Ace3` as an optional dependency.
 
 ## Testing

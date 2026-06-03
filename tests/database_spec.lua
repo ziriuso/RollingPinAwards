@@ -102,6 +102,31 @@ return {
     harness.assert_equal("nom:2", dataset.nominations[3].nominationId)
   end,
 
+  ["database generated award and nomination ids include the local actor to avoid cross-client collisions"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      serverTime = 1717336800,
+    })
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    local nominationId = addon.db:NextNominationId(
+      guildKey,
+      addon:GetCurrentPlayerFullName(),
+      addon.Time:Now()
+    )
+    local awardId = addon.db:NextAwardId(
+      guildKey,
+      addon:GetCurrentPlayerFullName(),
+      addon.Time:Now()
+    )
+
+    harness.assert_true(nominationId:match("^nom:Guildmaster%-Stormrage:1717336800:%d+$") ~= nil)
+    harness.assert_true(awardId:match("^award:Guildmaster%-Stormrage:1717336800:%d+$") ~= nil)
+  end,
+
   ["database stores alias mappings by normalized key in the current guild dataset"] = function()
     wow.reset({ guildName = "Raid Bakery" })
     local addon = wow.loadAddon()

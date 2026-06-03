@@ -6,6 +6,7 @@ Rolling Pin Awards keeps all synced data scoped to the active guild dataset.
 
 - Incoming payloads must match the active `guildKey`.
 - Privileged payloads are accepted only when the sender satisfies the exact rank permission required for that payload type.
+- Award and nomination snapshot rows are monotonic: stale same-ID records cannot replace newer local history or downgrade resolved nominations back to pending.
 - Duplicate votes from the same voter on the same nomination are ignored.
 - Votes are accepted only while the nomination remains `pending`.
 
@@ -29,6 +30,12 @@ Privileged payload mapping:
 - Receiving `sync_hello` answers with a full flat record stream for rank permissions, aliases, nominations, votes, and awards, followed by `sync_snapshot_complete`.
 - `/rpa sync now` and `/rpa sync all` force the same hello plus full snapshot stream for live two-client testing.
 - Inbound accepted payloads rerender the active tab when the main window has already been rendered.
+
+## Record Identity
+
+- New nomination ids use `nom:<Character-Realm>:<timestamp>:<sequence>`.
+- New award ids use `award:<Character-Realm>:<timestamp>:<sequence>`.
+- Legacy numeric ids such as `nom:1` and `award:1` remain readable, but new local records include the actor/timestamp to avoid cross-client id collisions.
 
 ## Diagnostics
 

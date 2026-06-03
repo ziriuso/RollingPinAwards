@@ -104,6 +104,86 @@ local function sortedKeys(records)
   return keys
 end
 
+local function recordTimestamp(record)
+  return tonumber((record or {}).lastModifiedAt or (record or {}).resolvedAt or (record or {}).createdAt or 0) or 0
+end
+
+local function nominationStatusRank(status)
+  if status == "approved" then
+    return 3
+  end
+
+  if status == "rejected" then
+    return 2
+  end
+
+  if status == "pending" then
+    return 1
+  end
+
+  return 0
+end
+
+local function nominationIdentityDiffers(left, right)
+  return tostring((left or {}).nominee or "") ~= tostring((right or {}).nominee or "")
+    or tostring((left or {}).reason or "") ~= tostring((right or {}).reason or "")
+    or tostring((left or {}).nominatedBy or "") ~= tostring((right or {}).nominatedBy or "")
+end
+
+local function awardIdentityDiffers(left, right)
+  return tostring((left or {}).recipient or (left or {}).player or "") ~= tostring((right or {}).recipient or (right or {}).player or "")
+    or tostring((left or {}).reason or "") ~= tostring((right or {}).reason or "")
+    or tostring((left or {}).awardedBy or "") ~= tostring((right or {}).awardedBy or "")
+end
+
+local function shouldApplyNomination(existing, incoming)
+  if type(existing) ~= "table" then
+    return true
+  end
+
+  local existingAt = recordTimestamp(existing)
+  local incomingAt = recordTimestamp(incoming)
+  if incomingAt < existingAt then
+    return false, "stale nomination"
+  end
+
+  if incomingAt == existingAt then
+    local existingRank = nominationStatusRank(existing.status)
+    local incomingRank = nominationStatusRank(incoming.status)
+    if incomingRank < existingRank then
+      return false, "stale nomination"
+    end
+
+    if incomingRank == existingRank and nominationIdentityDiffers(existing, incoming) then
+      return false, "stale nomination"
+    end
+
+    if not incoming.awardId and existing.awardId then
+      return false, "stale nomination"
+    end
+  end
+
+  return true
+end
+
+local function shouldApplyAward(existing, incoming)
+  if type(existing) ~= "table" then
+    return true
+  end
+
+  local existingAt = recordTimestamp(existing)
+  local incomingAt = recordTimestamp(incoming)
+  if incomingAt < existingAt then
+    return false, "stale award"
+  end
+
+  if incomingAt == existingAt and awardIdentityDiffers(existing, incoming) then
+    return false, "stale award"
+  end
+
+  return true
+end
+
 function Sync:New(addon)
   local obj = {
     addon = addon,
@@ -475,6 +555,14 @@ function Sync:AcceptAward(award)
     return false, "unauthorized"
   end
 
+  local existingAward = self.addon.db:GetAward(award.guildKey, award.awardId)
+  if award.deleted ~= true or award.lastModifiedAt ~= nil then
+    local shouldApply, staleErr = shouldApplyAward(existingAward, award)
+    if not shouldApply then
+      return false, staleErr
+    end
+  end
+
   if award.deleted == true then
     local deleted, deleteErr = self.addon.db:DeleteAward(award.guildKey, award.awardId)
     if not deleted then
@@ -513,6 +601,12 @@ function Sync:AcceptNomination(nomination)
     if not self.addon.permissions or not self.addon.permissions:CanManageNominations(actor) then
       return false, "unauthorized"
     end
+  end
+
+  local existingNomination = self.addon.db:GetNomination(nomination.guildKey, nomination.nominationId)
+  local shouldApply, staleErr = shouldApplyNomination(existingNomination, nomination)
+  if not shouldApply then
+    return false, staleErr
   end
 
   self.addon.db:UpsertNomination(nomination.guildKey, nomination)
