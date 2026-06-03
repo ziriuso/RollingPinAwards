@@ -32,6 +32,8 @@ Current command support:
 - `/rpa bg`
 - `/rpa syncdebug`
 - `/rpa sync debug`
+- `/rpa sync now`
+- `/rpa sync all`
 - `/rpa nominate Name-Realm "Reason"`
 
 ## UI Surface
@@ -61,7 +63,7 @@ The current MVP ships a functional in-game window with:
 
 ## Sync Diagnostics
 
-Use `/rpa syncdebug` or `/rpa sync debug` in game to print copy-friendly sync state to chat, including the active guild key, comm prefix registration, Ace3 transport availability, native addon-message fallback state, and the last inbound/outbound sync result.
+Use `/rpa syncdebug` or `/rpa sync debug` in game to print copy-friendly sync state to chat, including the active guild key, comm prefix registration, Ace3 transport availability, native addon-message fallback state, last inbound/outbound sync result, hello status, and snapshot status. Use `/rpa sync now` or `/rpa sync all` to force a sync hello plus a full guild snapshot stream.
 
 ## Runtime Notes
 
@@ -70,6 +72,7 @@ Use `/rpa syncdebug` or `/rpa sync debug` in game to print copy-friendly sync st
 - When `AceDB-3.0` is available, the domain database is backed by the active Ace profile instead of the plain SavedVariables fallback table.
 - When AceComm/AceSerializer are unavailable in-game, sync falls back to native `C_ChatInfo` addon messages with a flat guild-scoped payload serializer.
 - Awards, nominations, alias mappings, and rank permissions broadcast guild-scoped sync payloads when local user actions mutate them.
+- On startup the addon sends a `sync_hello` message, and receiving a hello answers with a full guild snapshot stream for rank permissions, aliases, nominations, votes, and awards.
 - The TOC continues to advertise `Ace3` as an optional dependency.
 
 ## Testing

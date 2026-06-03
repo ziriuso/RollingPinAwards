@@ -494,6 +494,7 @@ return {
     harness.assert_true(addon.__rpaUsesAce3 == false)
     harness.assert_equal(addon.Constants.COMM_PREFIX, addon.__rpaNativeCommPrefix)
     harness.assert_equal(addon.Constants.COMM_PREFIX, _G.__RPA_TEST_STATE.nativeCommPrefix)
+    harness.assert_true(#(_G.__RPA_TEST_STATE.nativeCommMessages or {}) >= 1)
 
     local award = addon.awards:CreateDirectAward("Burny-Stormrage", "Set the oven to lava")
     local sent = _G.__RPA_TEST_STATE.lastNativeCommMessage
@@ -532,5 +533,103 @@ return {
     harness.assert_true(called)
     harness.assert_equal("nomination", addon.sync.lastInbound.payloadType)
     harness.assert_true(addon.sync.lastInbound.ok)
+  end,
+
+  ["sync announces itself on startup and manual sync now over native fallback"] = function()
+    local addon = setupNativeGuild()
+    local startupMessages = _G.__RPA_TEST_STATE.nativeCommMessages or {}
+    local startupEnvelope = addon.sync:DeserializeEnvelope(startupMessages[1].message)
+
+    harness.assert_equal("sync_hello", startupEnvelope.payloadType)
+    harness.assert_equal(addon:GetActiveGuildContext().guildKey, startupEnvelope.payload.guildKey)
+
+    local beforeManual = #startupMessages
+    local ok = addon:HandleChatCommand("sync now")
+    local manualMessages = _G.__RPA_TEST_STATE.nativeCommMessages or {}
+
+    harness.assert_true(ok)
+    harness.assert_true(#manualMessages > beforeManual)
+    local manualEnvelope = addon.sync:DeserializeEnvelope(manualMessages[beforeManual + 1].message)
+    harness.assert_equal("sync_hello", manualEnvelope.payloadType)
+  end,
+
+  ["sync responds to hello with all syncable record types"] = function()
+    local addon = setupNativeGuild()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+
+    addon.db:UpsertRankPermission(guildKey, 1, {
+      rankIndex = 1,
+      rankName = "Officer",
+      canManageNominations = true,
+      canCreateDirectAwards = true,
+      canDeleteAwards = true,
+      canManageAddonPermissions = true,
+      lastModifiedAt = 1717336800,
+      lastModifiedBy = "Guildmaster-Stormrage",
+    })
+    addon.db:UpsertAliasMapping(guildKey, {
+      aliasKey = "moon",
+      aliasDisplay = "Moon",
+      canonicalName = "Moonrustle-Stormrage",
+      createdBy = "Guildmaster-Stormrage",
+      createdAt = 1717336800,
+      lastModifiedBy = "Guildmaster-Stormrage",
+      lastModifiedAt = 1717336800,
+    })
+    addon.db:UpsertNomination(guildKey, {
+      nominationId = "nom:5",
+      guildKey = guildKey,
+      nominee = "Moonrustle-Stormrage",
+      reason = "Helpful testing",
+      status = "pending",
+      nominatedBy = "Bakerone-Stormrage",
+      lastModifiedBy = "Bakerone-Stormrage",
+      lastModifiedAt = 1717336800,
+    })
+    addon.db:StoreVote(guildKey, "nom:5", {
+      nominationId = "nom:5",
+      guildKey = guildKey,
+      voter = "Bakerone-Stormrage",
+      voteType = "upvote",
+      createdAt = 1717336801,
+    })
+    addon.db:UpsertAward(guildKey, {
+      awardId = "award:8",
+      guildKey = guildKey,
+      awardName = "The Burnt Rolling Pin",
+      awardType = "burnt",
+      recipient = "Moonrustle-Stormrage",
+      player = "Moonrustle-Stormrage",
+      reason = "Won the dough race",
+      awardedBy = "Guildmaster-Stormrage",
+      source = "direct",
+      lastModifiedBy = "Guildmaster-Stormrage",
+      lastModifiedAt = 1717336802,
+    })
+
+    _G.__RPA_TEST_STATE.nativeCommMessages = {}
+    local hello = addon.sync:SerializeEnvelope({
+      payloadType = "sync_hello",
+      payload = {
+        guildKey = guildKey,
+        sender = "Officerone-Stormrage",
+        sentAt = 1717336803,
+      },
+    })
+
+    addon:OnCommReceived(addon.Constants.COMM_PREFIX, hello, "GUILD", "Officerone-Stormrage")
+
+    local seen = {}
+    for _, message in ipairs(_G.__RPA_TEST_STATE.nativeCommMessages or {}) do
+      local envelope = addon.sync:DeserializeEnvelope(message.message)
+      seen[envelope.payloadType] = true
+    end
+
+    harness.assert_true(seen.rank_permissions)
+    harness.assert_true(seen.alias_mapping)
+    harness.assert_true(seen.nomination)
+    harness.assert_true(seen.vote)
+    harness.assert_true(seen.award)
+    harness.assert_true(seen.sync_snapshot_complete)
   end,
 }

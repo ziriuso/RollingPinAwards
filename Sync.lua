@@ -73,6 +73,37 @@ local function sendNativeAddonMessage(prefix, message, distribution, target)
   return false
 end
 
+local function copyFlatRecord(record)
+  local output = {}
+
+  for key, value in pairs(record or {}) do
+    local valueType = type(value)
+    if valueType == "string" or valueType == "number" or valueType == "boolean" then
+      output[key] = value
+    end
+  end
+
+  return output
+end
+
+local function sortedKeys(records)
+  local keys = {}
+
+  for key in pairs(records or {}) do
+    keys[#keys + 1] = key
+  end
+
+  table.sort(keys, function(left, right)
+    if type(left) == type(right) then
+      return left < right
+    end
+
+    return tostring(left) < tostring(right)
+  end)
+
+  return keys
+end
+
 function Sync:New(addon)
   local obj = {
     addon = addon,
@@ -178,13 +209,26 @@ function Sync:Broadcast(payloadType, payload, distribution, target, priority)
 
   if hasAceComm then
     local serialized = self.addon:Serialize(envelope)
-    self.addon:SendCommMessage(
+    local ok, err = pcall(self.addon.SendCommMessage, self.addon,
       self.addon.Constants.COMM_PREFIX,
       serialized,
       distribution or "GUILD",
       target,
       priority or "NORMAL"
     )
+    if not ok then
+      self.lastBroadcast = {
+        payloadType = payloadType,
+        distribution = distribution or "GUILD",
+        target = target,
+        priority = priority or "NORMAL",
+        ok = false,
+        transport = "ace",
+        error = err,
+      }
+
+      return false, err
+    end
   else
     local serialized, serializeErr = self:SerializeEnvelope(envelope)
     if not serialized then
@@ -198,7 +242,26 @@ function Sync:Broadcast(payloadType, payload, distribution, target, priority)
       return false, serializeErr
     end
 
-    sendNativeAddonMessage(self.addon.Constants.COMM_PREFIX, serialized, distribution or "GUILD", target)
+    local ok, result = pcall(
+      sendNativeAddonMessage,
+      self.addon.Constants.COMM_PREFIX,
+      serialized,
+      distribution or "GUILD",
+      target
+    )
+    if not ok or result == false then
+      self.lastBroadcast = {
+        payloadType = payloadType,
+        distribution = distribution or "GUILD",
+        target = target,
+        priority = priority or "NORMAL",
+        ok = false,
+        transport = "native",
+        error = ok and "native send failed" or result,
+      }
+
+      return false, self.lastBroadcast.error
+    end
   end
 
   self.lastBroadcast = {
@@ -211,6 +274,120 @@ function Sync:Broadcast(payloadType, payload, distribution, target, priority)
   }
 
   return true
+end
+
+function Sync:SendHello(distribution, target, force)
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild then
+    self.lastHello = {
+      ok = false,
+      error = "missing guild",
+    }
+
+    return false, "missing guild"
+  end
+
+  if not force and self.lastHello and self.lastHello.guildKey == guild.guildKey then
+    return false, "hello already sent"
+  end
+
+  local ok, err = self:Broadcast("sync_hello", {
+    guildKey = guild.guildKey,
+    sender = self.addon:GetCurrentPlayerFullName(),
+    sentAt = self.addon.Time and type(self.addon.Time.Now) == "function" and self.addon.Time:Now() or 0,
+  }, distribution or "GUILD", target, "NORMAL")
+
+  self.lastHello = {
+    guildKey = guild.guildKey,
+    ok = ok == true,
+    error = err,
+  }
+
+  return ok, err
+end
+
+function Sync:SendFullSnapshot(distribution, target)
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild then
+    self.lastSnapshot = {
+      ok = false,
+      error = "missing guild",
+    }
+
+    return false, "missing guild"
+  end
+
+  local dataset = self.addon.db:GetGuildDataset(guild.guildKey)
+  local counts = {
+    awards = 0,
+    nominations = 0,
+    votes = 0,
+    rankPermissions = 0,
+    aliasMappings = 0,
+  }
+
+  for _, rankIndex in ipairs(sortedKeys(dataset.rankPermissions)) do
+    local payload = copyFlatRecord(dataset.rankPermissions[rankIndex])
+    payload.guildKey = guild.guildKey
+    payload.rankIndex = tonumber(payload.rankIndex or rankIndex)
+    if payload.rankIndex ~= nil then
+      self:Broadcast("rank_permissions", payload, distribution or "GUILD", target)
+      counts.rankPermissions = counts.rankPermissions + 1
+    end
+  end
+
+  for _, aliasKey in ipairs(sortedKeys(dataset.aliasMappingsByKey)) do
+    local payload = copyFlatRecord(dataset.aliasMappingsByKey[aliasKey])
+    payload.guildKey = guild.guildKey
+    payload.aliasKey = payload.aliasKey or aliasKey
+    self:Broadcast("alias_mapping", payload, distribution or "GUILD", target)
+    counts.aliasMappings = counts.aliasMappings + 1
+  end
+
+  for _, nominationId in ipairs(sortedKeys(dataset.nominationsById)) do
+    local payload = copyFlatRecord(dataset.nominationsById[nominationId])
+    payload.guildKey = guild.guildKey
+    payload.nominationId = payload.nominationId or nominationId
+    self:Broadcast("nomination", payload, distribution or "GUILD", target)
+    counts.nominations = counts.nominations + 1
+  end
+
+  for _, nominationId in ipairs(sortedKeys(dataset.votesByNomination)) do
+    for _, voter in ipairs(sortedKeys(dataset.votesByNomination[nominationId])) do
+      local payload = copyFlatRecord(dataset.votesByNomination[nominationId][voter])
+      payload.guildKey = guild.guildKey
+      payload.nominationId = payload.nominationId or nominationId
+      payload.voter = payload.voter or voter
+      self:Broadcast("vote", payload, distribution or "GUILD", target)
+      counts.votes = counts.votes + 1
+    end
+  end
+
+  for _, awardId in ipairs(sortedKeys(dataset.awardsById)) do
+    local payload = copyFlatRecord(dataset.awardsById[awardId])
+    payload.guildKey = guild.guildKey
+    payload.awardId = payload.awardId or awardId
+    self:Broadcast("award", payload, distribution or "GUILD", target)
+    counts.awards = counts.awards + 1
+  end
+
+  self:Broadcast("sync_snapshot_complete", {
+    guildKey = guild.guildKey,
+    sender = self.addon:GetCurrentPlayerFullName(),
+    awards = counts.awards,
+    nominations = counts.nominations,
+    votes = counts.votes,
+    rankPermissions = counts.rankPermissions,
+    aliasMappings = counts.aliasMappings,
+  }, distribution or "GUILD", target)
+
+  self.lastSnapshot = {
+    guildKey = guild.guildKey,
+    ok = true,
+    counts = counts,
+  }
+
+  return true, counts
 end
 
 function Sync:DispatchEnvelope(envelope, distribution, sender)
@@ -230,7 +407,20 @@ function Sync:DispatchEnvelope(envelope, distribution, sender)
   payload.distribution = payload.distribution or distribution
   local ok, err
 
-  if envelope.payloadType == "award" then
+  if envelope.payloadType == "sync_hello" then
+    if not self:IsActiveGuildPayload(payload.guildKey) then
+      ok, err = false, "wrong guild"
+    elseif payload.sender == self.addon:GetCurrentPlayerFullName() or sender == self.addon:GetCurrentPlayerFullName() then
+      ok, err = false, "self origin"
+    else
+      ok, err = self:SendFullSnapshot(distribution or "GUILD")
+    end
+  elseif envelope.payloadType == "sync_snapshot_complete" then
+    ok, err = self:IsActiveGuildPayload(payload.guildKey), nil
+    if not ok then
+      err = "wrong guild"
+    end
+  elseif envelope.payloadType == "award" then
     ok, err = self:AcceptAward(payload)
   elseif envelope.payloadType == "nomination" then
     ok, err = self:AcceptNomination(payload)
@@ -462,6 +652,31 @@ function Sync:GetDebugLines()
     )
   else
     lines[#lines + 1] = "Last inbound: none"
+  end
+
+  if self.lastHello then
+    lines[#lines + 1] = ("Last hello: guild=%s ok=%s error=%s"):format(
+      tostring(self.lastHello.guildKey or "none"),
+      tostring(self.lastHello.ok),
+      tostring(self.lastHello.error or "none")
+    )
+  else
+    lines[#lines + 1] = "Last hello: none"
+  end
+
+  if self.lastSnapshot then
+    local counts = self.lastSnapshot.counts or {}
+    lines[#lines + 1] = ("Last snapshot: guild=%s awards=%s nominations=%s votes=%s aliases=%s ranks=%s ok=%s"):format(
+      tostring(self.lastSnapshot.guildKey or "none"),
+      tostring(counts.awards or 0),
+      tostring(counts.nominations or 0),
+      tostring(counts.votes or 0),
+      tostring(counts.aliasMappings or 0),
+      tostring(counts.rankPermissions or 0),
+      tostring(self.lastSnapshot.ok)
+    )
+  else
+    lines[#lines + 1] = "Last snapshot: none"
   end
 
   return lines

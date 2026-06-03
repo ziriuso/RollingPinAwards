@@ -3,13 +3,16 @@
 ## Repo
 - Path: `C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards`
 - Branch: `codex/rolling-pin-awards-mvp`
-- Pushed checkpoint: `2ac947cf87f2e5881b408f9956497bbbcced2c9d` (`feat: polish rolling pin awards ui shell`)
-- Current working tree has uncommitted follow-up text-readability polish:
+- Pushed checkpoint before the current sync-catchup slice: `04089b24a813c56307254e341764c74985da07ef` (`fix: embed ace comm like gbankmanager`)
+- Current working tree has uncommitted sync protocol follow-up:
+  - `Commands.lua`
+  - `Core.lua`
   - `README.md`
-  - `UI/Components.lua`
-  - `UI/Tabs/Admin.lua`
+  - `Sync.lua`
   - `docs/superpowers/handoffs/latest-handoff.md`
-  - `tests/bridge_spec.lua`
+  - `docs/superpowers/specs/2026-06-03-sync-broadcast-debug-design.md`
+  - `docs/sync.md`
+  - `tests/sync_spec.lua`
 
 ## Current State
 - UI polish pass is largely implemented and deployed locally to both Retail and PTR.
@@ -80,11 +83,17 @@
 - Current local code now broadcasts local mutations for awards, nominations, nomination votes, alias mappings, and rank permission saves, and includes `/rpa syncdebug` / `/rpa sync debug` chat diagnostics for live transport checks.
 - Live diagnostics showed both clients had `Ace3=false SendComm=false Serialize=false`, so sync now falls back to native `C_ChatInfo` addon messages when AceComm/AceSerializer are unavailable.
 - After comparing GBankManager, Rolling Pin now directly embeds AceComm/AceSerializer through LibStub instead of requiring AceAddon to construct the addon object first.
+- After stepping back on the remaining live sync failure, the current local slice adds a GBankManager-style catch-up flow:
+  - startup sends `sync_hello` once per active guild.
+  - receiving `sync_hello` responds with rank permission, alias, nomination, vote, and award records.
+  - the snapshot stream ends with `sync_snapshot_complete`.
+  - `/rpa sync now` and `/rpa sync all` force hello plus full snapshot for live testing.
+  - `/rpa syncdebug` now reports last hello and last snapshot counts in addition to transport state and last inbound/outbound.
 - The updated sync/debug/dashboard build has been copied to both documented local Retail and PTR AddOns folders.
 
 ## Priority Blocker
 - Top priority remains live sync validation. Real in-game testing previously showed no client-to-client sync despite the local Lua harness being green.
-- The local action-broadcast audit is now implemented, but live two-client validation is still required before treating sync as fixed in game.
+- The local action-broadcast audit and hello/snapshot catch-up flow are now implemented locally, but live two-client validation is still required before treating sync as fixed in game.
 - Current tests prove validation helpers, envelope construction, AceComm registration, and dispatcher routing, but they may not prove the full live transport path or that every local mutation broadcasts:
   - `Sync.lua` owns `BuildEnvelope`, `Broadcast`, `DispatchEnvelope`, and `Accept*` merge/validation helpers.
   - `Core.lua` registers `Constants.COMM_PREFIX` in `OnEnable` and deserializes/routes inbound comms in `OnCommReceived`.
@@ -92,7 +101,7 @@
   - Local direct awards, nominations, votes, approvals/rejections, rank-permission saves, alias changes, and award deletes now broadcast sync payloads in the Lua test harness.
 - Likely failure areas to inspect first:
   - Inbound live AceComm may still differ from the local harness even though the stub now serializes outbound messages as strings and exercises `OnCommReceived` deserialization.
-  - Native `C_ChatInfo` fallback now has local test coverage, but still needs live two-client verification.
+  - Native `C_ChatInfo` fallback now has local test coverage for mutation broadcasts, startup/manual hello, and hello-triggered snapshot streaming, but still needs live two-client verification.
   - `/rpa syncdebug` now reports individual AceComm/AceSerializer embed state.
   - Self-sent messages may need to be ignored intentionally, while other same-guild senders must be accepted and rerender the UI.
   - Authorized sender validation depends on active guild context and rank permissions; a receiving client may reject a legitimate sender if the rank matrix/guild roster state has not converged.
@@ -137,10 +146,11 @@
 - `tests/bridge_spec.lua`
 
 ## Likely Next Investigation
-1. Reproduce the live sync failure with two same-guild clients and record the exact action tested: nomination create, vote, approve/reject, direct award, delete, rank permission save, or alias merge.
-2. Use `/rpa syncdebug` on both clients before and after a tested action and capture the chat output.
-3. Verify receiving-client merge behavior rerenders the visible tab after accepted inbound sync.
-4. Deploy to Retail/PTR and re-test sync in the live client before returning to broader polish.
+1. Deploy the current sync-catchup slice to Retail/PTR.
+2. In two same-guild clients, run `/rpa syncdebug` on both clients immediately after reload/login and confirm `Last outbound` shows `sync_hello`.
+3. Run `/rpa sync now` on one client, then `/rpa syncdebug` on both clients and confirm snapshot counts/inbound status update.
+4. Test a normal local mutation afterward: nomination create, vote, approve/reject, direct award, delete, rank permission save, or alias merge.
+5. Verify receiving-client merge behavior rerenders the visible tab after accepted inbound sync.
 
 ## Verification
 - Full suite command:
@@ -148,6 +158,7 @@
 - Last known result:
   - full suite passed after setting `RPA_LUA=C:\Users\Ziri\Documents\Codex\2026-05-11\GBankManager\.worktrees\gbankmanager-v1\tools\lua\lua.exe`
   - native comm fallback slice passed with the same `RPA_LUA`
+  - sync-filtered tests passed after adding startup/manual hello and hello-triggered snapshot streaming
 
 ## Local Deploy Targets
 - Retail:
@@ -161,9 +172,8 @@
 
 ## Resume Order
 1. Read this handoff.
-2. Run `git status --short` and note the uncommitted readability polish plus `.figma-make-inspect/` and `.research/`.
+2. Run `git status --short` and note the uncommitted sync protocol slice plus `.figma-make-inspect/` and `.research/`.
 3. Run the full test suite.
-4. Run the full test suite.
-5. Deploy to Retail/PTR if live validation is next.
-6. Validate sync in the real WoW client with two clients, using `/rpa syncdebug` before and after each action.
-7. Only after real sync works, continue any remaining UI polish cleanup.
+4. Deploy to Retail/PTR if live validation is next.
+5. Validate sync in the real WoW client with two clients, using `/rpa syncdebug` and `/rpa sync now`.
+6. Only after real sync works, continue any remaining UI polish cleanup.

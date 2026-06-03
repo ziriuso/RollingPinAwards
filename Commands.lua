@@ -68,6 +68,41 @@ function Commands:Handle(message)
     end
 
     return nil, "sync unavailable"
+  elseif command == "sync" and (rest == "now" or rest == "all") then
+    if self.addon.sync
+      and type(self.addon.sync.SendHello) == "function"
+      and type(self.addon.sync.SendFullSnapshot) == "function"
+    then
+      local helloOk, helloErr = self.addon.sync:SendHello("GUILD", nil, true)
+      local snapshotOk, snapshotResult = self.addon.sync:SendFullSnapshot("GUILD")
+      local lines = {
+        ("Rolling Pin Awards sync now: hello=%s snapshot=%s"):format(
+          tostring(helloOk == true),
+          tostring(snapshotOk == true)
+        ),
+      }
+
+      if helloErr then
+        lines[#lines + 1] = "Hello error: " .. tostring(helloErr)
+      end
+
+      if type(snapshotResult) == "table" then
+        lines[#lines + 1] = ("Sent snapshot: awards=%s nominations=%s votes=%s aliases=%s ranks=%s"):format(
+          tostring(snapshotResult.awards or 0),
+          tostring(snapshotResult.nominations or 0),
+          tostring(snapshotResult.votes or 0),
+          tostring(snapshotResult.aliasMappings or 0),
+          tostring(snapshotResult.rankPermissions or 0)
+        )
+      elseif snapshotResult then
+        lines[#lines + 1] = "Snapshot error: " .. tostring(snapshotResult)
+      end
+
+      printChatLines(self.addon, lines)
+      return helloOk == true or snapshotOk == true
+    end
+
+    return nil, "sync unavailable"
   end
 
   return nil, "unknown command"

@@ -25,6 +25,9 @@ Privileged payload mapping:
 - `Core.lua` owns comm registration and inbound dispatch.
 - `Sync.lua` owns envelope construction, outbound broadcast, and payload-type routing.
 - Local mutations broadcast immediately for awards, nominations, nomination votes, rank permission changes, and alias mapping changes.
+- `Core.lua` sends a `sync_hello` once per active guild when sync enables, and again after guild context appears later through `PLAYER_GUILD_UPDATE`.
+- Receiving `sync_hello` answers with a full flat record stream for rank permissions, aliases, nominations, votes, and awards, followed by `sync_snapshot_complete`.
+- `/rpa sync now` and `/rpa sync all` force the same hello plus full snapshot stream for live two-client testing.
 - Inbound accepted payloads rerender the active tab when the main window has already been rendered.
 
 ## Diagnostics
@@ -38,6 +41,8 @@ Use `/rpa syncdebug` or `/rpa sync debug` to print copy-friendly chat diagnostic
 - native addon-message fallback availability
 - last outbound payload result
 - last inbound payload result
+- last hello result
+- last snapshot counts
 
 ## Persistence Notes
 
@@ -48,6 +53,7 @@ Use `/rpa syncdebug` or `/rpa sync debug` to print copy-friendly chat diagnostic
 
 `Sync.lua` currently provides conservative acceptance helpers for:
 
+- sync hello and snapshot completion markers
 - award updates
 - award deletion updates
 - nomination upserts

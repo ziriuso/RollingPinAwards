@@ -245,6 +245,10 @@ function RPA:OnEnable()
     self:RegisterNativeComm()
   end
 
+  if self.sync and type(self.sync.SendHello) == "function" then
+    self.sync:SendHello()
+  end
+
   self.__rpaEnabling = nil
   self.__rpaEnabled = true
 
@@ -365,6 +369,9 @@ if type(CreateFrame) == "function" then
       end
 
       RPA:RefreshActiveGuildContext()
+      if RPA.__rpaEnabled and RPA.sync and type(RPA.sync.SendHello) == "function" then
+        RPA.sync:SendHello()
+      end
     end
   end)
 end
