@@ -6,13 +6,22 @@ local Components = RPA.UIComponents or {}
 local Styles = RPA.UIStyles or {}
 RPA.UITabs = UITabs
 
+local function stripRealm(name)
+  if type(name) ~= "string" then
+    return name or "Unknown"
+  end
+
+  return name:match("^([^-]+)") or name
+end
+
 local function buildModerationText(row)
   local flagText = row.moderationFlagged and "Flagged" or "Review"
 
-  return ("%s %s\n%s\nUpvotes: %d  Downvotes: %d  %s"):format(
+  return ("%s %s\n%s\nSubmitted by %s\nUpvotes: %d  Downvotes: %d  %s"):format(
     row.nominee,
     row.status,
     row.reason or "",
+    stripRealm(row.nominatedBy),
     row.upvotes or 0,
     row.downvotes or 0,
     flagText
@@ -61,10 +70,11 @@ UITabs.admin = {
     }
   end,
   BuildPanel = function(parent)
+    local layout = Styles.Layout or {}
     local media = Styles.Media or {}
     local panel = CreateFrame("Frame", nil, parent)
-    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 14, -42)
-    panel:SetSize((parent.width or 820) - 28, (parent.height or 520) - 34)
+    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", layout.panelX or 59, layout.panelY or -42)
+    panel:SetSize(layout.panelWidth or 762, (parent.height or 520) - 34)
 
     panel.rankSection = Components.CreateScrollableSection(panel, {
       id = "RollingPinAwardsRankPermissionsSection",
@@ -72,7 +82,7 @@ UITabs.admin = {
       iconPath = media.leaderboardIcon,
       iconWidth = 22,
       iconHeight = 22,
-      width = 780,
+      width = 762,
       height = 138,
       x = 0,
       y = 0,
@@ -120,7 +130,7 @@ UITabs.admin = {
       }, "\n"),
       x = 0,
       y = -148,
-      width = 760,
+      width = 742,
       justifyH = "LEFT",
       justifyV = "TOP",
       font = "GameFontHighlightSmall",
@@ -133,8 +143,8 @@ UITabs.admin = {
       iconPath = media.standardPinIcon,
       iconWidth = 20,
       iconHeight = 20,
-      width = 780,
-      height = 104,
+      width = 762,
+      height = 126,
       x = 0,
       y = -236,
     })
@@ -179,11 +189,20 @@ UITabs.admin = {
         Components.SetVisible(panel.aliasDialog, true)
       end,
     })
+    panel.aliasSuggestionButton = Components.CreateButton(panel.aliasFormSection, {
+      text = "",
+      width = 230,
+      height = 20,
+      x = 180,
+      y = -88,
+      variant = "secondary",
+    })
+    Components.SetVisible(panel.aliasSuggestionButton, false)
     panel.aliasSummaryLabel = Components.CreateLabel(panel, {
       text = "",
       x = 0,
-      y = -350,
-      width = 760,
+      y = -374,
+      width = 742,
       justifyH = "LEFT",
       font = "GameFontHighlightSmall",
       fontSizeDelta = 2,
@@ -214,7 +233,7 @@ UITabs.admin = {
       width = 220,
       height = 34,
       x = 0,
-      y = -374,
+      y = -398,
       variant = "secondary",
       onClick = function()
         Components.SetVisible(panel.moderationDialog, true)
@@ -267,14 +286,14 @@ UITabs.admin = {
       height = 292,
       x = 16,
       y = -84,
-      visibleRowCount = 4,
-      rowHeight = 60,
+      visibleRowCount = 3,
+      rowHeight = 72,
     })
     panel.statusLabel = Components.CreateLabel(panel, {
       text = "",
       x = 0,
-      y = -420,
-      width = 760,
+      y = -454,
+      width = 742,
       justifyH = "LEFT",
       fontSizeDelta = 2,
     })
@@ -357,6 +376,31 @@ UITabs.admin = {
       mainFrame:RenderActiveTab()
     end)
 
+    local function refreshAliasSuggestion()
+      local suggestions = bridge:GetGuildRosterNameSuggestions(panel.canonicalInput:GetText(), 1)
+      local suggestion = suggestions and suggestions[1] or nil
+      if suggestion and suggestion.name then
+        panel.aliasSuggestionButton.suggestedName = suggestion.name
+        Components.SetText(panel.aliasSuggestionButton, ("Use %s"):format(suggestion.name))
+        Components.SetVisible(panel.aliasSuggestionButton, true)
+      else
+        panel.aliasSuggestionButton.suggestedName = nil
+        Components.SetText(panel.aliasSuggestionButton, "")
+        Components.SetVisible(panel.aliasSuggestionButton, false)
+      end
+    end
+
+    if panel.canonicalInput.SetScript then
+      panel.canonicalInput:SetScript("OnTextChanged", refreshAliasSuggestion)
+    end
+    Components.SetButtonHandler(panel.aliasSuggestionButton, function()
+      if panel.aliasSuggestionButton.suggestedName then
+        Components.SetText(panel.canonicalInput, panel.aliasSuggestionButton.suggestedName)
+      end
+      refreshAliasSuggestion()
+    end)
+    refreshAliasSuggestion()
+
     local aliasRows = ((viewModel.aliases or {}).rows or {})
     if #aliasRows == 0 then
       aliasRows = {
@@ -421,10 +465,10 @@ UITabs.admin = {
     end
 
     Components.SetText(panel.moderationButton, ("Open Moderation Queue (%d)"):format(countPendingNominations(viewModel.nominations or {})))
-    Components.SetButtonVariant(panel.moderationDialog.pendingFilterButton, selectedFilter == "pending" and "primary" or "secondary")
-    Components.SetButtonVariant(panel.moderationDialog.approvedFilterButton, selectedFilter == "approved" and "primary" or "secondary")
-    Components.SetButtonVariant(panel.moderationDialog.rejectedFilterButton, selectedFilter == "rejected" and "primary" or "secondary")
-    Components.SetButtonVariant(panel.moderationDialog.allFilterButton, selectedFilter == "all" and "primary" or "secondary")
+    Components.SetButtonVariant(panel.moderationDialog.pendingFilterButton, selectedFilter == "pending" and "selected" or "secondary")
+    Components.SetButtonVariant(panel.moderationDialog.approvedFilterButton, selectedFilter == "approved" and "selected" or "secondary")
+    Components.SetButtonVariant(panel.moderationDialog.rejectedFilterButton, selectedFilter == "rejected" and "selected" or "secondary")
+    Components.SetButtonVariant(panel.moderationDialog.allFilterButton, selectedFilter == "all" and "selected" or "secondary")
 
     Components.SetButtonHandler(panel.moderationDialog.pendingFilterButton, function()
       panel.moderationDialog.selectedFilter = "pending"
@@ -453,15 +497,38 @@ UITabs.admin = {
         return
       end
 
+      local actions = {}
+      if row.status == "pending" then
+        actions[#actions + 1] = {
+          text = "Approve",
+          width = 74,
+          onClick = function()
+            bridge:ApproveNomination(row.nominationId)
+            mainFrame:RenderActiveTab()
+          end,
+        }
+        actions[#actions + 1] = {
+          text = "Reject",
+          width = 68,
+          variant = "secondary",
+          onClick = function()
+            bridge:RejectNomination(row.nominationId)
+            mainFrame:RenderActiveTab()
+          end,
+        }
+      end
+
       Components.AddListRow(section, {
         text = buildModerationText(row),
         iconPath = row.awardIconPath,
         iconWidth = 18,
         iconHeight = 18,
-        labelWidth = 640,
-        rowHeight = 60,
+        labelWidth = 470,
+        rowHeight = 72,
         backdropTone = "rowHighlight",
-        actions = {},
+        actionX = 506,
+        actionColumns = 1,
+        actions = actions,
       })
     end)
 

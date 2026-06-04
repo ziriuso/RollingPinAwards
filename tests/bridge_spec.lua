@@ -165,8 +165,8 @@ return {
     local entries = rows[1].entries
 
     harness.assert_equal(2, #entries)
-    harness.assert_equal("Bakerone-Stormrage", entries[1].displayAwardedBy)
-    harness.assert_equal("Guildmaster-Stormrage", entries[2].displayAwardedBy)
+    harness.assert_equal("Bakerone", entries[1].displayAwardedBy)
+    harness.assert_equal("Guildmaster", entries[2].displayAwardedBy)
     harness.assert_true(type(entries[1].dateText) == "string" and #entries[1].dateText > 0)
   end,
 
@@ -491,11 +491,18 @@ return {
     harness.assert_equal("", addon.mainFrame.frame.titleText.text)
     harness.assert_equal("", addon.mainFrame.frame.subtitleText.text)
     harness.assert_equal("OUTLINE", addon.mainFrame.frame.subtitleText.fontFlags)
+    harness.assert_equal(59, addon.mainFrame.contentPanel.titleText.point[4])
+    harness.assert_equal(17, addon.mainFrame.contentPanel.titleText.fontHeight)
     harness.assert_equal("OUTLINE", addon.mainFrame.contentPanel.bodyText.fontFlags)
   end,
 
   ["tab rail layout centers nav buttons inside a tighter rail"] = function()
-    wow.reset({ guildName = "Raid Bakery" })
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
 
     local addon = wow.loadAddon()
     addon:OnInitialize()
@@ -514,6 +521,37 @@ return {
     harness.assert_nil(firstButton.label.textColor)
     harness.assert_equal("OUTLINE", firstButton.label.fontFlags)
     harness.assert_nil(firstButton.label.outlineLabels)
+  end,
+
+  ["tab rail recenters visible buttons when admin is hidden"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Memberone",
+      guildRankName = "Member",
+      guildRankIndex = 5,
+      isGuildOfficer = false,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.mainFrame:EnsureRendered()
+
+    local tabRail = addon.mainFrame.frame.tabRail
+    local visibleButtons = {}
+    for _, button in ipairs(addon.mainFrame.tabButtons or {}) do
+      if button.visible then
+        visibleButtons[#visibleButtons + 1] = button
+      end
+    end
+
+    harness.assert_equal(5, #visibleButtons)
+    local firstButton = visibleButtons[1]
+    local lastButton = visibleButtons[#visibleButtons]
+    local firstLeft = firstButton.point and firstButton.point[4] or 0
+    local lastLeft = lastButton.point and lastButton.point[4] or 0
+    local rightGap = (tabRail.width or 0) - (lastLeft + (lastButton.width or 0))
+
+    harness.assert_true(math.abs(firstLeft - rightGap) <= 1)
   end,
 
   ["dashboard renders stats, content sections, and footer actions after recomposition"] = function()
@@ -608,6 +646,33 @@ return {
     harness.assert_nil(panel.leaderboardSection.rows[1].label.fontFlags)
     harness.assert_nil(panel.recentAwardsSection.rows[1].label.fontFlags)
     harness.assert_true((panel.leaderboardSection.rows[1].width or 0) <= (panel.leaderboardSection.width or 0) - 48)
+    harness.assert_equal(3, panel.leaderboardSection.visibleRowCount)
+    local lastLeaderboardRow = panel.leaderboardSection.rows[#panel.leaderboardSection.rows]
+    local lastLeaderboardBottom = math.abs(lastLeaderboardRow.point[5] or 0) + (lastLeaderboardRow.height or 0)
+    harness.assert_true(lastLeaderboardBottom <= (panel.leaderboardSection.height or 0))
+    harness.assert_equal(3, panel.recentAwardsSection.visibleRowCount)
+    local lastRecentRow = panel.recentAwardsSection.rows[#panel.recentAwardsSection.rows]
+    local lastRecentBottom = math.abs(lastRecentRow.point[5] or 0) + (lastRecentRow.height or 0)
+    harness.assert_true(lastRecentBottom <= (panel.recentAwardsSection.height or 0))
+  end,
+
+  ["all tab panels use the parchment-safe dashboard content offset"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.mainFrame:EnsureRendered()
+
+    local tabIds = { "dashboard", "award", "nominations", "history", "leaderboard", "admin" }
+    for _, tabId in ipairs(tabIds) do
+      addon.mainFrame:SelectTab(tabId)
+      harness.assert_equal(59, addon.mainFrame.tabPanels[tabId].point[4])
+    end
   end,
 
   ["dashboard footer actions remain clickable after recomposition"] = function()
@@ -1178,8 +1243,12 @@ return {
 
     addon.mainFrame:SelectTab("award")
     local awardPanel = addon.mainFrame.tabPanels.award
+    harness.assert_equal("selected", awardPanel.typeBurntButton.variant)
+    harness.assert_equal("secondary", awardPanel.typeGoldenButton.variant)
     awardPanel.typeGoldenButton:Click()
     harness.assert_equal("golden", awardPanel.selectedAwardType)
+    harness.assert_equal("secondary", awardPanel.typeBurntButton.variant)
+    harness.assert_equal("selected", awardPanel.typeGoldenButton.variant)
     harness.assert_true(awardPanel.statusSection == nil)
     harness.assert_true((awardPanel.submitButton.point[5] or 0) - (awardPanel.submitButton.height or 0) >= -(awardPanel.formSection.height or 0))
 
@@ -1192,8 +1261,12 @@ return {
     harness.assert_equal("", nominationsPanel.statusLabel.text)
     harness.assert_equal(-116, nominationsPanel.submitButton.point[5])
     harness.assert_true((nominationsPanel.submitButton.point[4] or 0) + (nominationsPanel.submitButton.width or 0) <= (nominationsPanel.formSection.width or 0) - 14)
+    harness.assert_equal("selected", nominationsPanel.typeBurntButton.variant)
+    harness.assert_equal("secondary", nominationsPanel.typeGoldenButton.variant)
     nominationsPanel.typeGoldenButton:Click()
     harness.assert_equal("golden", nominationsPanel.selectedAwardType)
+    harness.assert_equal("secondary", nominationsPanel.typeBurntButton.variant)
+    harness.assert_equal("selected", nominationsPanel.typeGoldenButton.variant)
     harness.assert_equal("Nominate A Guild Legend", nominationsPanel.formSection.titleText.text)
     harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\golden-rolling-pin.png", nominationsPanel.selectedAwardPreview.texturePath)
   end,
@@ -1333,6 +1406,7 @@ return {
 
     local panel = addon.mainFrame.tabPanels.history
     panel.listSection.rows[1].actions[1]:Click()
+    harness.assert_true((panel.confirmDialog.frameLevel or 0) > (panel.listSection.rows[1].frameLevel or 0))
     panel.confirmDialog.confirmButton:Click()
 
     harness.assert_equal(0, #addon.uiBridge:GetPublicHistoryViewModel())
@@ -1358,6 +1432,41 @@ return {
     local rowText = addon.mainFrame.tabPanels.history.listSection.rows[1].label.text
 
     harness.assert_true(rowText:match("2024") ~= nil or rowText:match("%d%d%d%d%-%d%d%-%d%d") ~= nil)
+    harness.assert_true(rowText:match("Guildmaster%-Stormrage") == nil)
+    harness.assert_true(rowText:match("Awarded by Guildmaster") ~= nil)
+  end,
+
+  ["award tables render newest awards first"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    _G.GetServerTime = function()
+      return 1717336800
+    end
+    addon.awards:CreateDirectAward("Oldpin-Stormrage", "Older award")
+
+    _G.GetServerTime = function()
+      return 1717423200
+    end
+    addon.awards:CreateDirectAward("Newpin-Stormrage", "Newer award")
+
+    addon.mainFrame:EnsureRendered()
+    addon.mainFrame:SelectTab("history")
+
+    local historyText = addon.mainFrame.tabPanels.history.listSection.rows[1].label.text
+    harness.assert_true(historyText:match("Newpin%-Stormrage") ~= nil)
+    harness.assert_true(addon.uiBridge:GetPublicHistoryViewModel()[1].recipient:match("Newpin") ~= nil)
+
+    addon.mainFrame:SelectTab("dashboard")
+    local dashboardText = addon.mainFrame.tabPanels.dashboard.recentAwardsSection.rows[1].label.text
+    harness.assert_true(dashboardText:match("Newpin") ~= nil)
   end,
 
   ["leaderboard list exposes a scrollbar for many recipients"] = function()
@@ -1383,6 +1492,10 @@ return {
 
     harness.assert_true(section.scrollBar ~= nil)
     harness.assert_true(section.scrollBar.maxValue > 0)
+    harness.assert_equal(5, section.visibleRowCount)
+    local lastRow = section.rows[#section.rows]
+    local lastRowBottom = math.abs(lastRow.point[5] or 0) + (lastRow.height or 0)
+    harness.assert_true(lastRowBottom <= (section.height or 0))
   end,
 
   ["scrolling a large nominations list rerenders later rows"] = function()
@@ -1429,7 +1542,7 @@ return {
     harness.assert_true(section.rows[1].label.text:match("Burny2%-Stormrage") ~= nil)
   end,
 
-  ["nominations row lays out vote and moderation buttons on separate columns"] = function()
+  ["nominations row keeps public voting separate from moderation actions"] = function()
     wow.reset({
       guildName = "Raid Bakery",
       playerName = "Guildmaster",
@@ -1446,12 +1559,76 @@ return {
 
     local row = addon.mainFrame.tabPanels.nominations.listSection.rows[1]
     local upvoteButton = row.actions[1]
-    local approveButton = row.actions[3]
     local downvoteButton = row.actions[2]
-    local rejectButton = row.actions[4]
 
+    harness.assert_equal(2, #row.actions)
     harness.assert_true(downvoteButton.point[4] > upvoteButton.point[4])
-    harness.assert_true(approveButton.point[5] < downvoteButton.point[5])
-    harness.assert_true(rejectButton.point[5] == approveButton.point[5])
+    harness.assert_equal("Upvote", upvoteButton.label.text)
+    harness.assert_equal("Downvote", downvoteButton.label.text)
+  end,
+
+  ["moderation queue rows show submitter and approve or reject pending nominations"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    wow.setPlayer("Bakerone", "Member", 5)
+    addon.nominations:Create("Burny-Stormrage", "Pulled the boss")
+    wow.setPlayer("Guildmaster", "Guild Master", 0)
+
+    addon.mainFrame:EnsureRendered()
+    addon.mainFrame:SelectTab("admin")
+    local panel = addon.mainFrame.tabPanels.admin
+    panel.moderationButton:Click()
+
+    local row = panel.moderationDialog.listSection.rows[1]
+    harness.assert_true(row.label.text:match("Submitted by Bakerone") ~= nil)
+    harness.assert_equal(2, #row.actions)
+    harness.assert_equal("Approve", row.actions[1].label.text)
+    harness.assert_equal("Reject", row.actions[2].label.text)
+
+    row.actions[1]:Click()
+    harness.assert_equal("approved", addon.uiBridge:GetAdminNominationsViewModel()[1].status)
+  end,
+
+  ["admin alias canonical field suggests guild roster names while typing"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.mainFrame:EnsureRendered()
+    addon.mainFrame:SelectTab("admin")
+
+    local panel = addon.mainFrame.tabPanels.admin
+    panel.canonicalInput:SetText("Off")
+
+    harness.assert_true(panel.aliasSuggestionButton.visible)
+    harness.assert_equal("Officerone-Stormrage", panel.aliasSuggestionButton.suggestedName)
+    harness.assert_true(panel.aliasSuggestionButton.label.text:match("Officerone%-Stormrage") ~= nil)
+
+    panel.aliasSuggestionButton:Click()
+    harness.assert_equal("Officerone-Stormrage", panel.canonicalInput:GetText())
   end,
 }

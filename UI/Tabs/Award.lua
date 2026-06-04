@@ -31,10 +31,11 @@ UITabs.award = {
     }
   end,
   BuildPanel = function(parent, mainFrame)
+    local layout = Styles.Layout or {}
     local media = Styles.Media or {}
     local panel = CreateFrame("Frame", nil, parent)
-    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 14, -42)
-    panel:SetSize((parent.width or 820) - 28, (parent.height or 520) - 56)
+    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", layout.panelX or 59, layout.panelY or -42)
+    panel:SetSize(layout.panelWidth or 762, (parent.height or 520) - 56)
 
     panel.formSection = Components.CreateSection(panel, {
       id = "RollingPinAwardsAwardFormSection",
@@ -42,7 +43,7 @@ UITabs.award = {
       iconPath = media.awardIcon,
       iconWidth = 24,
       iconHeight = 24,
-      width = 504,
+      width = 500,
       height = 296,
       x = 0,
       y = 0,
@@ -147,9 +148,9 @@ UITabs.award = {
       iconPath = media.headerIcon,
       iconWidth = 22,
       iconHeight = 22,
-      width = 260,
+      width = 246,
       height = 296,
-      x = 520,
+      x = 516,
       y = 0,
     })
     panel.briefLabel = Components.CreateLabel(panel.briefSection, {
@@ -166,7 +167,7 @@ UITabs.award = {
       }, "\n"),
       x = 14,
       y = -38,
-      width = 228,
+      width = 214,
       justifyH = "LEFT",
       justifyV = "TOP",
       font = "GameFontHighlightSmall",
@@ -177,8 +178,8 @@ UITabs.award = {
   RefreshPanel = function(panel, viewModel)
     local awardType = panel.selectedAwardType or "burnt"
     local isGolden = awardType == "golden"
-    Components.SetButtonVariant(panel.typeBurntButton, isGolden and "secondary" or "primary")
-    Components.SetButtonVariant(panel.typeGoldenButton, isGolden and "primary" or "secondary")
+    Components.SetButtonVariant(panel.typeBurntButton, isGolden and "secondary" or "selected")
+    Components.SetButtonVariant(panel.typeGoldenButton, isGolden and "selected" or "secondary")
     Components.SetText(
       panel.formSection.titleText,
       isGolden and "Award The Golden Rolling Pin" or "Award The Burnt Rolling Pin"

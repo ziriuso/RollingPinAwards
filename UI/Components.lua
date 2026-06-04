@@ -506,6 +506,46 @@ function Components.CreateTabButton(parent, spec, index)
   }
 end
 
+function Components.LayoutTabButtons(parent, buttons)
+  if not parent or type(buttons) ~= "table" then
+    return
+  end
+
+  local layout = Styles.Layout or {}
+  local host = parent.tabRail or parent
+  local visibleButtons = {}
+
+  for _, button in ipairs(buttons) do
+    if button and button.visible ~= false then
+      visibleButtons[#visibleButtons + 1] = button
+    end
+  end
+
+  if #visibleButtons == 0 then
+    return
+  end
+
+  local tabWidth = layout.tabWidth or (visibleButtons[1].width or 114)
+  local tabGap = layout.tabGap or 10
+  local groupWidth = (#visibleButtons * tabWidth) + (math.max(0, #visibleButtons - 1) * tabGap)
+  local startX = math.floor(((host.width or groupWidth) - groupWidth) / 2)
+
+  for visibleIndex, button in ipairs(visibleButtons) do
+    if button.ClearAllPoints then
+      button:ClearAllPoints()
+    end
+    if button.SetPoint then
+      button:SetPoint(
+        "TOPLEFT",
+        host,
+        "TOPLEFT",
+        startX + ((visibleIndex - 1) * (tabWidth + tabGap)),
+        -6
+      )
+    end
+  end
+end
+
 function Components.CreateContentPanel(parent, config)
   local colors = Styles.Colors or {}
   local panel = CreateFrame("Frame", config.id, parent, "BackdropTemplate")
@@ -554,11 +594,13 @@ function Components.CreateContentPanel(parent, config)
   if type(panel.contentHost.CreateFontString) == "function" then
     titleText = panel.contentHost:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     bodyText = panel.contentHost:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    applyTextTreatment(titleText)
+    applyTextTreatment(titleText, {
+      fontSizeDelta = (Styles.Layout or {}).pageHeaderFontSizeDelta or 5,
+    })
     applyTextTreatment(bodyText)
 
     if titleText.SetPoint then
-      titleText:SetPoint("TOPLEFT", panel.contentHost, "TOPLEFT", 16, -16)
+      titleText:SetPoint("TOPLEFT", panel.contentHost, "TOPLEFT", (Styles.Layout or {}).panelX or 59, -16)
     end
 
     if bodyText.SetPoint then
@@ -835,9 +877,17 @@ function Components.SetButtonVariant(button, variant)
 
   local colors = Styles.Colors or {}
   button.variant = variant or button.variant or "primary"
+  button.selected = button.variant == "selected"
 
-  local buttonFill = button.variant == "secondary" and colors.parchmentMuted or colors.accent
-  local border = button.variant == "secondary" and colors.brass or colors.accentSoft
+  local buttonFill = colors.accent
+  local border = colors.accentSoft
+  if button.variant == "secondary" then
+    buttonFill = colors.parchmentMuted
+    border = colors.brass
+  elseif button.variant == "selected" then
+    buttonFill = colors.selected or colors.glow or colors.accent
+    border = colors.selectedBorder or colors.accentSoft
+  end
   applyBackdrop(button, {
     bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
     edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -851,6 +901,14 @@ function Components.SetButtonVariant(button, variant)
       bottom = 2,
     },
   }, buttonFill, border)
+
+  if button.label and button.label.SetTextColor then
+    if button.variant == "selected" then
+      button.label:SetTextColor(unpackColor(colors.ink or { 0.1, 0.07, 0.04, 1 }))
+    else
+      button.label:SetTextColor(unpackColor(colors.selectedBorder or { 1, 0.92, 0.48, 1 }))
+    end
+  end
 end
 
 function Components.CreateEditBox(parent, config)
@@ -997,6 +1055,13 @@ function Components.CreateConfirmationDialog(parent, config)
 
   if dialog.SetPoint then
     dialog:SetPoint("CENTER", parent, "CENTER", config.x or 0, config.y or 0)
+  end
+  if dialog.SetFrameStrata then
+    local parentStrata = parent.GetFrameStrata and parent:GetFrameStrata() or nil
+    dialog:SetFrameStrata(config.frameStrata or parentStrata or "DIALOG")
+  end
+  if dialog.SetFrameLevel and parent.GetFrameLevel then
+    dialog:SetFrameLevel((parent:GetFrameLevel() or 0) + (config.frameLevelOffset or 120))
   end
 
   applyBackdrop(dialog, {

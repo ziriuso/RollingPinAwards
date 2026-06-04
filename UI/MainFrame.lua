@@ -104,6 +104,10 @@ function MainFrame:RefreshTabVisibility()
   if not activeVisible then
     self.activeTabId = fallbackTabId
   end
+
+  if Components.LayoutTabButtons then
+    Components.LayoutTabButtons(self.frame, self.tabButtons)
+  end
 end
 
 function MainFrame:RenderActiveTab()

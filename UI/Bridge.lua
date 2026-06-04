@@ -83,6 +83,18 @@ local function sortDescendingByCreatedAt(left, right)
   return (left.awardId or "") < (right.awardId or "")
 end
 
+local function getShortName(name)
+  if Utils.GetShortCharacterName then
+    return Utils.GetShortCharacterName(name)
+  end
+
+  if type(name) ~= "string" then
+    return name
+  end
+
+  return name:match("^([^-]+)") or name
+end
+
 function Bridge:New(addon)
   local obj = {
     addon = addon,
@@ -168,11 +180,15 @@ function Bridge:GetPublicHistoryViewModel()
       shortRecipient = Utils.GetShortCharacterName(self:ResolveDisplayCharacterName(award.recipient)),
       reason = award.reason,
       awardedBy = award.awardedBy,
+      displayAwardedBy = getShortName(award.awardedBy),
       source = award.source,
+      createdAt = award.createdAt or 0,
       dateText = self.addon.Time:FormatDate(award.createdAt),
       canDelete = canDelete,
     }
   end
+
+  table.sort(rows, sortDescendingByCreatedAt)
 
   return rows
 end
@@ -216,6 +232,7 @@ function Bridge:GetLeaderboardViewModel(mode)
       if nomination and nomination.nominatedBy then
         displayAwardedBy = nomination.nominatedBy
       end
+      displayAwardedBy = getShortName(displayAwardedBy)
 
       grouped[recipient].totalCount = grouped[recipient].totalCount + 1
       if normalizedAwardType == Constants.AWARD_TYPE_GOLDEN then
@@ -358,6 +375,40 @@ function Bridge:GetAliasMappingsViewModel()
     canManageAliases = self:CanCurrentPlayerManageAddonPermissions(),
     rows = self.addon.db:GetAliasMappings(guild.guildKey) or {},
   }
+end
+
+function Bridge:GetGuildRosterNameSuggestions(query, limit)
+  local matches = {}
+  local normalizedQuery = Utils.NormalizeAliasKey(trim(query))
+  if not normalizedQuery or normalizedQuery == "" then
+    return matches
+  end
+
+  local count = 0
+  if type(_G.GetNumGuildMembers) == "function" then
+    count = _G.GetNumGuildMembers() or 0
+  end
+
+  for index = 1, count do
+    local name = _G.GetGuildRosterInfo and _G.GetGuildRosterInfo(index)
+    if type(name) == "string" and name ~= "" then
+      local normalizedName = Utils.NormalizeAliasKey(name)
+      local shortName = getShortName(name)
+      local normalizedShort = Utils.NormalizeAliasKey(shortName)
+      if (normalizedName and normalizedName:find(normalizedQuery, 1, true) == 1)
+        or (normalizedShort and normalizedShort:find(normalizedQuery, 1, true) == 1) then
+        matches[#matches + 1] = {
+          name = name,
+          shortName = shortName,
+        }
+        if #matches >= (limit or 5) then
+          break
+        end
+      end
+    end
+  end
+
+  return matches
 end
 
 function Bridge:SubmitNomination(nominee, reason, awardType)

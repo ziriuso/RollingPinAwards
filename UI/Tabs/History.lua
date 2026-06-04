@@ -33,10 +33,11 @@ UITabs.history = {
     }
   end,
   BuildPanel = function(parent)
+    local layout = Styles.Layout or {}
     local media = Styles.Media or {}
     local panel = CreateFrame("Frame", nil, parent)
-    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 14, -42)
-    panel:SetSize((parent.width or 820) - 28, (parent.height or 520) - 56)
+    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", layout.panelX or 59, layout.panelY or -42)
+    panel:SetSize(layout.panelWidth or 762, (parent.height or 520) - 56)
 
     panel.listSection = Components.CreateScrollableSection(panel, {
       id = "RollingPinAwardsHistoryList",
@@ -44,18 +45,18 @@ UITabs.history = {
       iconPath = media.awardIcon,
       iconWidth = 22,
       iconHeight = 22,
-      width = 780,
+      width = 762,
       height = 420,
       x = 0,
       y = 0,
-      visibleRowCount = 7,
+      visibleRowCount = 6,
       rowHeight = 56,
     })
     panel.statusLabel = Components.CreateLabel(panel, {
       text = "",
       x = 0,
       y = -430,
-      width = 736,
+      width = 742,
       justifyH = "LEFT",
     })
     panel.confirmDialog = Components.CreateConfirmationDialog(panel, {
@@ -121,7 +122,7 @@ UITabs.history = {
           award.recipient,
           award.reason,
           award.dateText or "Unknown date",
-          award.awardedBy
+          award.displayAwardedBy or award.awardedBy
         ),
         iconPath = award.awardIconPath,
         iconWidth = 18,

@@ -53,11 +53,12 @@ UITabs.leaderboard = {
     }
   end,
   BuildPanel = function(parent, mainFrame)
+    local layout = Styles.Layout or {}
     local media = Styles.Media or {}
     local panel = CreateFrame("Frame", nil, parent)
     panel.ownerFrame = mainFrame
-    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 14, -42)
-    panel:SetSize((parent.width or 820) - 28, (parent.height or 520) - 56)
+    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", layout.panelX or 59, layout.panelY or -42)
+    panel:SetSize(layout.panelWidth or 762, (parent.height or 520) - 56)
 
     panel.listSection = Components.CreateScrollableSection(panel, {
       id = "RollingPinAwardsLeaderboardList",
@@ -65,11 +66,11 @@ UITabs.leaderboard = {
       iconPath = media.leaderboardIcon,
       iconWidth = 22,
       iconHeight = 22,
-      width = 780,
+      width = 762,
       height = 360,
       x = 0,
       y = 0,
-      visibleRowCount = 6,
+      visibleRowCount = 5,
       rowHeight = 56,
     })
     panel.selectedMode = panel.selectedMode or "combined"

@@ -24,6 +24,19 @@
   - `docs/superpowers/plans/2026-06-03-sync-transport-refactor.md`
 
 ## Current State
+- Current local UI polish follow-up after sync validation looked good:
+  - all tab panels now use the Dashboard parchment-safe content offset and width.
+  - Dashboard Recent Awards renders three visible rows so list rows do not collide with footer buttons.
+  - Burnt/Golden toggle buttons use a stronger reusable selected state.
+  - History delete confirmation dialogs render above table rows, and history rows use short awarded-by names without `-Server`.
+  - public Nominations rows keep only Upvote/Downvote actions.
+  - Admin moderation queue rows show who submitted the nomination and provide Approve/Reject actions for pending rows.
+  - Admin alias canonical input suggests matching guild roster names while typing.
+  - visible navbar buttons re-center when Admin is hidden for users without Admin access.
+  - award-backed tables render newest records first.
+  - shared page headers align to the page content safe offset and render five font points larger.
+  - Dashboard top-recipient and Leaderboard visible rows stay inside their table chrome and use scrollbars for extra records.
+  - `docs/superpowers/specs/2026-06-04-ui-polish-followup-design.md` and `docs/superpowers/plans/2026-06-04-ui-polish-followup.md` capture this slice.
 - UI polish pass is largely implemented and deployed locally to both Retail and PTR.
 - Custom media icons are wired in under `Media/`.
 - Burnt and Golden rolling pin award types are implemented across direct awards, nominations, history, dashboard, and leaderboard.

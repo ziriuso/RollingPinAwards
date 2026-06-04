@@ -49,15 +49,16 @@ UITabs.nominations = {
     }
   end,
   BuildPanel = function(parent, mainFrame)
+    local layout = Styles.Layout or {}
     local media = Styles.Media or {}
     local panel = CreateFrame("Frame", nil, parent)
-    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 14, -42)
-    panel:SetSize((parent.width or 820) - 28, (parent.height or 520) - 56)
+    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", layout.panelX or 59, layout.panelY or -42)
+    panel:SetSize(layout.panelWidth or 762, (parent.height or 520) - 56)
 
     panel.formSection = Components.CreateSection(panel, {
       id = "RollingPinAwardsNominationFormSection",
       title = "Nominate A Guild Failure",
-      width = 780,
+      width = 762,
       height = 160,
       x = 0,
       y = 0,
@@ -66,7 +67,7 @@ UITabs.nominations = {
       text = "Tell the story, let the guild react, and leave the final verdict to authorized judges.",
       x = 14,
       y = -38,
-      width = 740,
+      width = 720,
       font = "GameFontHighlightSmall",
       justifyH = "LEFT",
     })
@@ -123,14 +124,14 @@ UITabs.nominations = {
       texture = media.awardIcon,
       width = 54,
       height = 54,
-      x = 657,
+      x = 639,
       y = -56,
     })
     panel.submitButton = Components.CreateButton(panel.formSection, {
       text = "Submit Nomination",
       width = 164,
       height = 36,
-      x = 602,
+      x = 584,
       y = -116,
       variant = "primary",
       onClick = function()
@@ -158,7 +159,7 @@ UITabs.nominations = {
       iconPath = media.headerIcon,
       iconWidth = 22,
       iconHeight = 22,
-      width = 780,
+      width = 762,
       height = 280,
       x = 0,
       y = -176,
@@ -169,7 +170,7 @@ UITabs.nominations = {
       text = "",
       x = 0,
       y = -468,
-      width = 760,
+      width = 742,
       justifyH = "LEFT",
     })
 
@@ -218,35 +219,15 @@ UITabs.nominations = {
         }
       end
 
-      if row.canModerate then
-        actions[#actions + 1] = {
-          text = "Approve",
-          width = 74,
-          onClick = function()
-            bridge:ApproveNomination(row.nominationId)
-            mainFrame:RenderActiveTab()
-          end,
-        }
-        actions[#actions + 1] = {
-          text = "Reject",
-          width = 68,
-          variant = "secondary",
-          onClick = function()
-            bridge:RejectNomination(row.nominationId)
-            mainFrame:RenderActiveTab()
-          end,
-        }
-      end
-
       Components.AddListRow(section, {
         text = buildNominationText(row),
         iconPath = row.awardIconPath,
         iconWidth = 18,
         iconHeight = 18,
-        labelWidth = 422,
+        labelWidth = 438,
         rowHeight = 72,
         backdropTone = "rowHighlight",
-        actionX = 448,
+        actionX = 466,
         actionColumns = 2,
         actionSpacingX = 8,
         actionSpacingY = 8,
@@ -255,8 +236,8 @@ UITabs.nominations = {
     end)
 
     local isGolden = (panel.selectedAwardType or "burnt") == "golden"
-    Components.SetButtonVariant(panel.typeBurntButton, isGolden and "secondary" or "primary")
-    Components.SetButtonVariant(panel.typeGoldenButton, isGolden and "primary" or "secondary")
+    Components.SetButtonVariant(panel.typeBurntButton, isGolden and "secondary" or "selected")
+    Components.SetButtonVariant(panel.typeGoldenButton, isGolden and "selected" or "secondary")
     Components.SetText(
       panel.formSection.titleText,
       isGolden and "Nominate A Guild Legend" or "Nominate A Guild Failure"

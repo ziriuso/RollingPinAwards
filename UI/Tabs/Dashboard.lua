@@ -46,8 +46,8 @@ UITabs.dashboard = {
     local dash = Styles.Dashboard or {}
     local media = Styles.Media or {}
     local panel = CreateFrame("Frame", nil, parent)
-    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 59, -42)
-    panel:SetSize((parent.width or 820) - 28, (parent.height or 520) - 56)
+    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", layout.panelX or 59, layout.panelY or -42)
+    panel:SetSize(layout.panelWidth or 762, (parent.height or 520) - 56)
 
     panel.heroLabel = Components.CreateLabel(panel, {
       text = "Guild chaos, professionally archived.",
@@ -88,7 +88,7 @@ UITabs.dashboard = {
       height = 214,
       x = 0,
       y = -162,
-      visibleRowCount = 4,
+      visibleRowCount = 3,
       rowHeight = 48,
     })
     panel.recentAwardsSection = Components.CreateScrollableSection(panel, {
@@ -98,7 +98,7 @@ UITabs.dashboard = {
       height = 214,
       x = 376,
       y = -162,
-      visibleRowCount = 4,
+      visibleRowCount = 3,
       rowHeight = 56,
     })
 

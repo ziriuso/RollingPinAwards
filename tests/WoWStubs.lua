@@ -258,6 +258,11 @@ local function createFrameObject(frameType, name, parent, template)
 
   function frame:SetText(value)
     self.text = value
+    if self.frameType == "EditBox" and type(self.scripts.OnTextChanged) == "function" and not self.__settingText then
+      self.__settingText = true
+      self.scripts.OnTextChanged(self)
+      self.__settingText = false
+    end
   end
 
   function frame:GetText()
