@@ -121,11 +121,17 @@
   - lifecycle wiring is split into `Core/Namespace.lua`, `Bootstrap.lua`, `Core/Events.lua`, and `Core/SlashCommands.lua`.
   - `tests/embedded_ace3_spec.lua` now verifies the GBankManager-style TOC structure and load order.
   - the refactored build has been copied to the documented local Retail AddOns folder; representative hashes match for `RollingPinAwards.toc`, `Bootstrap.lua`, `Core/Namespace.lua`, `Core/Events.lua`, `Sync/Codec.lua`, `Sync/Coordinator.lua`, and `UI/MinimapButton.lua`.
+- Current local offline-catch-up follow-up after `84726f6`:
+  - live testing showed online-to-online sync works, but an offline client could miss records created while offline.
+  - diagnostics showed the joining client active on numeric guild `426137461` while its `Last hello` used provisional guild key `tyrrish rebellion`; the online peer rejected that hello as `wrong guild`, so it did not send the catch-up snapshot.
+  - `Bootstrap.lua` now sends a fresh `sync_hello` when `RefreshActiveGuildContext()` migrates from a provisional name-based key to the stable guild id while sync is enabled.
+  - `tests/sync_spec.lua` covers this with `sync sends a fresh hello when provisional guild key becomes stable`.
 
 ## Priority Blocker
 - Top priority remains live sync validation. Real in-game testing previously showed no client-to-client sync despite the local Lua harness being green.
 - The local action-broadcast audit, hello/snapshot catch-up flow, and same-id stale snapshot guards are now pushed and deployed, but live two-client validation is still required before treating sync as fixed in game.
 - The latest local native chunking follow-up is verified locally but has not yet been live-validated in two Retail clients.
+- The latest offline-catch-up follow-up is verified locally but has not yet been live-validated in two Retail clients.
 - Current tests prove validation helpers, envelope construction, AceComm registration, and dispatcher routing, but they may not prove the full live transport path or that every local mutation broadcasts:
   - `Sync/Coordinator.lua` owns `BuildEnvelope` and `DispatchEnvelope`.
   - `Sync/Transport.lua` owns `Broadcast` and `SendHello`.
@@ -193,12 +199,19 @@
 1. Confirm both Retail clients are running the deployed `f61c8d3` build, then `/reload` both clients.
 2. In two same-guild clients, run `/rpa syncdebug` on both clients immediately after reload/login and confirm `Last outbound` shows `sync_hello`.
 3. Run `/rpa sync now` on the data-rich client, then `/rpa syncdebug` on both clients and confirm snapshot counts/inbound status update.
-4. Verify history and nominations specifically:
+4. Offline catch-up regression:
+  - keep the data-rich client online.
+  - log the second client fully out/offline.
+  - create a fresh nomination and direct award on the online client.
+  - log the second client back in and `/reload` if needed.
+  - run `/rpa syncdebug` on both clients and confirm the joining client sends/receives a stable numeric-guild hello and the online client responds with a snapshot.
+  - verify the missed nomination and award appear on the formerly offline client without clearing SavedVariables.
+5. Verify history and nominations specifically:
   - existing legacy/collided rows may already be damaged from pre-`f61c8d3` testing, so create fresh post-update test records before judging the fix.
   - do not clear SavedVariables or delete live records without explicit user approval.
-5. Test normal local mutations afterward: nomination create, vote, approve/reject, direct award, delete, rank permission save, and alias merge.
-6. Verify receiving-client merge behavior rerenders the visible tab after accepted inbound sync.
-7. If history still does not appear, inspect `/rpa syncdebug` last inbound/outbound plus sender authorization for `award` payloads before changing transport again.
+6. Test normal local mutations afterward: nomination create, vote, approve/reject, direct award, delete, rank permission save, and alias merge.
+7. Verify receiving-client merge behavior rerenders the visible tab after accepted inbound sync.
+8. If history still does not appear, inspect `/rpa syncdebug` last inbound/outbound plus sender authorization for `award` payloads before changing transport again.
 
 ## Verification
 - Full suite command:

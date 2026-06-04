@@ -157,9 +157,10 @@ function RPA:RefreshActiveGuildContext()
   local nextContext = self.GuildContext:Build()
   if nextContext then
     local previousContext = self.activeGuildContext
+    local guildKeyChanged = previousContext and previousContext.guildKey ~= nextContext.guildKey
     if previousContext
       and previousContext.guildName == nextContext.guildName
-      and previousContext.guildKey ~= nextContext.guildKey
+      and guildKeyChanged
       and self.db
       and type(self.db.MigrateGuildDatasetKey) == "function"
     then
@@ -167,6 +168,15 @@ function RPA:RefreshActiveGuildContext()
     end
 
     self.activeGuildContext = nextContext
+
+    if guildKeyChanged
+      and self.__rpaEnabled
+      and self.sync
+      and type(self.sync.SendHello) == "function"
+    then
+      self.sync:SendHello()
+    end
+
     return self.activeGuildContext
   end
 

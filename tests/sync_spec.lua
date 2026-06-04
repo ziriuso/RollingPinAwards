@@ -706,6 +706,26 @@ return {
     harness.assert_equal("sync_hello", manualEnvelope.payloadType)
   end,
 
+  ["sync sends a fresh hello when provisional guild key becomes stable"] = function()
+    local addon = setupNativeGuild({
+      guildName = "Tyrrish Rebellion",
+    })
+    local startupMessages = _G.__RPA_TEST_STATE.nativeCommMessages or {}
+    local startupEnvelope = addon.sync:DeserializeEnvelope(startupMessages[1].message)
+
+    harness.assert_equal("sync_hello", startupEnvelope.payloadType)
+    harness.assert_equal("tyrrish rebellion", startupEnvelope.payload.guildKey)
+
+    local beforeRefresh = #startupMessages
+    wow.setGuild("Tyrrish Rebellion", 426137461)
+    addon:RefreshActiveGuildContext()
+
+    harness.assert_true(#startupMessages > beforeRefresh)
+    local stableEnvelope = addon.sync:DeserializeEnvelope(startupMessages[beforeRefresh + 1].message)
+    harness.assert_equal("sync_hello", stableEnvelope.payloadType)
+    harness.assert_equal("426137461", stableEnvelope.payload.guildKey)
+  end,
+
   ["sync responds to hello with all syncable record types"] = function()
     local addon = setupNativeGuild()
     local guildKey = addon:GetActiveGuildContext().guildKey
