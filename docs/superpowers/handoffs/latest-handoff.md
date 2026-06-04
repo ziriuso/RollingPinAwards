@@ -36,6 +36,8 @@
   - award-backed tables render newest records first.
   - shared page headers align to the page content safe offset and render five font points larger.
   - Dashboard top-recipient and Leaderboard visible rows stay inside their table chrome and use scrollbars for extra records.
+  - navbar buttons now use the provided `Media/NavBar/<tab>.png` art and swap to `<tab>-selected.png` for the active page.
+  - navbar button backdrops are hidden behind the art; the full Admin-visible nav uses the 188px sizing margin plus a 32px left centerline offset, while the no-Admin nav keeps the 257px visible-button centering margin.
   - `docs/superpowers/specs/2026-06-04-ui-polish-followup-design.md` and `docs/superpowers/plans/2026-06-04-ui-polish-followup.md` capture this slice.
 - UI polish pass is largely implemented and deployed locally to both Retail and PTR.
 - Custom media icons are wired in under `Media/`.

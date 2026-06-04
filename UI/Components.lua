@@ -108,6 +108,17 @@ local function createFontString(parent, font, x, y, width, justifyH, justifyV, t
   return label
 end
 
+local function getNavButtonTexturePath(tabId, selected)
+  if type(tabId) ~= "string" or tabId == "" then
+    return nil
+  end
+
+  return ("Interface\\AddOns\\RollingPinAwards\\Media\\NavBar\\%s%s.png"):format(
+    tabId,
+    selected and "-selected" or ""
+  )
+end
+
 local function createArtworkFrame(parent, config)
   local artwork = CreateFrame("Frame", config.id, parent, "BackdropTemplate")
   artwork.width = config.width or 32
@@ -453,7 +464,7 @@ function Components.CreateTabButton(parent, spec, index)
 
     button.id = spec.id
     button.width = layout.tabWidth or 114
-    button.height = (layout.tabRailHeight or 52) - 12
+    button.height = layout.navButtonHeight or ((layout.tabRailHeight or 52) - 12)
 
     if button.SetSize then
       button:SetSize(button.width, button.height)
@@ -472,19 +483,13 @@ function Components.CreateTabButton(parent, spec, index)
       )
     end
 
-    applyBackdrop(button, {
-      bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-      edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-      tile = true,
-      tileSize = 16,
-      edgeSize = 8,
-      insets = {
-        left = 2,
-        right = 2,
-        top = 2,
-        bottom = 2,
-      },
-    }, colors.parchmentMuted, colors.brassMuted)
+    button.navTexture = button:CreateTexture(nil, "ARTWORK")
+    if button.navTexture.SetAllPoints then
+      button.navTexture:SetAllPoints(button)
+    end
+    if button.navTexture.SetTexture then
+      button.navTexture:SetTexture(getNavButtonTexturePath(spec.id, false))
+    end
 
     button.label = createFontString(
       button,
@@ -496,6 +501,11 @@ function Components.CreateTabButton(parent, spec, index)
       "TOP",
       spec.label
     )
+    if button.label.Hide then
+      button.label:Hide()
+    else
+      button.label.visible = false
+    end
 
     return button
   end
@@ -504,6 +514,19 @@ function Components.CreateTabButton(parent, spec, index)
     id = spec.id,
     label = spec.label,
   }
+end
+
+function Components.SetTabButtonSelected(button, selected)
+  if not button then
+    return
+  end
+
+  button.selected = selected == true
+  button.navTexturePath = getNavButtonTexturePath(button.id, button.selected)
+
+  if button.navTexture and button.navTexture.SetTexture then
+    button.navTexture:SetTexture(button.navTexturePath)
+  end
 end
 
 function Components.LayoutTabButtons(parent, buttons)
@@ -525,12 +548,38 @@ function Components.LayoutTabButtons(parent, buttons)
     return
   end
 
-  local tabWidth = layout.tabWidth or (visibleButtons[1].width or 114)
   local tabGap = layout.tabGap or 10
-  local groupWidth = (#visibleButtons * tabWidth) + (math.max(0, #visibleButtons - 1) * tabGap)
-  local startX = math.floor(((host.width or groupWidth) - groupWidth) / 2)
+  local totalTabCount = #(Styles.TabOrder or {})
+  local hasAdminVisible = #visibleButtons >= totalTabCount
+  local navMargin = hasAdminVisible
+    and (layout.navMarginWithAdmin or 188)
+    or (layout.navMarginWithoutAdmin or 257)
+  local background = parent.backgroundArt
+  local backgroundLeft = background and background.point and background.point[4] or 0
+  local backgroundWidth = background and background.width or (parent.width or host.width or 0)
+  if background and host.SetSize then
+    host.width = backgroundWidth
+    host:SetSize(host.width, host.height or (layout.tabRailHeight or 52))
+  end
+  if background and host.SetPoint then
+    if host.ClearAllPoints then
+      host:ClearAllPoints()
+    end
+    host:SetPoint("TOPLEFT", parent, "TOPLEFT", backgroundLeft, host.point and host.point[5] or -112)
+  end
+  local groupWidth = math.max(0, (backgroundWidth or 0) - (2 * navMargin))
+  local tabWidth = (groupWidth - (math.max(0, #visibleButtons - 1) * tabGap)) / #visibleButtons
+  local startX = navMargin
+  if hasAdminVisible then
+    startX = ((backgroundWidth - groupWidth) / 2) + (layout.navCenterOffsetWithAdmin or 0)
+  end
 
   for visibleIndex, button in ipairs(visibleButtons) do
+    button.width = tabWidth
+    button.height = layout.navButtonHeight or button.height
+    if button.SetSize then
+      button:SetSize(button.width, button.height)
+    end
     if button.ClearAllPoints then
       button:ClearAllPoints()
     end

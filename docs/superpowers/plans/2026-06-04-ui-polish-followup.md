@@ -14,6 +14,9 @@
   - newest-first order in award-backed tables.
   - shared page headers aligned to page content and five font points larger.
   - Dashboard top-recipient and Leaderboard last visible rows staying inside table chrome.
+  - navbar art paths switching between inactive and active selected textures.
+  - legacy navbar button backdrops hidden behind rendered art.
+  - background-relative navbar sizing margins of 188px with Admin and 257px without Admin, with the Admin-visible group centered to the header jewel using a 32px left offset.
 
 ## Implementation
 - Add shared content geometry tokens to `UI/Styles.lua`.
@@ -30,6 +33,9 @@
 - Sort public history rows by `createdAt` descending before History and Dashboard consume them.
 - Move the shared content-panel title to the page content safe offset and add a reusable header font delta style token.
 - Reduce the Dashboard top-recipient and Leaderboard visible row counts to fit their existing section heights.
+- Copy the provided navbar PNGs into `Media/NavBar/`, create tab button textures from those assets, hide the old text label, and refresh selected art from `RenderActiveTab`.
+- Remove the tab button backdrop once art owns the visual state.
+- Add navbar margin and center-offset style tokens, then calculate visible button width from the main background art edges.
 
 ## Verification
 - Run the full Lua suite with:

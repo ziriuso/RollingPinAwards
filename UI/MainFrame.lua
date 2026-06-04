@@ -117,6 +117,12 @@ function MainFrame:RenderActiveTab()
 
   self:RefreshTabVisibility()
 
+  if Components.SetTabButtonSelected then
+    for index, tab in ipairs(self.tabs) do
+      Components.SetTabButtonSelected(self.tabButtons[index], tab.id == self.activeTabId)
+    end
+  end
+
   local tab = self:GetActiveTab()
   if not tab then
     return nil

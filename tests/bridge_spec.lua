@@ -509,18 +509,49 @@ return {
     addon.mainFrame:EnsureRendered()
 
     local tabRail = addon.mainFrame.frame.tabRail
+    local background = addon.mainFrame.frame.backgroundArt
     local firstButton = addon.mainFrame.tabButtons[1]
     local lastButton = addon.mainFrame.tabButtons[#addon.mainFrame.tabButtons]
-    local firstLeft = firstButton.point and firstButton.point[4] or 0
-    local lastLeft = lastButton.point and lastButton.point[4] or 0
-    local rightGap = (tabRail.width or 0) - (lastLeft + (lastButton.width or 0))
+    local railLeft = tabRail.point and tabRail.point[4] or 0
+    local backgroundLeft = background.point and background.point[4] or 0
+    local backgroundRight = backgroundLeft + (background.width or 0)
+    local firstLeft = railLeft + (firstButton.point and firstButton.point[4] or 0)
+    local lastRight = railLeft + (lastButton.point and lastButton.point[4] or 0) + (lastButton.width or 0)
+    local groupCenter = firstLeft + ((lastRight - firstLeft) / 2)
+    local targetCenter = backgroundLeft + ((background.width or 0) / 2) - 32
 
-    harness.assert_true((tabRail.width or 0) < ((addon.mainFrame.frame.width or 0) - 100))
-    harness.assert_true(firstLeft > 10)
-    harness.assert_true(math.abs(firstLeft - rightGap) <= 1)
+    harness.assert_equal(background.width, tabRail.width)
+    harness.assert_equal(backgroundLeft, railLeft)
+    harness.assert_equal(math.floor(targetCenter + 0.5), math.floor(groupCenter + 0.5))
     harness.assert_nil(firstButton.label.textColor)
     harness.assert_equal("OUTLINE", firstButton.label.fontFlags)
     harness.assert_nil(firstButton.label.outlineLabels)
+  end,
+
+  ["tab rail uses art textures for active and inactive page states"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.mainFrame:EnsureRendered()
+
+    local dashboardButton = addon.mainFrame.tabButtons[1]
+    local awardButton = addon.mainFrame.tabButtons[2]
+
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\NavBar\\dashboard-selected.png", dashboardButton.navTexture.texturePath)
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\NavBar\\award.png", awardButton.navTexture.texturePath)
+    harness.assert_nil(dashboardButton.backdrop)
+    harness.assert_false(dashboardButton.label.visible)
+
+    addon.mainFrame:SelectTab("award")
+
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\NavBar\\dashboard.png", dashboardButton.navTexture.texturePath)
+    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\NavBar\\award-selected.png", awardButton.navTexture.texturePath)
   end,
 
   ["tab rail recenters visible buttons when admin is hidden"] = function()
@@ -537,6 +568,7 @@ return {
     addon.mainFrame:EnsureRendered()
 
     local tabRail = addon.mainFrame.frame.tabRail
+    local background = addon.mainFrame.frame.backgroundArt
     local visibleButtons = {}
     for _, button in ipairs(addon.mainFrame.tabButtons or {}) do
       if button.visible then
@@ -547,11 +579,16 @@ return {
     harness.assert_equal(5, #visibleButtons)
     local firstButton = visibleButtons[1]
     local lastButton = visibleButtons[#visibleButtons]
-    local firstLeft = firstButton.point and firstButton.point[4] or 0
-    local lastLeft = lastButton.point and lastButton.point[4] or 0
-    local rightGap = (tabRail.width or 0) - (lastLeft + (lastButton.width or 0))
+    local railLeft = tabRail.point and tabRail.point[4] or 0
+    local backgroundLeft = background.point and background.point[4] or 0
+    local backgroundRight = backgroundLeft + (background.width or 0)
+    local firstLeft = railLeft + (firstButton.point and firstButton.point[4] or 0)
+    local lastRight = railLeft + (lastButton.point and lastButton.point[4] or 0) + (lastButton.width or 0)
+    local leftGap = firstLeft - backgroundLeft
+    local rightGap = backgroundRight - lastRight
 
-    harness.assert_true(math.abs(firstLeft - rightGap) <= 1)
+    harness.assert_equal(257, math.floor(leftGap + 0.5))
+    harness.assert_equal(257, math.floor(rightGap + 0.5))
   end,
 
   ["dashboard renders stats, content sections, and footer actions after recomposition"] = function()
