@@ -568,6 +568,34 @@ local function buildAceLibStub()
   end
 end
 
+local function storeNativeComm(prefix, message, distribution, target)
+  state.nativeCommMessages = state.nativeCommMessages or {}
+
+  local maxBytes = tonumber(state.nativeCommMaxBytes or 0) or 0
+  if maxBytes > 0 and type(message) == "string" and #message > maxBytes then
+    state.nativeCommRejectedMessages = state.nativeCommRejectedMessages or {}
+    state.nativeCommRejectedMessages[#state.nativeCommRejectedMessages + 1] = {
+      prefix = prefix,
+      message = message,
+      distribution = distribution,
+      target = target,
+      length = #message,
+    }
+
+    return false
+  end
+
+  state.lastNativeCommMessage = {
+    prefix = prefix,
+    message = message,
+    distribution = distribution,
+    target = target,
+  }
+  state.nativeCommMessages[#state.nativeCommMessages + 1] = state.lastNativeCommMessage
+
+  return true
+end
+
 local function loadAddonFromToc(path)
   for line in io.lines(path or "RollingPinAwards.toc") do
     local entry = line:match("^%s*(.-)%s*$")
@@ -598,6 +626,7 @@ function wow.reset(seed)
     ace3 = seed.ace3,
     noAceAddon = seed.noAceAddon,
     nativeComm = seed.nativeComm,
+    nativeCommMaxBytes = seed.nativeCommMaxBytes,
     loggedIn = seed.loggedIn == true,
     serializedPayloads = {},
     chatMessages = {},
@@ -646,16 +675,7 @@ function wow.reset(seed)
       state.nativeCommPrefix = prefix
     end,
     SendAddonMessage = function(prefix, message, distribution, target)
-      state.nativeCommMessages = state.nativeCommMessages or {}
-      state.lastNativeCommMessage = {
-        prefix = prefix,
-        message = message,
-        distribution = distribution,
-        target = target,
-      }
-      state.nativeCommMessages[#state.nativeCommMessages + 1] = state.lastNativeCommMessage
-
-      return true
+      return storeNativeComm(prefix, message, distribution, target)
     end,
   } or nil
 
@@ -699,6 +719,7 @@ function wow.reset(seed)
   _G.IsLoggedIn = function()
     return state.loggedIn == true
   end
+  _G.ChatThrottleLib = state.ace3 and {} or nil
   _G.LibStub = state.ace3 and buildAceLibStub() or nil
   _G.RollingPinAwards = nil
   _G.RollingPinAwardsDB = state.savedVariables

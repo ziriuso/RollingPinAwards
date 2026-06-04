@@ -1,40 +1,3 @@
-local function createAddonObject()
-  local existing = _G.RollingPinAwards or {}
-  local libStub = rawget(_G, "LibStub")
-
-  if type(libStub) ~= "function" then
-    existing.__rpaUsesAce3 = false
-
-    return existing
-  end
-
-  local embedded = {}
-  local function embedLibrary(libraryName)
-    local library = libStub(libraryName, true)
-    if library and type(library.Embed) == "function" then
-      library:Embed(existing)
-      embedded[libraryName] = true
-      return true
-    end
-
-    embedded[libraryName] = false
-    return false
-  end
-
-  embedLibrary("AceEvent-3.0")
-  embedLibrary("AceConsole-3.0")
-  embedLibrary("AceComm-3.0")
-  embedLibrary("AceSerializer-3.0")
-
-  existing.__rpaAceLibraries = embedded
-  existing.__rpaUsesAce3 = embedded["AceComm-3.0"] == true
-    or embedded["AceSerializer-3.0"] == true
-    or embedded["AceConsole-3.0"] == true
-    or embedded["AceEvent-3.0"] == true
-
-  return existing
-end
-
 local function getOptionalLibrary(libraryName)
   local libStub = rawget(_G, "LibStub")
   if type(libStub) ~= "function" then
@@ -44,7 +7,7 @@ local function getOptionalLibrary(libraryName)
   return libStub(libraryName, true)
 end
 
-local RPA = createAddonObject()
+local RPA = _G.RollingPinAwards or {}
 _G.RollingPinAwards = RPA
 
 local Constants = RPA.Constants or {
@@ -89,22 +52,6 @@ RPA.UIBridge = Bridge
 RPA.ADDON_NAME = Constants.ADDON_NAME
 RPA.SLASH_COMMAND = Constants.SLASH_COMMAND
 RPA.defaults = Defaults
-
-local function registerFallbackSlashCommand(addon)
-  _G.SlashCmdList = _G.SlashCmdList or {}
-  _G.SLASH_ROLLINGPINAWARDS1 = addon.SLASH_COMMAND
-  _G.SlashCmdList.ROLLINGPINAWARDS = function(message)
-    if not addon.__rpaInitialized then
-      addon:OnInitialize()
-    end
-
-    if not addon.__rpaEnabled and (type(IsLoggedIn) ~= "function" or IsLoggedIn()) then
-      addon:OnEnable()
-    end
-
-    return addon:HandleChatCommand(message or "")
-  end
-end
 
 function RPA:OnInitialize()
   if self.__rpaInitialized or self.__rpaInitializing then
@@ -191,7 +138,9 @@ function RPA:OnInitialize()
   end
 
   if self.commands then
-    registerFallbackSlashCommand(self)
+    if type(self.RegisterFallbackSlashCommand) == "function" then
+      self:RegisterFallbackSlashCommand()
+    end
   end
 
   self.__rpaInitializing = nil
@@ -300,8 +249,12 @@ function RPA:OnCommReceived(prefix, message, distribution, sender)
     end
 
     envelope = decoded
-  elseif self.sync and type(self.sync.DeserializeEnvelope) == "function" and type(message) == "string" then
-    local decoded, decodeErr = self.sync:DeserializeEnvelope(message)
+  elseif self.sync and type(self.sync.DecodeNativeMessage) == "function" and type(message) == "string" then
+    local decoded, decodeErr = self.sync:DecodeNativeMessage(message, distribution, sender)
+    if decodeErr == "partial" then
+      return true
+    end
+
     if not decoded then
       if type(self.sync.RecordInbound) == "function" then
         self.sync:RecordInbound({
@@ -340,40 +293,8 @@ function RPA:HandleChatCommand(message)
   return self.commands:Handle(message or "")
 end
 
-registerFallbackSlashCommand(RPA)
-
-if type(CreateFrame) == "function" then
-  local startupFrame = CreateFrame("Frame", "RollingPinAwardsStartupFrame")
-  startupFrame:RegisterEvent("ADDON_LOADED")
-  startupFrame:RegisterEvent("PLAYER_LOGIN")
-  startupFrame:RegisterEvent("PLAYER_GUILD_UPDATE")
-  startupFrame:SetScript("OnEvent", function(_, event, addonName)
-    if event == "ADDON_LOADED" and addonName == RPA.ADDON_NAME then
-      RPA:OnInitialize()
-      return
-    end
-
-    if event == "PLAYER_LOGIN" then
-      if not RPA.__rpaInitialized then
-        RPA:OnInitialize()
-      end
-
-      RPA:OnEnable()
-      RPA:RefreshActiveGuildContext()
-      return
-    end
-
-    if event == "PLAYER_GUILD_UPDATE" then
-      if not RPA.__rpaInitialized then
-        RPA:OnInitialize()
-      end
-
-      RPA:RefreshActiveGuildContext()
-      if RPA.__rpaEnabled and RPA.sync and type(RPA.sync.SendHello) == "function" then
-        RPA.sync:SendHello()
-      end
-    end
-  end)
+if type(RPA.RegisterFallbackSlashCommand) == "function" then
+  RPA:RegisterFallbackSlashCommand()
 end
 
 return RPA

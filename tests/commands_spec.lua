@@ -106,6 +106,8 @@ return {
     harness.assert_true(addon.__rpaLastChatOutput[1]:match("Rolling Pin Awards sync diagnostics") ~= nil)
     harness.assert_true(addon.__rpaLastChatOutput[2]:match("Guild:") ~= nil)
     harness.assert_true(addon.__rpaLastChatOutput[3]:match("Comm prefix:") ~= nil)
+    harness.assert_true(table.concat(addon.__rpaLastChatOutput, "\n"):match("LibStub:") ~= nil)
+    harness.assert_true(table.concat(addon.__rpaLastChatOutput, "\n"):match("ChatThrottleLib:") ~= nil)
   end,
 
   ["minimap button uses custom icon and toggles the main frame"] = function()

@@ -23,10 +23,18 @@ Privileged payload mapping:
 - Comm payloads use the addon prefix `RPAAwardsSync`.
 - When Ace3 is available, sync envelopes flow through directly embedded `AceComm-3.0` and `AceSerializer-3.0`, matching the proven GBankManager transport pattern instead of requiring `AceAddon-3.0` to construct the addon object first.
 - When Ace3 comm/serializer APIs are unavailable, sync falls back to native `C_ChatInfo.RegisterAddonMessagePrefix` and `C_ChatInfo.SendAddonMessage` with a small flat-field serializer for the existing payload shapes.
-- `Core.lua` owns comm registration and inbound dispatch.
-- `Sync.lua` owns envelope construction, outbound broadcast, and payload-type routing.
+- Native fallback messages larger than the addon-message limit are split into `RPA2C` chunks and reassembled before dispatch. Partial chunks do not mutate the database.
+- `Bootstrap.lua` owns service initialization and comm registration.
+- `Core/Events.lua` owns `ADDON_LOADED`, `PLAYER_LOGIN`, and `PLAYER_GUILD_UPDATE` lifecycle wiring.
+- `Bootstrap.lua` routes inbound addon messages through `RPA:OnCommReceived`.
+- `Sync/Codec.lua` owns native envelope serialization and `RPA2C` chunk reassembly.
+- `Sync/Transport.lua` owns outbound Ace/native sends and hello broadcasts.
+- `Sync/Snapshot.lua` owns deterministic snapshot streaming.
+- `Sync/Merge.lua` owns `Accept*` merge and authorization helpers.
+- `Sync/Diagnostics.lua` owns `/rpa syncdebug` output and receive summaries.
+- `Sync/Coordinator.lua` owns envelope construction and payload-type routing.
 - Local mutations broadcast immediately for awards, nominations, nomination votes, rank permission changes, and alias mapping changes.
-- `Core.lua` sends a `sync_hello` once per active guild when sync enables, and again after guild context appears later through `PLAYER_GUILD_UPDATE`.
+- `Bootstrap.lua` sends a `sync_hello` once per active guild when sync enables, and `Core/Events.lua` sends again after guild context appears later through `PLAYER_GUILD_UPDATE`.
 - Receiving `sync_hello` answers with a full flat record stream for rank permissions, aliases, nominations, votes, and awards, followed by `sync_snapshot_complete`.
 - `/rpa sync now` and `/rpa sync all` force the same hello plus full snapshot stream for live two-client testing.
 - Inbound accepted payloads rerender the active tab when the main window has already been rendered.
@@ -46,8 +54,11 @@ Use `/rpa syncdebug` or `/rpa sync debug` to print copy-friendly chat diagnostic
 - Ace3 transport and serializer availability
 - individual AceComm/AceSerializer embed state
 - native addon-message fallback availability
+- LibStub and ChatThrottleLib presence
+- native chunk state for the most recent chunked inbound message
 - last outbound payload result
 - last inbound payload result
+- receive summaries by payload type, including accepted and rejected counts
 - last hello result
 - last snapshot counts
 
@@ -58,7 +69,7 @@ Use `/rpa syncdebug` or `/rpa sync debug` to print copy-friendly chat diagnostic
 
 ## Current Service Surface
 
-`Sync.lua` currently provides conservative acceptance helpers for:
+`Sync/Merge.lua` currently provides conservative acceptance helpers for:
 
 - sync hello and snapshot completion markers
 - award updates

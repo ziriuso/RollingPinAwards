@@ -572,16 +572,94 @@ return {
     harness.assert_true(#(_G.__RPA_TEST_STATE.nativeCommMessages or {}) >= 1)
 
     local award = addon.awards:CreateDirectAward("Burny-Stormrage", "Set the oven to lava")
-    local sent = _G.__RPA_TEST_STATE.lastNativeCommMessage
-    local envelope = addon.sync:DeserializeEnvelope(sent.message)
+    local envelope
+    for _, sent in ipairs(_G.__RPA_TEST_STATE.nativeCommMessages or {}) do
+      local decoded, err = addon.sync:DecodeNativeMessage(
+        sent.message,
+        sent.distribution,
+        "Guildmaster-Stormrage"
+      )
+      if err ~= "partial" and decoded and decoded.payloadType == "award" then
+        envelope = decoded
+      end
+    end
 
     harness.assert_true(award ~= nil)
-    harness.assert_equal(addon.Constants.COMM_PREFIX, sent.prefix)
-    harness.assert_equal("GUILD", sent.distribution)
-    harness.assert_equal("string", type(sent.message))
+    harness.assert_true(envelope ~= nil)
     harness.assert_equal("award", envelope.payloadType)
     harness.assert_equal(award.awardId, envelope.payload.awardId)
     harness.assert_equal("direct", envelope.payload.source)
+  end,
+
+  ["native fallback chunks long nomination envelopes under the addon-message limit"] = function()
+    local addon = setupNativeGuild({
+      nativeCommMaxBytes = 255,
+    })
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    _G.__RPA_TEST_STATE.nativeCommMessages = {}
+    _G.__RPA_TEST_STATE.nativeCommRejectedMessages = {}
+
+    local ok = addon.sync:Broadcast("nomination", {
+      nominationId = "nom:Guildmaster-Stormrage:1717336800:99",
+      guildKey = guildKey,
+      nominee = "Moonrustle-Stormrage",
+      reason = string.rep("Helpful bakery logistics. ", 18),
+      awardType = "burnt",
+      status = "pending",
+      nominatedBy = "Guildmaster-Stormrage",
+      createdAt = 1717336800,
+      lastModifiedAt = 1717336800,
+      lastModifiedBy = "Guildmaster-Stormrage",
+    }, "GUILD")
+
+    harness.assert_true(ok)
+    harness.assert_equal(0, #(_G.__RPA_TEST_STATE.nativeCommRejectedMessages or {}))
+    harness.assert_true(#(_G.__RPA_TEST_STATE.nativeCommMessages or {}) > 1)
+
+    for _, sent in ipairs(_G.__RPA_TEST_STATE.nativeCommMessages or {}) do
+      harness.assert_true(#sent.message <= 255)
+    end
+  end,
+
+  ["native fallback reassembles chunked inbound nominations before dispatch"] = function()
+    local addon = setupNativeGuild({
+      nativeCommMaxBytes = 255,
+    })
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    _G.__RPA_TEST_STATE.nativeCommMessages = {}
+
+    addon.sync:Broadcast("nomination", {
+      nominationId = "nom:Officerone-Stormrage:1717336800:100",
+      guildKey = guildKey,
+      nominee = "Moonrustle-Stormrage",
+      reason = string.rep("Chunked inbound bakery logistics. ", 16),
+      awardType = "golden",
+      status = "pending",
+      nominatedBy = "Officerone-Stormrage",
+      createdAt = 1717336800,
+      lastModifiedAt = 1717336800,
+      lastModifiedBy = "Officerone-Stormrage",
+    }, "GUILD")
+
+    local dispatchedNominationId
+    addon.sync.AcceptNomination = function(_, payload)
+      dispatchedNominationId = payload.nominationId
+
+      return true
+    end
+
+    for _, sent in ipairs(_G.__RPA_TEST_STATE.nativeCommMessages or {}) do
+      addon:OnCommReceived(
+        addon.Constants.COMM_PREFIX,
+        sent.message,
+        sent.distribution,
+        "Officerone-Stormrage"
+      )
+    end
+
+    harness.assert_equal("nom:Officerone-Stormrage:1717336800:100", dispatchedNominationId)
+    harness.assert_equal("nomination", addon.sync.lastInbound.payloadType)
+    harness.assert_true(addon.sync.lastInbound.ok)
   end,
 
   ["native comm fallback inbound messages deserialize and dispatch"] = function()
@@ -696,8 +774,15 @@ return {
 
     local seen = {}
     for _, message in ipairs(_G.__RPA_TEST_STATE.nativeCommMessages or {}) do
-      local envelope = addon.sync:DeserializeEnvelope(message.message)
-      seen[envelope.payloadType] = true
+      local envelope, err = addon.sync:DecodeNativeMessage(
+        message.message,
+        message.distribution,
+        "Guildmaster-Stormrage"
+      )
+      if err ~= "partial" then
+        harness.assert_true(envelope ~= nil)
+        seen[envelope.payloadType] = true
+      end
     end
 
     harness.assert_true(seen.rank_permissions)

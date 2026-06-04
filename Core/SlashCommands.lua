@@ -108,4 +108,20 @@ function Commands:Handle(message)
   return nil, "unknown command"
 end
 
+function RPA:RegisterFallbackSlashCommand()
+  _G.SlashCmdList = _G.SlashCmdList or {}
+  _G.SLASH_ROLLINGPINAWARDS1 = self.SLASH_COMMAND or "/rpa"
+  _G.SlashCmdList.ROLLINGPINAWARDS = function(message)
+    if not self.__rpaInitialized then
+      self:OnInitialize()
+    end
+
+    if not self.__rpaEnabled and (type(IsLoggedIn) ~= "function" or IsLoggedIn()) then
+      self:OnEnable()
+    end
+
+    return self:HandleChatCommand(message or "")
+  end
+end
+
 return RPA.Commands
