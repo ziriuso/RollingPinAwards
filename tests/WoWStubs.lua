@@ -558,14 +558,19 @@ local function buildAceLibStub()
     libraries["AceAddon-3.0"] = nil
   end
 
-  return function(libraryName, silent)
-    local library = libraries[libraryName]
-    if library or silent then
-      return library
-    end
+  local libStub = {}
+  setmetatable(libStub, {
+    __call = function(_, libraryName, silent)
+      local library = libraries[libraryName]
+      if library or silent then
+        return library
+      end
 
-    error("missing library: " .. tostring(libraryName))
-  end
+      error("missing library: " .. tostring(libraryName))
+    end,
+  })
+
+  return libStub
 end
 
 local function storeNativeComm(prefix, message, distribution, target)

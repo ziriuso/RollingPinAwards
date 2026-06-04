@@ -126,12 +126,18 @@
   - diagnostics showed the joining client active on numeric guild `426137461` while its `Last hello` used provisional guild key `tyrrish rebellion`; the online peer rejected that hello as `wrong guild`, so it did not send the catch-up snapshot.
   - `Bootstrap.lua` now sends a fresh `sync_hello` when `RefreshActiveGuildContext()` migrates from a provisional name-based key to the stable guild id while sync is enabled.
   - `tests/sync_spec.lua` covers this with `sync sends a fresh hello when provisional guild key becomes stable`.
+- Current local AceComm activation follow-up:
+  - live diagnostics still showed `LibStub=false` and `Ace libs: Comm=false Serializer=false` even though the TOC embeds LibStub and AceComm.
+  - root cause: real LibStub is a callable table with `__call`, while `Core/Namespace.lua` and `Bootstrap.lua` only accepted `type(LibStub) == "function"`.
+  - `Core/Namespace.lua` and `Bootstrap.lua` now accept callable LibStub tables, so embedded `AceComm-3.0`, `AceSerializer-3.0`, `AceConsole-3.0`, `AceEvent-3.0`, and `AceDB-3.0` can activate.
+  - `tests/WoWStubs.lua` now models LibStub as a callable table, and Ace integration tests cover the real shape.
 
 ## Priority Blocker
 - Top priority remains live sync validation. Real in-game testing previously showed no client-to-client sync despite the local Lua harness being green.
 - The local action-broadcast audit, hello/snapshot catch-up flow, and same-id stale snapshot guards are now pushed and deployed, but live two-client validation is still required before treating sync as fixed in game.
 - The latest local native chunking follow-up is verified locally but has not yet been live-validated in two Retail clients.
 - The latest offline-catch-up follow-up is verified locally but has not yet been live-validated in two Retail clients.
+- The latest AceComm activation follow-up is verified locally but has not yet been live-validated in two Retail clients.
 - Current tests prove validation helpers, envelope construction, AceComm registration, and dispatcher routing, but they may not prove the full live transport path or that every local mutation broadcasts:
   - `Sync/Coordinator.lua` owns `BuildEnvelope` and `DispatchEnvelope`.
   - `Sync/Transport.lua` owns `Broadcast` and `SendHello`.

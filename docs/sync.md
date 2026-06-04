@@ -22,6 +22,7 @@ Privileged payload mapping:
 
 - Comm payloads use the addon prefix `RPAAwardsSync`.
 - When Ace3 is available, sync envelopes flow through directly embedded `AceComm-3.0` and `AceSerializer-3.0`, matching the proven GBankManager transport pattern instead of requiring `AceAddon-3.0` to construct the addon object first.
+- LibStub is a callable table in the embedded Ace3 library, so the addon treats callable tables and functions as valid LibStub providers before embedding AceComm/AceSerializer.
 - When Ace3 comm/serializer APIs are unavailable, sync falls back to native `C_ChatInfo.RegisterAddonMessagePrefix` and `C_ChatInfo.SendAddonMessage` with a small flat-field serializer for the existing payload shapes.
 - Native fallback messages larger than the addon-message limit are split into `RPA2C` chunks and reassembled before dispatch. Partial chunks do not mutate the database.
 - `Bootstrap.lua` owns service initialization and comm registration.

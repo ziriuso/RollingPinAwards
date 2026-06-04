@@ -1,10 +1,19 @@
 local function getOptionalLibrary(libraryName)
   local libStub = rawget(_G, "LibStub")
-  if type(libStub) ~= "function" then
+  local metatable = type(libStub) == "table" and getmetatable(libStub) or nil
+  local callable = type(libStub) == "function"
+    or (type(metatable) == "table" and type(metatable.__call) == "function")
+
+  if not callable then
     return nil
   end
 
-  return libStub(libraryName, true)
+  local ok, library = pcall(libStub, libraryName, true)
+  if not ok then
+    return nil
+  end
+
+  return library
 end
 
 local RPA = _G.RollingPinAwards or {}

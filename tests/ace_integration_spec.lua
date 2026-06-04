@@ -15,6 +15,7 @@ return {
     harness.assert_true(type(addon.SendCommMessage) == "function")
     harness.assert_true(type(addon.Serialize) == "function")
     harness.assert_true(addon.__rpaUsesAce3 == true)
+    harness.assert_true(addon.__rpaLibStubPresent == true)
   end,
 
   ["core bootstrap embeds ace comm and serializer without ace addon"] = function()
