@@ -3,25 +3,12 @@
 ## Repo
 - Path: `C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards`
 - Branch: `codex/rolling-pin-awards-mvp`
-- Pushed checkpoint: `f61c8d3b6047716588921ca0bf51fadabf355817` (`fix: harden sync record merges`)
-- Current working tree now has an uncommitted native sync transport follow-up and GBankManager-style structure refactor after `f61c8d3`.
-  - `Bootstrap.lua`
-  - `Core/`
-  - `Data/`
-  - `Domain/`
-  - `Sync/`
-  - `UI/MinimapButton.lua`
-  - `RollingPinAwards.toc`
-  - `docs/sync.md`
-  - `tests/WoWStubs.lua`
-  - `tests/commands_spec.lua`
-  - `tests/embedded_ace3_spec.lua`
-  - `tests/sync_spec.lua`
-  - `docs/superpowers/handoffs/latest-handoff.md`
-  - `docs/superpowers/specs/2026-06-03-addon-structure-refactor-design.md`
-  - `docs/superpowers/specs/2026-06-03-sync-transport-refactor-design.md`
-  - `docs/superpowers/plans/2026-06-03-addon-structure-refactor.md`
-  - `docs/superpowers/plans/2026-06-03-sync-transport-refactor.md`
+- Pushed checkpoint: `bd207b4ffc76ec728a91bd881bbdc2dd8dc23b75` (`fix: preserve offline delete sync tombstones`)
+- Current working tree is clean against `origin/codex/rolling-pin-awards-mvp` except local-only untracked folders:
+  - `.figma-make-inspect/`
+  - `.research/`
+  - `tools/`
+- Do not stage the local-only folders unless explicitly instructed.
 
 ## Current State
 - Current local UI polish follow-up after sync validation looked good:
@@ -40,7 +27,7 @@
   - navbar button backdrops are hidden behind the art; the full Admin-visible nav uses the 188px sizing margin plus a 60px left centerline offset, and the no-Admin nav centers its Nominations button on that same visual centerline.
   - award and linked nomination deletes are retained as hidden sync tombstones so offline clients receive deletes during catch-up snapshots and cannot resurrect older rows.
   - `docs/superpowers/specs/2026-06-04-ui-polish-followup-design.md` and `docs/superpowers/plans/2026-06-04-ui-polish-followup.md` capture this slice.
-- UI polish pass is largely implemented and deployed locally to both Retail and PTR.
+- UI polish pass is largely implemented. Current key files match the deployed Retail addon folder, but the PTR addon folder still contains the older pre-refactor flat module layout and is not ready for validating the current build until redeployed.
 - Custom media icons are wired in under `Media/`.
 - Burnt and Golden rolling pin award types are implemented across direct awards, nominations, history, dashboard, and leaderboard.
 - Leaderboard supports `Burnt`, `Golden`, and `Combined` modes.
@@ -218,7 +205,7 @@
 - `tests/bridge_spec.lua`
 
 ## Likely Next Investigation
-1. Confirm both Retail clients are running the deployed `f61c8d3` build, then `/reload` both clients.
+1. Confirm both Retail clients are running the deployed `bd207b4` build, then `/reload` both clients. Retail key-file hashes matched the repo on 2026-06-05; PTR still had the older flat module layout and should be redeployed before PTR validation.
 2. In two same-guild clients, run `/rpa syncdebug` on both clients immediately after reload/login and confirm `Last outbound` shows `sync_hello`.
 3. Run `/rpa sync now` on the data-rich client, then `/rpa syncdebug` on both clients and confirm snapshot counts/inbound status update.
 4. Offline catch-up regression:
@@ -239,6 +226,7 @@
 - Full suite command:
   - `powershell -ExecutionPolicy Bypass -File .\tests\run.ps1`
 - Last known result:
+  - 2026-06-05 full suite passed with `RPA_LUA=C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards\tools\lua\lua54.exe`.
   - full suite passed after setting `RPA_LUA=C:\Users\Ziri\Documents\Codex\2026-05-11\GBankManager\.worktrees\gbankmanager-v1\tools\lua\lua.exe`
   - native comm fallback slice passed with the same `RPA_LUA`
   - sync-filtered tests passed after adding startup/manual hello and hello-triggered snapshot streaming
@@ -255,11 +243,12 @@
 ## Untracked Local-Only Items Left Alone
 - `.figma-make-inspect/`
 - `.research/`
+- `tools/`
 
 ## Resume Order
 1. Read this handoff.
-2. Run `git status --short` and note the uncommitted native sync transport follow-up, GBankManager-style structure refactor, `.figma-make-inspect/`, `.research/`, and local `tools/` Lua runtime.
+2. Run `git status --short` and confirm the branch is clean against origin except `.figma-make-inspect/`, `.research/`, and local `tools/` Lua runtime.
 3. Run the full test suite with `RPA_LUA=tools\lua\lua54.exe` if making new code changes.
-4. `/reload` both Retail clients so they load the copied native chunking/refactor build.
+4. `/reload` both Retail clients so they load the copied `bd207b4` build. Redeploy PTR first if testing there; it was stale on 2026-06-05.
 5. Validate sync in the real WoW client with two clients, using `/rpa syncdebug` and `/rpa sync now`.
 6. Only after real sync works, continue UI polish cleanup, starting with dashboard margin/card alignment.
