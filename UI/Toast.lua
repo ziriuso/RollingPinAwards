@@ -165,7 +165,7 @@ function Toast:EnsureToastFrame()
     justifyH = "CENTER",
     justifyV = "TOP",
     font = "GameFontNormalLarge",
-    fontSizeDelta = 2,
+    textRole = "cardHeader",
   })
 
   frame.reasonLabel = Components.CreateLabel(frame, {
@@ -176,7 +176,6 @@ function Toast:EnsureToastFrame()
     justifyH = "CENTER",
     justifyV = "TOP",
     font = "GameFontHighlight",
-    outline = true,
   })
 
   frame.closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")

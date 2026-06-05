@@ -4,6 +4,8 @@ local wow = require("tests.WoWStubs")
 local BROWN = { 115 / 255, 64 / 255, 30 / 255, 1 }
 local BUTTON_TAN = { 223 / 255, 198 / 255, 163 / 255, 1 }
 local BLACK = { 0, 0, 0, 1 }
+local REGULAR_FONT = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Regular.ttf"
+local BOLD_FONT = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf"
 
 local function assert_color(label, color)
   harness.assert_true(label.textColor ~= nil)
@@ -18,6 +20,7 @@ local function assert_text_role(label, role, height, color, bold)
   harness.assert_equal(height, label.fontHeight)
   harness.assert_nil(label.fontFlags)
   harness.assert_equal(bold == true and "bold" or nil, label.fontWeight)
+  harness.assert_equal(bold == true and BOLD_FONT or REGULAR_FONT, label.fontFile)
   assert_color(label, color)
 end
 

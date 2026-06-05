@@ -78,10 +78,12 @@ local function applyTextTreatment(label, options)
   if label.GetFont and label.SetFont then
     local fontFile, fontHeight = label:GetFont()
     if fontFile and fontHeight then
+      local nextFontFile = role and role.fontFile or fontFile
       local nextHeight = role and role.fontHeight or (fontHeight + (options.fontSizeDelta or 0))
-      label:SetFont(fontFile, nextHeight, nil)
+      label:SetFont(nextFontFile, nextHeight, nil)
     end
   else
+    label.fontFile = role and role.fontFile or label.fontFile
     label.fontHeight = role and role.fontHeight or ((label.fontHeight or 12) + (options.fontSizeDelta or 0))
     label.fontFlags = nil
   end

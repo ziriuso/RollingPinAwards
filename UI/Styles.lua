@@ -34,26 +34,35 @@ RPA.UIStyles = {
     darkPanel = { 0.12, 0.08, 0.06, 0.98 },
     glow = { 0.98, 0.86, 0.45, 0.26 },
   },
+  Fonts = {
+    regular = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Regular.ttf",
+    bold = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf",
+  },
   Typography = {
     tabHeader = {
+      fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf",
       fontHeight = 24,
       color = { 115 / 255, 64 / 255, 30 / 255, 1 },
       bold = true,
     },
     tabDescription = {
+      fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Regular.ttf",
       fontHeight = 16,
       color = { 0, 0, 0, 1 },
     },
     cardHeader = {
+      fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf",
       fontHeight = 20,
       color = { 115 / 255, 64 / 255, 30 / 255, 1 },
       bold = true,
     },
     cardDescription = {
+      fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Regular.ttf",
       fontHeight = 16,
       color = { 0, 0, 0, 1 },
     },
     buttonText = {
+      fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf",
       fontHeight = 20,
       color = { 223 / 255, 198 / 255, 163 / 255, 1 },
       bold = true,

@@ -53,12 +53,12 @@
   - navbar buttons now use the provided `Media/NavBar/<tab>.png` art and swap to `<tab>-selected.png` for the active page.
   - navbar button backdrops are hidden behind the art; the full Admin-visible nav uses the 188px sizing margin and aligns the Nominations/History gap with the Dashboard `Top Recipient`/`Pending Nominations` gap, while the no-Admin nav centers its Nominations button on that same gap.
   - shared typography roles now remove WoW outline flags across page text:
-    - Tab Header: 24pt, bold role, `#73401E`.
-    - Tab Description: 16pt, black.
-    - Card Header and Card Value: 20pt, bold role, `#73401E`.
-    - Card Descriptor: 16pt, black.
-    - Button Text: 20pt, bold role, `#DFC6A3`.
-  - `UI/Styles.lua` owns the shared typography tokens, and `UI/Components.lua` applies them through reusable content panel, section, stat-card, label, button, nav-button, row, checkbox, and modal factories.
+    - Tab Header: 24pt, Roboto Bold, `#73401E`.
+    - Tab Description: 16pt, Roboto Regular, black.
+    - Card Header and Card Value: 20pt, Roboto Bold, `#73401E`.
+    - Card Descriptor: 16pt, Roboto Regular, black.
+    - Button Text: 20pt, Roboto Bold, `#DFC6A3`.
+  - `Media/Fonts/Roboto-Regular.ttf` and `Media/Fonts/Roboto-Bold.ttf` are bundled with the addon, `UI/Styles.lua` owns their font paths, and `UI/Components.lua` applies them through reusable content panel, section, stat-card, label, button, nav-button, row, checkbox, and modal factories.
   - award and linked nomination deletes are retained as hidden sync tombstones so offline clients receive deletes during catch-up snapshots and cannot resurrect older rows.
   - `docs/superpowers/specs/2026-06-04-ui-polish-followup-design.md` and `docs/superpowers/plans/2026-06-04-ui-polish-followup.md` capture this slice.
   - `docs/superpowers/specs/2026-06-05-typography-readability-design.md` and `docs/superpowers/plans/2026-06-05-typography-readability.md` capture the typography slice.

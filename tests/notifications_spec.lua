@@ -1,6 +1,9 @@
 local harness = require("tests.TestHarness")
 local wow = require("tests.WoWStubs")
 
+local REGULAR_FONT = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Regular.ttf"
+local BOLD_FONT = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf"
+
 local function setupPlayer(seed)
   seed = seed or {}
   seed.nativeComm = seed.nativeComm ~= false
@@ -107,6 +110,8 @@ return {
     harness.assert_equal("Saved the pull from certain doom", addon.toast.frame.reasonLabel.text)
     harness.assert_equal("CENTER", addon.toast.frame.titleLabel.justifyH)
     harness.assert_equal("CENTER", addon.toast.frame.reasonLabel.justifyH)
+    harness.assert_equal(BOLD_FONT, addon.toast.frame.titleLabel.fontFile)
+    harness.assert_equal(REGULAR_FONT, addon.toast.frame.reasonLabel.fontFile)
   end,
 
   ["accepted inbound award toast only shows once across duplicate sync and reload"] = function()
