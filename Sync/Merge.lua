@@ -13,6 +13,10 @@ local function recordTimestamp(record)
 end
 
 local function nominationStatusRank(status)
+  if status == "deleted" then
+    return 4
+  end
+
   if status == "approved" then
     return 3
   end
@@ -101,7 +105,9 @@ function Sync:AcceptAward(award)
   local isAuthorized = false
 
   if self.addon.permissions then
-    if award.source == "nomination" then
+    if award.deleted == true then
+      isAuthorized = self.addon.permissions:CanDeleteAwards(actor)
+    elseif award.source == "nomination" then
       isAuthorized = self.addon.permissions:CanManageNominations(actor)
     elseif award.source == "direct" then
       isAuthorized = self.addon.permissions:CanCreateDirectAwards(actor)
@@ -114,7 +120,7 @@ function Sync:AcceptAward(award)
     return false, "unauthorized"
   end
 
-  local existingAward = self.addon.db:GetAward(award.guildKey, award.awardId)
+  local existingAward = self.addon.db:GetAward(award.guildKey, award.awardId, true)
   if award.deleted ~= true or award.lastModifiedAt ~= nil then
     local shouldApply, staleErr = shouldApplyAward(existingAward, award)
     if not shouldApply then
@@ -123,7 +129,8 @@ function Sync:AcceptAward(award)
   end
 
   if award.deleted == true then
-    local deleted, deleteErr = self.addon.db:DeleteAward(award.guildKey, award.awardId)
+    award.lastModifiedAt = award.lastModifiedAt or recordTimestamp(existingAward)
+    local deleted, deleteErr = self.addon.db:DeleteAward(award.guildKey, award.awardId, award)
     if not deleted then
       return false, deleteErr
     end
@@ -131,7 +138,16 @@ function Sync:AcceptAward(award)
     if award.nominationId then
       local deletedNomination, nominationErr = self.addon.db:DeleteNomination(
         award.guildKey,
-        award.nominationId
+        award.nominationId,
+        {
+          guildKey = award.guildKey,
+          nominationId = award.nominationId,
+          status = "deleted",
+          awardId = award.awardId,
+          deleted = true,
+          lastModifiedAt = award.lastModifiedAt,
+          lastModifiedBy = actor,
+        }
       )
       if not deletedNomination and nominationErr ~= "missing nomination" then
         return false, nominationErr
@@ -155,17 +171,30 @@ function Sync:AcceptNomination(nomination)
     return false, "wrong guild"
   end
 
-  if nomination.status ~= "pending" then
+  if nomination.deleted == true then
+    nomination.status = "deleted"
+    local actor = nomination.lastModifiedBy or nomination.resolvedBy
+    local canDeleteAwards = self.addon.permissions and self.addon.permissions:CanDeleteAwards(actor)
+    local canManageNominations = self.addon.permissions and self.addon.permissions:CanManageNominations(actor)
+    if not canDeleteAwards and not canManageNominations then
+      return false, "unauthorized"
+    end
+  elseif nomination.status ~= "pending" then
     local actor = nomination.lastModifiedBy or nomination.resolvedBy
     if not self.addon.permissions or not self.addon.permissions:CanManageNominations(actor) then
       return false, "unauthorized"
     end
   end
 
-  local existingNomination = self.addon.db:GetNomination(nomination.guildKey, nomination.nominationId)
+  local existingNomination = self.addon.db:GetNomination(nomination.guildKey, nomination.nominationId, true)
   local shouldApply, staleErr = shouldApplyNomination(existingNomination, nomination)
   if not shouldApply then
     return false, staleErr
+  end
+
+  if nomination.deleted == true then
+    nomination.lastModifiedAt = nomination.lastModifiedAt or recordTimestamp(existingNomination)
+    return self.addon.db:DeleteNomination(nomination.guildKey, nomination.nominationId, nomination)
   end
 
   self.addon.db:UpsertNomination(nomination.guildKey, nomination)
@@ -257,4 +286,3 @@ function Sync:AcceptAliasMapping(update)
 end
 
 return RPA.Sync
-

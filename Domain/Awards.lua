@@ -114,7 +114,17 @@ function Awards:DeleteAward(awardId)
     return false, "missing award"
   end
 
-  local ok, err = self.addon.db:DeleteAward(guild.guildKey, awardId)
+  local now = currentTimestamp(self.addon)
+  local actor = self.addon:GetCurrentPlayerFullName()
+  local ok, err = self.addon.db:DeleteAward(guild.guildKey, awardId, {
+    guildKey = guild.guildKey,
+    awardId = award.awardId,
+    source = award.source,
+    nominationId = award.nominationId,
+    deleted = true,
+    lastModifiedAt = now,
+    lastModifiedBy = actor,
+  })
   if not ok then
     return false, err
   end
@@ -122,7 +132,16 @@ function Awards:DeleteAward(awardId)
   if award.nominationId then
     local deletedNomination, nominationErr = self.addon.db:DeleteNomination(
       guild.guildKey,
-      award.nominationId
+      award.nominationId,
+      {
+        guildKey = guild.guildKey,
+        nominationId = award.nominationId,
+        status = "deleted",
+        awardId = award.awardId,
+        deleted = true,
+        lastModifiedAt = now,
+        lastModifiedBy = actor,
+      }
     )
     if not deletedNomination and nominationErr ~= "missing nomination" then
       return false, nominationErr
@@ -136,8 +155,8 @@ function Awards:DeleteAward(awardId)
       source = award.source,
       nominationId = award.nominationId,
       deleted = true,
-      lastModifiedAt = currentTimestamp(self.addon),
-      lastModifiedBy = self.addon:GetCurrentPlayerFullName(),
+      lastModifiedAt = now,
+      lastModifiedBy = actor,
     }, "GUILD")
   end
 

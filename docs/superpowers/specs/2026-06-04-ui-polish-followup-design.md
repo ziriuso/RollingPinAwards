@@ -20,8 +20,8 @@
 - Replace text/backdrop navbar buttons with the provided page-specific navbar art.
 - Show the `-selected` navbar art variant for the active page and the base art for inactive pages.
 - Hide the legacy navbar button backdrop whenever the PNG art is rendered.
-- Position the full six-button navbar with the 188px sizing margin, then center the group on the header jewel/visual centerline using a 32px left offset.
-- Position the five-button navbar, when Admin is hidden, 257px from each background edge.
+- Position the full six-button navbar with the 188px sizing margin, then center the group on the header jewel/visual centerline using a 60px left offset.
+- Position the five-button navbar, when Admin is hidden, so the Nominations button lands on the same visual centerline as the six-button Nominations/History gap.
 
 ## Non-Goals
 - No SavedVariables cleanup or live record deletion.
@@ -39,4 +39,4 @@
 - The shared content panel title uses `Styles.Layout.panelX` and `Styles.Layout.pageHeaderFontSizeDelta`, so every tab page title moves together.
 - Dashboard top recipients and Leaderboard keep scrollbars for additional data rather than rendering the last visible row into footer/mode buttons.
 - Navbar art lives under `Media/NavBar/` with filenames that match tab ids. `Components.SetTabButtonSelected` swaps between `<tab>.png` and `<tab>-selected.png` whenever the active tab changes.
-- Navbar layout uses the main background art dimensions as the measurement frame. It derives the rendered button width from the visible tab count, configured gaps, and the requested background-edge margins; the Admin-visible group applies the dedicated centerline offset while the no-Admin group remains centered by its visible-button margins.
+- Navbar layout uses the main background art dimensions as the measurement frame. It derives the rendered button width from the visible tab count, configured gaps, and the requested background-edge margins; both Admin-visible and no-Admin layouts apply dedicated centerline offsets so the middle nav focus aligns to the same visual line.

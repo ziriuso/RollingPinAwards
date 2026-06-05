@@ -563,6 +563,65 @@ return {
     harness.assert_equal(0, #addon.awards:GetPublicHistory())
   end,
 
+  ["sync keeps offline award snapshots from resurrecting deleted awards"] = function()
+    local addon = setupAceGuild()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    local award = addon.awards:CreateDirectAward("Burny-Stormrage", "Set the oven to lava")
+
+    local deleted = addon.sync:AcceptAward({
+      guildKey = guildKey,
+      awardId = award.awardId,
+      source = "direct",
+      deleted = true,
+      lastModifiedAt = (award.lastModifiedAt or 0) + 10,
+      lastModifiedBy = "Guildmaster-Stormrage",
+    })
+    local accepted, err = addon.sync:AcceptAward({
+      guildKey = guildKey,
+      awardId = award.awardId,
+      awardName = award.awardName,
+      awardType = award.awardType,
+      recipient = award.recipient,
+      player = award.player,
+      reason = award.reason,
+      awardedBy = award.awardedBy,
+      source = award.source,
+      createdAt = award.createdAt,
+      lastModifiedAt = award.lastModifiedAt,
+      lastModifiedBy = award.lastModifiedBy,
+    })
+
+    harness.assert_true(deleted)
+    harness.assert_false(accepted)
+    harness.assert_equal("stale award", err)
+    harness.assert_equal(0, #addon.awards:GetPublicHistory())
+  end,
+
+  ["sync full snapshot includes award delete tombstones for offline catch-up"] = function()
+    local addon = setupNativeGuild()
+    local award = addon.awards:CreateDirectAward("Burny-Stormrage", "Set the oven to lava")
+    addon.awards:DeleteAward(award.awardId)
+
+    _G.__RPA_TEST_STATE.nativeCommMessages = {}
+    addon.sync:SendFullSnapshot("GUILD")
+
+    local seenDelete = false
+    for _, message in ipairs(_G.__RPA_TEST_STATE.nativeCommMessages or {}) do
+      local envelope, err = addon.sync:DecodeNativeMessage(
+        message.message,
+        message.distribution,
+        "Guildmaster-Stormrage"
+      )
+      if err ~= "partial" and envelope and envelope.payloadType == "award" then
+        seenDelete = envelope.payload.awardId == award.awardId
+          and envelope.payload.deleted == true
+          and envelope.payload.lastModifiedBy == "Guildmaster-Stormrage"
+      end
+    end
+
+    harness.assert_true(seenDelete)
+  end,
+
   ["native comm fallback registers and broadcasts when ace is unavailable"] = function()
     local addon = setupNativeGuild()
 

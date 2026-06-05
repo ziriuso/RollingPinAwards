@@ -65,7 +65,10 @@ local function rebuildNominationRows(dataset)
 
   dataset.nominations = {}
   for _, nominationId in ipairs(nominationIds) do
-    dataset.nominations[#dataset.nominations + 1] = dataset.nominationsById[nominationId]
+    local nomination = dataset.nominationsById[nominationId]
+    if nomination.deleted ~= true then
+      dataset.nominations[#dataset.nominations + 1] = nomination
+    end
   end
 end
 
@@ -80,7 +83,10 @@ local function rebuildAwardRows(dataset)
 
   dataset.awards = {}
   for _, awardId in ipairs(awardIds) do
-    dataset.awards[#dataset.awards + 1] = dataset.awardsById[awardId]
+    local award = dataset.awardsById[awardId]
+    if award.deleted ~= true then
+      dataset.awards[#dataset.awards + 1] = award
+    end
   end
 end
 
@@ -219,7 +225,7 @@ function Database:UpsertNomination(guildKey, nomination)
   return nomination
 end
 
-function Database:GetNomination(guildKey, nominationId)
+function Database:GetNomination(guildKey, nominationId, includeDeleted)
   if isMissingString(nominationId) then
     return nil, "missing nominationId"
   end
@@ -229,10 +235,15 @@ function Database:GetNomination(guildKey, nominationId)
     return nil, err
   end
 
-  return dataset.nominationsById[nominationId], nil
+  local nomination = dataset.nominationsById[nominationId]
+  if nomination and nomination.deleted == true and includeDeleted ~= true then
+    return nil, nil
+  end
+
+  return nomination, nil
 end
 
-function Database:DeleteNomination(guildKey, nominationId)
+function Database:DeleteNomination(guildKey, nominationId, tombstone)
   if isMissingString(nominationId) then
     return false, "missing nominationId"
   end
@@ -242,11 +253,18 @@ function Database:DeleteNomination(guildKey, nominationId)
     return false, err
   end
 
-  if dataset.nominationsById[nominationId] == nil then
+  if dataset.nominationsById[nominationId] == nil and type(tombstone) ~= "table" then
     return false, "missing nomination"
   end
 
-  dataset.nominationsById[nominationId] = nil
+  if type(tombstone) == "table" then
+    tombstone.guildKey = tombstone.guildKey or guildKey
+    tombstone.nominationId = tombstone.nominationId or nominationId
+    tombstone.deleted = true
+    dataset.nominationsById[nominationId] = tombstone
+  else
+    dataset.nominationsById[nominationId] = nil
+  end
   dataset.votesByNomination[nominationId] = nil
   rebuildNominationRows(dataset)
 
@@ -482,7 +500,7 @@ function Database:UpsertAward(guildKey, award)
   return award
 end
 
-function Database:GetAward(guildKey, awardId)
+function Database:GetAward(guildKey, awardId, includeDeleted)
   if isMissingString(awardId) then
     return nil, "missing awardId"
   end
@@ -492,10 +510,15 @@ function Database:GetAward(guildKey, awardId)
     return nil, err
   end
 
-  return dataset.awardsById[awardId], nil
+  local award = dataset.awardsById[awardId]
+  if award and award.deleted == true and includeDeleted ~= true then
+    return nil, nil
+  end
+
+  return award, nil
 end
 
-function Database:DeleteAward(guildKey, awardId)
+function Database:DeleteAward(guildKey, awardId, tombstone)
   if isMissingString(awardId) then
     return false, "missing awardId"
   end
@@ -505,11 +528,18 @@ function Database:DeleteAward(guildKey, awardId)
     return false, err
   end
 
-  if dataset.awardsById[awardId] == nil then
+  if dataset.awardsById[awardId] == nil and type(tombstone) ~= "table" then
     return false, "missing award"
   end
 
-  dataset.awardsById[awardId] = nil
+  if type(tombstone) == "table" then
+    tombstone.guildKey = tombstone.guildKey or guildKey
+    tombstone.awardId = tombstone.awardId or awardId
+    tombstone.deleted = true
+    dataset.awardsById[awardId] = tombstone
+  else
+    dataset.awardsById[awardId] = nil
+  end
   rebuildAwardRows(dataset)
 
   return true

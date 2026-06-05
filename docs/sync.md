@@ -7,6 +7,7 @@ Rolling Pin Awards keeps all synced data scoped to the active guild dataset.
 - Incoming payloads must match the active `guildKey`.
 - Privileged payloads are accepted only when the sender satisfies the exact rank permission required for that payload type.
 - Award and nomination snapshot rows are monotonic: stale same-ID records cannot replace newer local history or downgrade resolved nominations back to pending.
+- Award and linked nomination deletions are stored as hidden tombstones, so stale offline snapshots cannot resurrect deleted rows.
 - Duplicate votes from the same voter on the same nomination are ignored.
 - Votes are accepted only while the nomination remains `pending`.
 
@@ -37,7 +38,7 @@ Privileged payload mapping:
 - Local mutations broadcast immediately for awards, nominations, nomination votes, rank permission changes, and alias mapping changes.
 - `Bootstrap.lua` sends a `sync_hello` once per active guild when sync enables, and `Core/Events.lua` sends again after guild context appears later through `PLAYER_GUILD_UPDATE`.
 - If the client first sees only a provisional name-based guild key and later resolves the stable guild club id, `Bootstrap.lua` migrates the guild dataset key and sends a fresh `sync_hello` for the stable key so online peers can answer with the missed snapshot.
-- Receiving `sync_hello` answers with a full flat record stream for rank permissions, aliases, nominations, votes, and awards, followed by `sync_snapshot_complete`.
+- Receiving `sync_hello` answers with a full flat record stream for rank permissions, aliases, nominations, votes, awards, and hidden delete tombstones, followed by `sync_snapshot_complete`.
 - `/rpa sync now` and `/rpa sync all` force the same hello plus full snapshot stream for live two-client testing.
 - Inbound accepted payloads rerender the active tab when the main window has already been rendered.
 
@@ -68,6 +69,7 @@ Use `/rpa syncdebug` or `/rpa sync debug` to print copy-friendly chat diagnostic
 
 - When `AceDB-3.0` is available, Rolling Pin Awards uses the active Ace profile as the storage backing for the domain database.
 - Without AceDB, the addon falls back to the plain `RollingPinAwardsDB.profile` table path already covered by the Lua-only tests.
+- Delete tombstones stay in the guild dataset id maps for sync conflict checks and snapshot catch-up, but normal UI/database reads filter them out so deleted awards and nominations remain absent from History, Dashboard, Leaderboard, and Nominations views.
 
 ## Current Service Surface
 

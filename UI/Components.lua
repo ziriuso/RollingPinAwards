@@ -569,10 +569,10 @@ function Components.LayoutTabButtons(parent, buttons)
   end
   local groupWidth = math.max(0, (backgroundWidth or 0) - (2 * navMargin))
   local tabWidth = (groupWidth - (math.max(0, #visibleButtons - 1) * tabGap)) / #visibleButtons
-  local startX = navMargin
-  if hasAdminVisible then
-    startX = ((backgroundWidth - groupWidth) / 2) + (layout.navCenterOffsetWithAdmin or 0)
-  end
+  local navCenterOffset = hasAdminVisible
+    and (layout.navCenterOffsetWithAdmin or 0)
+    or (layout.navCenterOffsetWithoutAdmin or 0)
+  local startX = ((backgroundWidth - groupWidth) / 2) + navCenterOffset
 
   for visibleIndex, button in ipairs(visibleButtons) do
     button.width = tabWidth

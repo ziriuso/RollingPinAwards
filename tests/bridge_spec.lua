@@ -514,11 +514,10 @@ return {
     local lastButton = addon.mainFrame.tabButtons[#addon.mainFrame.tabButtons]
     local railLeft = tabRail.point and tabRail.point[4] or 0
     local backgroundLeft = background.point and background.point[4] or 0
-    local backgroundRight = backgroundLeft + (background.width or 0)
     local firstLeft = railLeft + (firstButton.point and firstButton.point[4] or 0)
     local lastRight = railLeft + (lastButton.point and lastButton.point[4] or 0) + (lastButton.width or 0)
     local groupCenter = firstLeft + ((lastRight - firstLeft) / 2)
-    local targetCenter = backgroundLeft + ((background.width or 0) / 2) - 32
+    local targetCenter = backgroundLeft + ((background.width or 0) / 2) - 60
 
     harness.assert_equal(background.width, tabRail.width)
     harness.assert_equal(backgroundLeft, railLeft)
@@ -554,7 +553,7 @@ return {
     harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\NavBar\\award-selected.png", awardButton.navTexture.texturePath)
   end,
 
-  ["tab rail recenters visible buttons when admin is hidden"] = function()
+  ["tab rail centers nominations on the visual centerline when admin is hidden"] = function()
     wow.reset({
       guildName = "Raid Bakery",
       playerName = "Memberone",
@@ -577,18 +576,16 @@ return {
     end
 
     harness.assert_equal(5, #visibleButtons)
-    local firstButton = visibleButtons[1]
-    local lastButton = visibleButtons[#visibleButtons]
+    local nominationsButton = visibleButtons[3]
     local railLeft = tabRail.point and tabRail.point[4] or 0
     local backgroundLeft = background.point and background.point[4] or 0
-    local backgroundRight = backgroundLeft + (background.width or 0)
-    local firstLeft = railLeft + (firstButton.point and firstButton.point[4] or 0)
-    local lastRight = railLeft + (lastButton.point and lastButton.point[4] or 0) + (lastButton.width or 0)
-    local leftGap = firstLeft - backgroundLeft
-    local rightGap = backgroundRight - lastRight
+    local nominationsCenter = railLeft
+      + (nominationsButton.point and nominationsButton.point[4] or 0)
+      + ((nominationsButton.width or 0) / 2)
+    local targetCenter = backgroundLeft + ((background.width or 0) / 2) - 60
 
-    harness.assert_equal(257, math.floor(leftGap + 0.5))
-    harness.assert_equal(257, math.floor(rightGap + 0.5))
+    harness.assert_equal("nominations", nominationsButton.id)
+    harness.assert_equal(math.floor(targetCenter + 0.5), math.floor(nominationsCenter + 0.5))
   end,
 
   ["dashboard renders stats, content sections, and footer actions after recomposition"] = function()
