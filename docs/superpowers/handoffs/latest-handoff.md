@@ -50,14 +50,19 @@
   - award-backed tables render newest records first.
   - shared page headers align to the page content safe offset and render five font points larger.
   - Dashboard top-recipient and Leaderboard visible rows stay inside their table chrome and use scrollbars for extra records.
-  - navbar buttons now use the provided `Media/NavBar/<tab>.png` art and swap to `<tab>-selected.png` for the active page.
-  - navbar button backdrops are hidden behind the art; the full Admin-visible nav uses the 188px sizing margin and aligns the Nominations/History gap with the Dashboard `Top Recipient`/`Pending Nominations` gap, while the no-Admin nav centers its Nominations button on that same gap.
+  - navbar buttons have been restored to the original reusable framed button treatment; the full Admin-visible nav aligns the Nominations/History gap with the Dashboard `Top Recipient`/`Pending Nominations` gap, while the no-Admin nav centers its Nominations button on that same gap.
   - shared typography roles now remove WoW outline flags across page text:
     - Tab Header: 24pt, Roboto Bold, `#73401E`.
     - Tab Description: 16pt, Roboto Regular, black.
-    - Card Header and Card Value: 20pt, Roboto Bold, `#73401E`.
+    - Card Header: 18pt, Roboto Bold, `#73401E`.
+    - Card Value: 20pt, Roboto Bold, `#73401E`.
     - Card Descriptor: 16pt, Roboto Regular, black.
-    - Button Text: 20pt, Roboto Bold, `#DFC6A3`.
+    - Table Row: 14pt, Roboto Regular, black.
+    - Empty Table Row: 14pt, Roboto Regular, white.
+    - Button Text: 16pt, Roboto Bold, `#DFC6A3`.
+    - Compact Action Button Text: 14pt, Roboto Bold, `#DFC6A3`.
+    - Modal Header: 18pt, Roboto Bold, `#DFC6A3`.
+    - Leaderboard Detail Count: 21pt, Roboto Bold, `#73401E`.
   - `Media/Fonts/Roboto-Regular.ttf` and `Media/Fonts/Roboto-Bold.ttf` are bundled with the addon, `UI/Styles.lua` owns their font paths, and `UI/Components.lua` applies them through reusable content panel, section, stat-card, label, button, nav-button, row, checkbox, and modal factories.
   - award and linked nomination deletes are retained as hidden sync tombstones so offline clients receive deletes during catch-up snapshots and cannot resurrect older rows.
   - `docs/superpowers/specs/2026-06-04-ui-polish-followup-design.md` and `docs/superpowers/plans/2026-06-04-ui-polish-followup.md` capture this slice.
@@ -123,6 +128,9 @@
 - Latest text readability pass is implemented:
   - reusable light row backdrops render dark row text without WoW outline flags.
   - Admin helper/status text, rank names, tab descriptions, card descriptors, card headers, card values, and buttons now flow through shared typography roles for consistent size/color choices.
+  - Award Recipient and Nomination Nominee autocomplete now shows up to three guild roster matches, and both submit paths require selecting one of those suggestions instead of accepting free-form names.
+  - Pending Nominations empty-state rows use the shared white `tableEmpty` role.
+  - Award/Nomination field labels are bold, the Award helper text is smaller, and the `What Gets Recorded` box no longer renders its flame icon.
 - The updated build has been copied to both documented local Retail and PTR AddOns folders.
 - Test suite is green.
 - Live visual inspection after the readability pass looked better.

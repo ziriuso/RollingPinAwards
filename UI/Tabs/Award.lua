@@ -45,7 +45,7 @@ UITabs.award = {
       iconWidth = 24,
       iconHeight = 24,
       width = 500,
-      height = 316,
+      height = 336,
       x = 0,
       y = 0,
     })
@@ -56,6 +56,7 @@ UITabs.award = {
       width = 470,
       font = "GameFontHighlightSmall",
       justifyH = "LEFT",
+      textRole = "descriptionSmall",
     })
     panel.selectedAwardType = panel.selectedAwardType or "burnt"
     panel.typeBurntButton = Components.CreateButton(panel.formSection, {
@@ -87,6 +88,7 @@ UITabs.award = {
       x = 14,
       y = -102,
       font = "GameFontNormal",
+      textRole = "fieldLabel",
     })
     panel.recipientInput = Components.CreateEditBox(panel.formSection, {
       width = 300,
@@ -106,28 +108,35 @@ UITabs.award = {
     panel.reasonLabel = Components.CreateLabel(panel.formSection, {
       text = "Reason",
       x = 14,
-      y = -176,
+      y = -220,
       font = "GameFontNormal",
+      textRole = "fieldLabel",
     })
     panel.reasonInput = Components.CreateEditBox(panel.formSection, {
       width = 462,
       x = 14,
-      y = -198,
+      y = -242,
       maxLetters = 180,
     })
     panel.submitButton = Components.CreateButton(panel.formSection, {
       text = "Award The Burnt Rolling Pin",
       width = 280,
-      height = 40,
+      height = 36,
       x = 14,
-      y = -246,
+      y = -280,
       variant = "primary",
       iconPath = media.awardIcon,
       iconWidth = 20,
       iconHeight = 20,
       onClick = function()
+        local recipientName = panel.recipientInput.selectedRosterName
+        if not recipientName then
+          Components.SetText(panel.statusLabel, "Select a guild character from the suggestions before awarding.")
+          return
+        end
+
         local award, err = mainFrame.uiBridge:CreateDirectAward(
-          panel.recipientInput:GetText(),
+          recipientName,
           panel.reasonInput:GetText(),
           panel.selectedAwardType
         )
@@ -135,6 +144,7 @@ UITabs.award = {
         if award then
           Components.SetText(panel.statusLabel, ("Awarded %s."):format(Utils.GetShortCharacterName(award.recipient)))
           Components.SetText(panel.recipientInput, "")
+          panel.recipientInput.selectedRosterName = nil
           Components.SetText(panel.reasonInput, "")
         else
           Components.SetText(panel.statusLabel, ("Unable to award: %s"):format(err or "unknown error"))
@@ -146,7 +156,7 @@ UITabs.award = {
     panel.statusLabel = Components.CreateLabel(panel.formSection, {
       text = "",
       x = 14,
-      y = -294,
+      y = -318,
       width = 470,
       justifyH = "LEFT",
       font = "GameFontHighlightSmall",
@@ -155,11 +165,8 @@ UITabs.award = {
     panel.briefSection = Components.CreateSection(panel, {
       id = "RollingPinAwardsAwardBriefSection",
       title = "What Gets Recorded",
-      iconPath = media.headerIcon,
-      iconWidth = 22,
-      iconHeight = 22,
       width = 246,
-      height = 316,
+      height = 336,
       x = 516,
       y = 0,
     })
@@ -190,7 +197,10 @@ UITabs.award = {
       panel.recipientAutocompleteRefresh = Components.AttachRosterAutocomplete(
         panel.recipientInput,
         panel.recipientSuggestionButton,
-        bridge
+        bridge,
+        {
+          maxSuggestions = 3,
+        }
       )
     end
 

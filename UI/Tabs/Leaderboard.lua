@@ -160,6 +160,7 @@ UITabs.leaderboard = {
       width = 96,
       justifyH = "CENTER",
       font = "GameFontNormalHuge",
+      textRole = "leaderboardCount",
     })
     panel.detailDialog.burntCountLabel = Components.CreateLabel(showcaseHost, {
       text = "0",
@@ -168,6 +169,7 @@ UITabs.leaderboard = {
       width = 96,
       justifyH = "CENTER",
       font = "GameFontNormalHuge",
+      textRole = "leaderboardCount",
     })
     panel.detailDialog.listSection = Components.CreateScrollableSection(showcaseHost, {
       id = "RollingPinAwardsLeaderboardDetailList",

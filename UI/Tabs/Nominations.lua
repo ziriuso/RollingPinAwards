@@ -60,7 +60,7 @@ UITabs.nominations = {
       id = "RollingPinAwardsNominationFormSection",
       title = "Nominate A Guild Failure",
       width = 762,
-      height = 160,
+      height = 214,
       x = 0,
       y = 0,
     })
@@ -102,6 +102,7 @@ UITabs.nominations = {
       x = 14,
       y = -102,
       font = "GameFontNormal",
+      textRole = "fieldLabel",
     })
     panel.nomineeInput = Components.CreateEditBox(panel.formSection, {
       width = 220,
@@ -123,6 +124,7 @@ UITabs.nominations = {
       x = 252,
       y = -102,
       font = "GameFontNormal",
+      textRole = "fieldLabel",
     })
     panel.reasonInput = Components.CreateEditBox(panel.formSection, {
       width = 320,
@@ -135,18 +137,24 @@ UITabs.nominations = {
       width = 54,
       height = 54,
       x = 639,
-      y = -56,
+      y = -72,
     })
     panel.submitButton = Components.CreateButton(panel.formSection, {
       text = "Submit Nomination",
       width = 164,
       height = 36,
       x = 584,
-      y = -116,
+      y = -138,
       variant = "primary",
       onClick = function()
+        local nomineeName = panel.nomineeInput.selectedRosterName
+        if not nomineeName then
+          Components.SetText(panel.statusLabel, "Select a guild character from the suggestions before nominating.")
+          return
+        end
+
         local nomination, err = mainFrame.uiBridge:SubmitNomination(
-          panel.nomineeInput:GetText(),
+          nomineeName,
           panel.reasonInput:GetText(),
           panel.selectedAwardType
         )
@@ -154,6 +162,7 @@ UITabs.nominations = {
         if nomination then
           Components.SetText(panel.statusLabel, ("Submitted nomination for %s."):format(Utils.GetShortCharacterName(nomination.nominee)))
           Components.SetText(panel.nomineeInput, "")
+          panel.nomineeInput.selectedRosterName = nil
           Components.SetText(panel.reasonInput, "")
         else
           Components.SetText(panel.statusLabel, ("Unable to nominate: %s"):format(err or "unknown error"))
@@ -170,16 +179,16 @@ UITabs.nominations = {
       iconWidth = 22,
       iconHeight = 22,
       width = 762,
-      height = 280,
+      height = 250,
       x = 0,
-      y = -176,
+      y = -230,
       visibleRowCount = 3,
       rowHeight = 72,
     })
     panel.statusLabel = Components.CreateLabel(panel, {
       text = "",
       x = 0,
-      y = -468,
+      y = -482,
       width = 742,
       justifyH = "LEFT",
     })
@@ -191,7 +200,10 @@ UITabs.nominations = {
       panel.nomineeAutocompleteRefresh = Components.AttachRosterAutocomplete(
         panel.nomineeInput,
         panel.nomineeSuggestionButton,
-        bridge
+        bridge,
+        {
+          maxSuggestions = 3,
+        }
       )
     end
 
@@ -210,6 +222,7 @@ UITabs.nominations = {
           text = "No pending nominations yet.",
           labelWidth = 520,
           rowHeight = 40,
+          textRole = "tableEmpty",
           actions = {},
         })
         return

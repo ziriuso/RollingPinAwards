@@ -4,6 +4,7 @@ local wow = require("tests.WoWStubs")
 local BROWN = { 115 / 255, 64 / 255, 30 / 255, 1 }
 local BUTTON_TAN = { 223 / 255, 198 / 255, 163 / 255, 1 }
 local BLACK = { 0, 0, 0, 1 }
+local WHITE = { 1, 1, 1, 1 }
 local REGULAR_FONT = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Regular.ttf"
 local BOLD_FONT = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf"
 
@@ -97,6 +98,16 @@ return {
         },
         {
           name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+        {
+          name = "Officertwo-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+        {
+          name = "Officerthree-Stormrage",
           rankName = "Officer",
           rankIndex = 1,
         },
@@ -265,6 +276,8 @@ return {
     harness.assert_true((panel.detailDialog.burntIcon.width or 0) > 88)
     harness.assert_equal("1", panel.detailDialog.goldenCountLabel.text)
     harness.assert_equal("1", panel.detailDialog.burntCountLabel.text)
+    assert_text_role(panel.detailDialog.goldenCountLabel, "leaderboardCount", 21, BROWN, true)
+    assert_text_role(panel.detailDialog.burntCountLabel, "leaderboardCount", 21, BROWN, true)
     harness.assert_true((panel.detailDialog.goldenCountLabel.point[5] or 0) < (panel.detailDialog.goldenIcon.point[5] or 0) - (panel.detailDialog.goldenIcon.height or 0))
     harness.assert_equal(-240, panel.detailDialog.listSection.point[5])
     harness.assert_equal("GameFontNormalHuge", panel.detailDialog.goldenCountLabel.template)
@@ -562,11 +575,11 @@ return {
     harness.assert_equal(background.width, tabRail.width)
     harness.assert_equal(backgroundLeft, railLeft)
     harness.assert_equal(math.floor(dashboardMiddleGapCenter + 0.5), math.floor(navMiddleGapCenter + 0.5))
-    assert_text_role(nominationsButton.label, "buttonText", 20, BUTTON_TAN, true)
+    assert_text_role(nominationsButton.label, "buttonText", 16, BUTTON_TAN, true)
     harness.assert_nil(nominationsButton.label.outlineLabels)
   end,
 
-  ["tab rail uses art textures for active and inactive page states"] = function()
+  ["tab rail uses original framed buttons for active and inactive page states"] = function()
     wow.reset({
       guildName = "Raid Bakery",
       playerName = "Guildmaster",
@@ -581,15 +594,19 @@ return {
     local dashboardButton = addon.mainFrame.tabButtons[1]
     local awardButton = addon.mainFrame.tabButtons[2]
 
-    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\NavBar\\dashboard-selected.png", dashboardButton.navTexture.texturePath)
-    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\NavBar\\award.png", awardButton.navTexture.texturePath)
-    harness.assert_nil(dashboardButton.backdrop)
-    harness.assert_false(dashboardButton.label.visible)
+    harness.assert_nil(dashboardButton.navTexture)
+    harness.assert_nil(awardButton.navTexture)
+    harness.assert_true(dashboardButton.backdrop ~= nil)
+    harness.assert_true(awardButton.backdrop ~= nil)
+    harness.assert_true(dashboardButton.label.visible)
+    harness.assert_true(awardButton.label.visible)
+    harness.assert_equal("selected", dashboardButton.variant)
+    harness.assert_equal("secondary", awardButton.variant)
 
     addon.mainFrame:SelectTab("award")
 
-    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\NavBar\\dashboard.png", dashboardButton.navTexture.texturePath)
-    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\NavBar\\award-selected.png", awardButton.navTexture.texturePath)
+    harness.assert_equal("secondary", dashboardButton.variant)
+    harness.assert_equal("selected", awardButton.variant)
   end,
 
   ["tab rail centers nominations on the visual centerline when admin is hidden"] = function()
@@ -673,7 +690,8 @@ return {
     harness.assert_equal("CENTER", panel.statCards[1].value.point[3])
     harness.assert_equal("Interface\\ChatFrame\\ChatFrameBackground", panel.statCards[1].backdrop.bgFile)
     harness.assert_true((panel.statCards[1].backdropColor.red or 0) >= 0.80)
-    assert_text_role(panel.statCards[1].label, "cardHeader", 20, BROWN, true)
+    assert_text_role(panel.statCards[1].label, "cardHeader", 18, BROWN, true)
+    assert_text_role(panel.statCards[1].value, "cardValue", 20, BROWN, true)
     harness.assert_equal(0, panel.statCards[1].label.shadowColor.alpha)
     harness.assert_equal(0, panel.statCards[1].label.shadowOffset.x)
     harness.assert_equal(0, panel.statCards[1].label.shadowOffset.y)
@@ -712,58 +730,65 @@ return {
     local addon = wow.loadAddon()
     addon:OnInitialize()
     addon.awards:CreateDirectAward("Zirleficent-Stormrage", "Good job")
-    addon.nominations:Create("Moonrustle-Stormrage", "Helpful nomination")
     addon.mainFrame:EnsureRendered()
 
     local dashboard = addon.mainFrame.tabPanels.dashboard
     assert_text_role(addon.mainFrame.contentPanel.titleText, "tabHeader", 24, BROWN, true)
     assert_text_role(dashboard.heroLabel, "tabDescription", 16, BLACK, false)
     assert_text_role(dashboard.permissionLabel, "tabDescription", 16, BLACK, false)
-    assert_text_role(dashboard.statCards[1].label, "cardHeader", 20, BROWN, true)
-    assert_text_role(dashboard.statCards[1].value, "cardHeader", 20, BROWN, true)
+    assert_text_role(dashboard.statCards[1].label, "cardHeader", 18, BROWN, true)
+    assert_text_role(dashboard.statCards[1].value, "cardValue", 20, BROWN, true)
     assert_text_role(dashboard.statCards[1].detail, "cardDescription", 16, BLACK, false)
-    assert_text_role(dashboard.leaderboardSection.titleText, "cardHeader", 20, BROWN, true)
-    assert_text_role(dashboard.leaderboardSection.rows[1].label, "cardDescription", 16, BLACK, false)
-    assert_text_role(dashboard.nominationButton.label, "buttonText", 20, BUTTON_TAN, true)
+    assert_text_role(dashboard.leaderboardSection.titleText, "cardHeader", 18, BROWN, true)
+    assert_text_role(dashboard.leaderboardSection.rows[1].label, "tableRow", 14, BLACK, false)
+    assert_text_role(dashboard.nominationButton.label, "buttonText", 16, BUTTON_TAN, true)
 
     addon.mainFrame:SelectTab("award")
     local award = addon.mainFrame.tabPanels.award
     assert_text_role(addon.mainFrame.contentPanel.titleText, "tabHeader", 24, BROWN, true)
-    assert_text_role(award.formSection.titleText, "cardHeader", 20, BROWN, true)
-    assert_text_role(award.helperLabel, "cardDescription", 16, BLACK, false)
-    assert_text_role(award.submitButton.label, "buttonText", 20, BUTTON_TAN, true)
+    assert_text_role(award.formSection.titleText, "cardHeader", 18, BROWN, true)
+    assert_text_role(award.helperLabel, "descriptionSmall", 12, BLACK, false)
+    assert_text_role(award.recipientLabel, "fieldLabel", 16, BLACK, true)
+    assert_text_role(award.reasonLabel, "fieldLabel", 16, BLACK, true)
+    assert_text_role(award.submitButton.label, "buttonText", 16, BUTTON_TAN, true)
+    harness.assert_true(award.briefSection.iconFrame == nil)
 
     addon.mainFrame:SelectTab("nominations")
     local nominations = addon.mainFrame.tabPanels.nominations
     assert_text_role(addon.mainFrame.contentPanel.titleText, "tabHeader", 24, BROWN, true)
-    assert_text_role(nominations.formSection.titleText, "cardHeader", 20, BROWN, true)
+    assert_text_role(nominations.formSection.titleText, "cardHeader", 18, BROWN, true)
     assert_text_role(nominations.helperLabel, "cardDescription", 16, BLACK, false)
-    assert_text_role(nominations.submitButton.label, "buttonText", 20, BUTTON_TAN, true)
+    assert_text_role(nominations.nomineeLabel, "fieldLabel", 16, BLACK, true)
+    assert_text_role(nominations.reasonLabel, "fieldLabel", 16, BLACK, true)
+    assert_text_role(nominations.submitButton.label, "buttonText", 16, BUTTON_TAN, true)
+    assert_text_role(nominations.listSection.rows[1].label, "tableEmpty", 14, WHITE, false)
 
     addon.mainFrame:SelectTab("history")
     local history = addon.mainFrame.tabPanels.history
     assert_text_role(addon.mainFrame.contentPanel.titleText, "tabHeader", 24, BROWN, true)
-    assert_text_role(history.listSection.titleText, "cardHeader", 20, BROWN, true)
+    assert_text_role(history.listSection.titleText, "cardHeader", 18, BROWN, true)
 
     addon.mainFrame:SelectTab("leaderboard")
     local leaderboard = addon.mainFrame.tabPanels.leaderboard
     assert_text_role(addon.mainFrame.contentPanel.titleText, "tabHeader", 24, BROWN, true)
-    assert_text_role(leaderboard.listSection.titleText, "cardHeader", 20, BROWN, true)
-    assert_text_role(leaderboard.burntModeButton.label, "buttonText", 20, BUTTON_TAN, true)
+    assert_text_role(leaderboard.listSection.titleText, "cardHeader", 18, BROWN, true)
+    assert_text_role(leaderboard.burntModeButton.label, "buttonText", 16, BUTTON_TAN, true)
 
     addon.mainFrame:SelectTab("admin")
     local admin = addon.mainFrame.tabPanels.admin
     assert_text_role(addon.mainFrame.contentPanel.titleText, "tabHeader", 24, BROWN, true)
-    assert_text_role(admin.rankSection.titleText, "cardHeader", 20, BROWN, true)
+    assert_text_role(admin.rankSection.titleText, "cardHeader", 18, BROWN, true)
     assert_text_role(admin.permissionHelpLabel, "cardDescription", 16, BLACK, false)
-    assert_text_role(admin.aliasSaveButton.label, "buttonText", 20, BUTTON_TAN, true)
+    assert_text_role(admin.aliasSaveButton.label, "buttonText", 16, BUTTON_TAN, true)
+    assert_text_role(admin.aliasDialog.titleLabel, "modalHeader", 18, BUTTON_TAN, true)
+    assert_text_role(admin.moderationDialog.titleLabel, "modalHeader", 18, BUTTON_TAN, true)
 
     addon.mainFrame:ShowSettingsPage()
     local settings = addon.mainFrame.settingsPanel
     assert_text_role(addon.mainFrame.contentPanel.titleText, "tabHeader", 24, BROWN, true)
-    assert_text_role(settings.toastSection.titleText, "cardHeader", 20, BROWN, true)
+    assert_text_role(settings.toastSection.titleText, "cardHeader", 18, BROWN, true)
     assert_text_role(settings.toastsCheck.label, "cardDescription", 16, BLACK, false)
-    assert_text_role(settings.testToastButton.label, "buttonText", 20, BUTTON_TAN, true)
+    assert_text_role(settings.testToastButton.label, "buttonText", 16, BUTTON_TAN, true)
   end,
 
   ["dashboard list polish removes realms and indents recipient totals"] = function()
@@ -1203,7 +1228,16 @@ return {
   end,
 
   ["nominations tab submit button creates a pending nomination"] = function()
-    wow.reset({ guildName = "Raid Bakery" })
+    wow.reset({
+      guildName = "Raid Bakery",
+      guildMembers = {
+        {
+          name = "Burny-Stormrage",
+          rankName = "Member",
+          rankIndex = 5,
+        },
+      },
+    })
 
     local addon = wow.loadAddon()
     addon:OnInitialize()
@@ -1211,7 +1245,8 @@ return {
     addon.mainFrame:SelectTab("nominations")
 
     local panel = addon.mainFrame.tabPanels.nominations
-    panel.nomineeInput:SetText("Burny-Stormrage")
+    panel.nomineeInput:SetText("Burny")
+    panel.nomineeSuggestionButton:Click()
     panel.reasonInput:SetText("Pulled the boss")
     panel.submitButton:Click()
 
@@ -1401,7 +1436,7 @@ return {
     harness.assert_true(nominationsPanel.selectedAwardPreview ~= nil)
     harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\burnt-rolling-pin.png", nominationsPanel.selectedAwardPreview.texturePath)
     harness.assert_equal("", nominationsPanel.statusLabel.text)
-    harness.assert_equal(-116, nominationsPanel.submitButton.point[5])
+    harness.assert_equal(-138, nominationsPanel.submitButton.point[5])
     harness.assert_true((nominationsPanel.submitButton.point[4] or 0) + (nominationsPanel.submitButton.width or 0) <= (nominationsPanel.formSection.width or 0) - 14)
     harness.assert_equal("selected", nominationsPanel.typeBurntButton.variant)
     harness.assert_equal("secondary", nominationsPanel.typeGoldenButton.variant)
@@ -1466,6 +1501,16 @@ return {
         },
         {
           name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+        {
+          name = "Officertwo-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+        {
+          name = "Officerthree-Stormrage",
           rankName = "Officer",
           rankIndex = 1,
         },
@@ -1794,6 +1839,16 @@ return {
           rankName = "Officer",
           rankIndex = 1,
         },
+        {
+          name = "Officertwo-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+        {
+          name = "Officerthree-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
       },
     })
 
@@ -1807,9 +1862,16 @@ return {
 
     harness.assert_true(awardPanel.recipientSuggestionButton.visible)
     harness.assert_equal("Officerone-Stormrage", awardPanel.recipientSuggestionButton.suggestedName)
+    harness.assert_equal(3, #(awardPanel.recipientInput.rosterSuggestionButtons or {}))
+    harness.assert_equal("Officerone-Stormrage", awardPanel.recipientInput.rosterSuggestionButtons[1].suggestedName)
+    harness.assert_equal("Officertwo-Stormrage", awardPanel.recipientInput.rosterSuggestionButtons[2].suggestedName)
+    harness.assert_equal("Officerthree-Stormrage", awardPanel.recipientInput.rosterSuggestionButtons[3].suggestedName)
+    harness.assert_true(awardPanel.recipientInput.rosterSuggestionButtons[2].visible)
+    harness.assert_true(awardPanel.recipientInput.rosterSuggestionButtons[3].visible)
 
-    awardPanel.recipientSuggestionButton:Click()
-    harness.assert_equal("Officerone-Stormrage", awardPanel.recipientInput:GetText())
+    awardPanel.recipientInput.rosterSuggestionButtons[2]:Click()
+    harness.assert_equal("Officertwo-Stormrage", awardPanel.recipientInput:GetText())
+    harness.assert_equal("Officertwo-Stormrage", awardPanel.recipientInput.selectedRosterName)
 
     addon.mainFrame:SelectTab("nominations")
     local nominationsPanel = addon.mainFrame.tabPanels.nominations
@@ -1817,9 +1879,65 @@ return {
 
     harness.assert_true(nominationsPanel.nomineeSuggestionButton.visible)
     harness.assert_equal("Officerone-Stormrage", nominationsPanel.nomineeSuggestionButton.suggestedName)
+    harness.assert_equal(3, #(nominationsPanel.nomineeInput.rosterSuggestionButtons or {}))
+    harness.assert_equal("Officerone-Stormrage", nominationsPanel.nomineeInput.rosterSuggestionButtons[1].suggestedName)
+    harness.assert_equal("Officertwo-Stormrage", nominationsPanel.nomineeInput.rosterSuggestionButtons[2].suggestedName)
+    harness.assert_equal("Officerthree-Stormrage", nominationsPanel.nomineeInput.rosterSuggestionButtons[3].suggestedName)
+    harness.assert_true(nominationsPanel.nomineeInput.rosterSuggestionButtons[2].visible)
+    harness.assert_true(nominationsPanel.nomineeInput.rosterSuggestionButtons[3].visible)
+
+    nominationsPanel.nomineeInput.rosterSuggestionButtons[3]:Click()
+    harness.assert_equal("Officerthree-Stormrage", nominationsPanel.nomineeInput:GetText())
+    harness.assert_equal("Officerthree-Stormrage", nominationsPanel.nomineeInput.selectedRosterName)
+  end,
+
+  ["award and nomination submits require selecting a roster suggestion"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Burny-Stormrage",
+          rankName = "Member",
+          rankIndex = 5,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.mainFrame:EnsureRendered()
+
+    addon.mainFrame:SelectTab("award")
+    local awardPanel = addon.mainFrame.tabPanels.award
+    awardPanel.recipientInput:SetText("Burny")
+    awardPanel.reasonInput:SetText("Set the oven to lava")
+    awardPanel.submitButton:Click()
+    harness.assert_true(awardPanel.statusLabel.text:match("Select a guild character") ~= nil)
+    harness.assert_equal(0, #addon.uiBridge:GetPublicHistoryViewModel())
+
+    awardPanel.recipientSuggestionButton:Click()
+    awardPanel.submitButton:Click()
+    harness.assert_equal(1, #addon.uiBridge:GetPublicHistoryViewModel())
+
+    addon.mainFrame:SelectTab("nominations")
+    local nominationsPanel = addon.mainFrame.tabPanels.nominations
+    nominationsPanel.nomineeInput:SetText("Burny")
+    nominationsPanel.reasonInput:SetText("Pulled the boss")
+    nominationsPanel.submitButton:Click()
+    harness.assert_true(nominationsPanel.statusLabel.text:match("Select a guild character") ~= nil)
+    harness.assert_equal(0, #addon.uiBridge:GetPendingNominationsViewModel())
 
     nominationsPanel.nomineeSuggestionButton:Click()
-    harness.assert_equal("Officerone-Stormrage", nominationsPanel.nomineeInput:GetText())
+    nominationsPanel.submitButton:Click()
+    harness.assert_equal(1, #addon.uiBridge:GetPendingNominationsViewModel())
   end,
 
   ["admin character mapping labels and both character fields autocomplete guild roster names"] = function()
@@ -1897,7 +2015,8 @@ return {
 
     addon.mainFrame:SelectTab("award")
     local awardPanel = addon.mainFrame.tabPanels.award
-    awardPanel.recipientInput:SetText("Burny-Stormrage")
+    awardPanel.recipientInput:SetText("Burny")
+    awardPanel.recipientSuggestionButton:Click()
     awardPanel.reasonInput:SetText("Set the oven to lava")
     awardPanel.submitButton:Click()
     harness.assert_true(awardPanel.statusLabel.text:match("Burny%-Stormrage") == nil)
@@ -1905,7 +2024,8 @@ return {
 
     addon.mainFrame:SelectTab("nominations")
     local nominationsPanel = addon.mainFrame.tabPanels.nominations
-    nominationsPanel.nomineeInput:SetText("Burny-Stormrage")
+    nominationsPanel.nomineeInput:SetText("Burny")
+    nominationsPanel.nomineeSuggestionButton:Click()
     nominationsPanel.reasonInput:SetText("Pulled the boss")
     nominationsPanel.submitButton:Click()
     harness.assert_true(nominationsPanel.statusLabel.text:match("Burny%-Stormrage") == nil)

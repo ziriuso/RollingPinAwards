@@ -487,12 +487,12 @@ end
 
 function Components.CreateTabButton(parent, spec, index)
   if type(CreateFrame) == "function" and parent then
-    local colors = Styles.Colors or {}
     local layout = Styles.Layout or {}
     local host = parent.tabRail or parent
     local button = CreateFrame("Button", nil, host, "BackdropTemplate")
 
     button.id = spec.id
+    button.variant = "secondary"
     button.width = layout.tabWidth or 114
     button.height = layout.navButtonHeight or ((layout.tabRailHeight or 52) - 12)
 
@@ -513,32 +513,31 @@ function Components.CreateTabButton(parent, spec, index)
       )
     end
 
-    button.navTexture = button:CreateTexture(nil, "ARTWORK")
-    if button.navTexture.SetAllPoints then
-      button.navTexture:SetAllPoints(button)
-    end
-    if button.navTexture.SetTexture then
-      button.navTexture:SetTexture(getNavButtonTexturePath(spec.id, false))
-    end
-
     button.label = createFontString(
       button,
       "GameFontNormal",
-      14,
-      -12,
+      8,
+      -6,
       button.width - 28,
       "CENTER",
-      "TOP",
+      "MIDDLE",
       spec.label,
       {
         textRole = "buttonText",
       }
     )
-    if button.label.Hide then
-      button.label:Hide()
-    else
-      button.label.visible = false
+    if button.label.SetPoint then
+      if button.label.ClearAllPoints then
+        button.label:ClearAllPoints()
+      end
+      button.label:SetPoint("CENTER", button, "CENTER", 0, 0)
     end
+    if button.label.Show then
+      button.label:Show()
+    else
+      button.label.visible = true
+    end
+    Components.SetButtonVariant(button, button.variant)
 
     return button
   end
@@ -555,11 +554,7 @@ function Components.SetTabButtonSelected(button, selected)
   end
 
   button.selected = selected == true
-  button.navTexturePath = getNavButtonTexturePath(button.id, button.selected)
-
-  if button.navTexture and button.navTexture.SetTexture then
-    button.navTexture:SetTexture(button.navTexturePath)
-  end
+  Components.SetButtonVariant(button, button.selected and "selected" or "secondary")
 end
 
 function Components.LayoutTabButtons(parent, buttons)
@@ -807,7 +802,7 @@ function Components.CreateStatCard(parent, config)
     textRole = "cardHeader",
   })
   card.value = createFontString(card, "GameFontNormalLarge", 14, -54, card.width - 28, "CENTER", "TOP", config.value or "", {
-    textRole = "cardHeader",
+    textRole = "cardValue",
   })
   card.detail = createFontString(card, "GameFontHighlightSmall", 14, -78, card.width - 28, "CENTER", "TOP", config.detail or "", {
     textRole = "cardDescription",
@@ -925,9 +920,11 @@ end
 function Components.CreateButton(parent, config)
   local button = CreateFrame("Button", nil, parent, "BackdropTemplate")
   button.variant = config.variant or "primary"
+  button.width = config.width or 120
+  button.height = config.height or 24
 
   if button.SetSize then
-    button:SetSize(config.width or 120, config.height or 24)
+    button:SetSize(button.width, button.height)
   end
 
   if button.SetPoint then
@@ -1503,7 +1500,7 @@ function Components.AddListRow(section, config)
     width = config.labelWidth or ((rowWidth or section.width or 100) - labelX - (config.labelRightPadding or 18)),
     justifyH = "LEFT",
     justifyV = config.justifyV or "MIDDLE",
-    textRole = config.textRole or "cardDescription",
+    textRole = config.textRole or "tableRow",
   })
   if label.SetPoint then
     if label.ClearAllPoints then
@@ -1542,6 +1539,7 @@ function Components.AddListRow(section, config)
       x = actionX + (columnIndex * (buttonWidth + actionSpacingX)),
       y = actionBaseY - (rowIndex * (22 + actionSpacingY)),
       variant = action.variant or (action.destructive and "secondary" or "primary"),
+      textRole = action.textRole or "actionButtonText",
       onClick = action.onClick,
     })
     if button.SetPoint then
@@ -1673,25 +1671,66 @@ function Components.SetButtonHandler(button, handler)
   end
 end
 
-function Components.AttachRosterAutocomplete(input, suggestionButton, bridge)
+function Components.AttachRosterAutocomplete(input, suggestionButton, bridge, config)
   if not input or not suggestionButton or not bridge then
     return nil
   end
+  config = config or {}
+  local maxSuggestions = math.max(1, tonumber(config.maxSuggestions) or 1)
+  local buttons = {
+    suggestionButton,
+  }
+
+  input.rosterSuggestionButtons = buttons
+
+  for index = 2, maxSuggestions do
+    local point = suggestionButton.point or {}
+    local x = point[4] or 0
+    local y = (point[5] or 0) - ((index - 1) * ((suggestionButton.height or 20) + (config.gap or 2)))
+    local button = Components.CreateButton(suggestionButton.parent, {
+      text = "",
+      width = suggestionButton.width or config.width or 180,
+      height = suggestionButton.height or config.height or 20,
+      x = x,
+      y = y,
+      variant = suggestionButton.variant or "secondary",
+    })
+    Components.SetVisible(button, false)
+    buttons[index] = button
+  end
+
+  local function selectSuggestion(button)
+    if button.suggestedName then
+      input.__selectingRosterSuggestion = true
+      input.selectedRosterName = button.suggestedName
+      Components.SetText(input, button.suggestedName)
+      input.__selectingRosterSuggestion = nil
+    end
+    for _, choice in ipairs(buttons) do
+      Components.SetVisible(choice, false)
+    end
+  end
 
   local function refreshSuggestion()
-    local suggestions = bridge:GetGuildRosterNameSuggestions(input:GetText(), 1)
-    local suggestion = suggestions and suggestions[1] or nil
+    if not input.__selectingRosterSuggestion then
+      input.selectedRosterName = nil
+    end
 
-    if suggestion and suggestion.name then
-      suggestionButton.suggestedName = suggestion.name
-      suggestionButton.targetInput = input
-      Components.SetText(suggestionButton, ("Use %s"):format(suggestion.name))
-      Components.SetVisible(suggestionButton, true)
-    else
-      suggestionButton.suggestedName = nil
-      suggestionButton.targetInput = input
-      Components.SetText(suggestionButton, "")
-      Components.SetVisible(suggestionButton, false)
+    local suggestions = bridge:GetGuildRosterNameSuggestions(input:GetText(), maxSuggestions)
+
+    for index, button in ipairs(buttons) do
+      local suggestion = suggestions and suggestions[index] or nil
+      if suggestion and suggestion.name then
+        button.suggestedName = suggestion.name
+        button.targetInput = input
+        Components.SetText(button, suggestion.name)
+        Components.SetVisible(button, true)
+      else
+        button.suggestedName = nil
+        button.targetInput = input
+        Components.SetText(button, "")
+        Components.SetVisible(button, false)
+      end
     end
   end
 
@@ -1699,12 +1738,11 @@ function Components.AttachRosterAutocomplete(input, suggestionButton, bridge)
     input:SetScript("OnTextChanged", refreshSuggestion)
   end
 
-  Components.SetButtonHandler(suggestionButton, function()
-    if suggestionButton.suggestedName then
-      Components.SetText(input, suggestionButton.suggestedName)
-    end
-    refreshSuggestion()
-  end)
+  for _, button in ipairs(buttons) do
+    Components.SetButtonHandler(button, function(clickedButton)
+      selectSuggestion(clickedButton or button)
+    end)
+  end
 
   refreshSuggestion()
 

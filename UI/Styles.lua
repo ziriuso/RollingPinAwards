@@ -52,6 +52,12 @@ RPA.UIStyles = {
     },
     cardHeader = {
       fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf",
+      fontHeight = 18,
+      color = { 115 / 255, 64 / 255, 30 / 255, 1 },
+      bold = true,
+    },
+    cardValue = {
+      fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf",
       fontHeight = 20,
       color = { 115 / 255, 64 / 255, 30 / 255, 1 },
       bold = true,
@@ -61,9 +67,48 @@ RPA.UIStyles = {
       fontHeight = 16,
       color = { 0, 0, 0, 1 },
     },
+    descriptionSmall = {
+      fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Regular.ttf",
+      fontHeight = 12,
+      color = { 0, 0, 0, 1 },
+    },
+    fieldLabel = {
+      fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf",
+      fontHeight = 16,
+      color = { 0, 0, 0, 1 },
+      bold = true,
+    },
+    tableRow = {
+      fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Regular.ttf",
+      fontHeight = 14,
+      color = { 0, 0, 0, 1 },
+    },
+    tableEmpty = {
+      fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Regular.ttf",
+      fontHeight = 14,
+      color = { 1, 1, 1, 1 },
+    },
+    modalHeader = {
+      fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf",
+      fontHeight = 18,
+      color = { 223 / 255, 198 / 255, 163 / 255, 1 },
+      bold = true,
+    },
+    leaderboardCount = {
+      fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf",
+      fontHeight = 21,
+      color = { 115 / 255, 64 / 255, 30 / 255, 1 },
+      bold = true,
+    },
+    actionButtonText = {
+      fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf",
+      fontHeight = 14,
+      color = { 223 / 255, 198 / 255, 163 / 255, 1 },
+      bold = true,
+    },
     buttonText = {
       fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf",
-      fontHeight = 20,
+      fontHeight = 16,
       color = { 223 / 255, 198 / 255, 163 / 255, 1 },
       bold = true,
     },

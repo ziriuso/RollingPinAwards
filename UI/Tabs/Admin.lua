@@ -224,6 +224,7 @@ UITabs.admin = {
       width = 640,
       height = 420,
       closeText = "Close",
+      titleTextRole = "modalHeader",
     })
     panel.aliasDialog.listSection = Components.CreateScrollableSection(panel.aliasDialog, {
       id = "RollingPinAwardsAliasMappingsSection",
@@ -256,6 +257,7 @@ UITabs.admin = {
       width = 700,
       height = 430,
       closeText = "Close",
+      titleTextRole = "modalHeader",
     })
     panel.moderationDialog.selectedFilter = panel.moderationDialog.selectedFilter or "pending"
     panel.moderationDialog.pendingFilterButton = Components.CreateButton(panel.moderationDialog, {

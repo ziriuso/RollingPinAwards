@@ -20,8 +20,9 @@ Storage and sync still use the existing full-name values where they already do. 
 ## UI Design
 
 - Add a reusable roster autocomplete helper for edit boxes.
-- Award Recipient uses the helper and fills the input with the selected full roster name.
-- Nomination Nominee uses the helper and fills the input with the selected full roster name.
+- Award Recipient uses the helper, shows up to three prefix matches, and fills the input with the selected full roster name.
+- Nomination Nominee uses the helper, shows up to three prefix matches, and fills the input with the selected full roster name.
+- Award and Nomination submit actions require selecting a guild roster suggestion; typed free-form names are not accepted.
 - Admin mapping labels change:
   - `Alias` -> `Alt Character`
   - `Canonical Character` -> `Main Character`
@@ -38,8 +39,9 @@ Storage and sync still use the existing full-name values where they already do. 
 
 ## Tests
 
-- Award Recipient autocomplete suggests and fills full guild roster names.
-- Nomination Nominee autocomplete suggests and fills full guild roster names.
+- Award Recipient autocomplete suggests up to three matching full guild roster names and fills the selected one.
+- Nomination Nominee autocomplete suggests up to three matching full guild roster names and fills the selected one.
+- Award and Nomination submit attempts without a selected roster suggestion show an error and do not create records.
 - Admin mapping labels/copy use Alt/Main Character wording and both fields autocomplete.
 - Normal rows/status text avoid `-Realm` outside character mapping.
 - Award toasts queue during combat and flush after `PLAYER_REGEN_ENABLED`.
