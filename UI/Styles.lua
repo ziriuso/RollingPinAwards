@@ -59,7 +59,7 @@ RPA.UIStyles = {
     minimapIcon = "Interface\\AddOns\\RollingPinAwards\\Media\\minimap-button.png",
     modalBackground = "Interface\\AddOns\\RollingPinAwards\\Media\\modal-background.png",
     standardPinIcon = "Interface\\AddOns\\RollingPinAwards\\Media\\rollingpin.png",
-    settingsGearIcon = "Interface\\Buttons\\UI-OptionsButton",
+    settingsGearIcon = "Interface\\WorldMap\\GEAR_64GREY",
   },
   Toast = {
     width = 360,

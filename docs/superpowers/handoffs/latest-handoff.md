@@ -21,7 +21,9 @@
   - The main background artwork has a bottom-right gear icon that opens a Settings page.
   - Settings includes `Enable reward toasts`, `Toggle Anchors Mode`, and `Test Toast`.
   - Anchor mode shows a movable toast anchor; right-click locks it and saves position.
+  - Follow-up fix: the settings gear now uses Blizzard's visible `Interface\WorldMap\GEAR_64GREY` texture and is explicitly frame-leveled above the parchment background art.
   - `tests/notifications_spec.lua` covers toast rendering, disabled toasts, settings persistence, anchor save, login reminders, and inbound nomination chat reminders.
+  - `tests/bridge_spec.lua` covers the gear texture, anchor target, and frame level above the background art.
   - `docs/superpowers/plans/2026-06-05-toast-settings-implementation.md` captures the implementation plan.
 - Current local UI polish follow-up after sync validation looked good:
   - all tab panels now use the Dashboard parchment-safe content offset and width.
@@ -238,6 +240,7 @@
 - Full suite command:
   - `powershell -ExecutionPolicy Bypass -File .\tests\run.ps1`
 - Last known result:
+  - 2026-06-05 full suite passed after the settings gear visibility fix with `RPA_LUA=C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards\tools\lua\lua54.exe`.
   - 2026-06-05 full suite passed after toast/settings implementation with `RPA_LUA=C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards\tools\lua\lua54.exe`.
   - 2026-06-05 full suite passed with `RPA_LUA=C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards\tools\lua\lua54.exe`.
   - full suite passed after setting `RPA_LUA=C:\Users\Ziri\Documents\Codex\2026-05-11\GBankManager\.worktrees\gbankmanager-v1\tools\lua\lua.exe`

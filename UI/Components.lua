@@ -938,6 +938,18 @@ function Components.CreateIconButton(parent, config)
     )
   end
 
+  if button.SetFrameStrata and parent and parent.GetFrameStrata then
+    button:SetFrameStrata(parent:GetFrameStrata())
+  end
+
+  if button.SetFrameLevel then
+    local frameLevel = parent and parent.GetFrameLevel and parent:GetFrameLevel() or 0
+    if config.relativeFrame and config.relativeFrame.GetFrameLevel then
+      frameLevel = math.max(frameLevel, config.relativeFrame:GetFrameLevel() or 0)
+    end
+    button:SetFrameLevel(frameLevel + (config.frameLevelOffset or 20))
+  end
+
   if button.CreateTexture then
     button.icon = button:CreateTexture(nil, "ARTWORK")
     if button.icon.SetAllPoints then
