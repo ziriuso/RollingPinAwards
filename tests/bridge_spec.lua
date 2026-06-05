@@ -413,7 +413,7 @@ return {
     local panel = addon.mainFrame.tabPanels.admin
     panel.moderationButton:Click()
 
-    harness.assert_equal("Open Moderation Queue (1)", panel.moderationButton.label.text)
+    harness.assert_equal("Moderation Queue (1)", panel.moderationButton.label.text)
     harness.assert_true(panel.moderationDialog.pendingFilterButton ~= nil)
     harness.assert_true(panel.moderationDialog.approvedFilterButton ~= nil)
     harness.assert_true(panel.moderationDialog.rejectedFilterButton ~= nil)
@@ -554,6 +554,7 @@ return {
     local background = addon.mainFrame.frame.backgroundArt
     local nominationsButton = addon.mainFrame.tabButtons[3]
     local historyButton = addon.mainFrame.tabButtons[4]
+    local leaderboardButton = addon.mainFrame.tabButtons[5]
     local dashboardPanel = addon.mainFrame.tabPanels.dashboard
     local statCards = dashboardPanel.statCards
     local railLeft = tabRail.point and tabRail.point[4] or 0
@@ -574,6 +575,10 @@ return {
 
     harness.assert_equal(background.width, tabRail.width)
     harness.assert_equal(backgroundLeft, railLeft)
+    harness.assert_true((nominationsButton.labelWidth or 0) >= #"Nominations" * 8)
+    harness.assert_equal("Nominations", nominationsButton.label.text)
+    harness.assert_true((leaderboardButton.labelWidth or 0) >= #"Leaderboard" * 8)
+    harness.assert_equal("Leaderboard", leaderboardButton.label.text)
     harness.assert_equal(math.floor(dashboardMiddleGapCenter + 0.5), math.floor(navMiddleGapCenter + 0.5))
     assert_text_role(nominationsButton.label, "buttonText", 16, BUTTON_TAN, true)
     harness.assert_nil(nominationsButton.label.outlineLabels)
@@ -602,11 +607,14 @@ return {
     harness.assert_true(awardButton.label.visible)
     harness.assert_equal("selected", dashboardButton.variant)
     harness.assert_equal("secondary", awardButton.variant)
+    harness.assert_true((dashboardButton.backdropColor.red or 0) > ((awardButton.backdropColor.red or 0) + 0.08))
+    harness.assert_true((dashboardButton.backdropBorderColor.red or 0) > (awardButton.backdropBorderColor.red or 0))
 
     addon.mainFrame:SelectTab("award")
 
     harness.assert_equal("secondary", dashboardButton.variant)
     harness.assert_equal("selected", awardButton.variant)
+    harness.assert_true((awardButton.backdropColor.red or 0) > ((dashboardButton.backdropColor.red or 0) + 0.08))
   end,
 
   ["tab rail centers nominations on the visual centerline when admin is hidden"] = function()
@@ -686,6 +694,10 @@ return {
     harness.assert_equal(panel.awardButton.width, panel.recentAwardsSection.width)
     harness.assert_equal("CENTER", panel.statCards[1].label.justifyH)
     harness.assert_equal("CENTER", panel.statCards[1].value.justifyH)
+    harness.assert_equal("TOP", panel.statCards[1].label.point[1])
+    harness.assert_equal("BOTTOM", panel.statCards[1].detail.point[1])
+    harness.assert_equal(12, math.abs(panel.statCards[1].label.point[5] or 0))
+    harness.assert_equal(10, panel.statCards[1].detail.point[5] or 0)
     harness.assert_equal("CENTER", panel.statCards[1].value.point[1])
     harness.assert_equal("CENTER", panel.statCards[1].value.point[3])
     harness.assert_equal("Interface\\ChatFrame\\ChatFrameBackground", panel.statCards[1].backdrop.bgFile)
@@ -700,6 +712,7 @@ return {
     harness.assert_equal("Interface\\ChatFrame\\ChatFrameBackground", panel.leaderboardSection.backdrop.bgFile)
     harness.assert_true((panel.leaderboardSection.backdropColor.red or 0) >= 0.80)
     harness.assert_true(panel.statCards[1].detail.text:match("ledger") == nil)
+    harness.assert_equal("Total Guildwide", panel.statCards[1].detail.text)
     harness.assert_equal("MIDDLE", panel.nominationButton.label.justifyV)
 
     local frame = addon.mainFrame.frame
@@ -1422,12 +1435,15 @@ return {
     local awardPanel = addon.mainFrame.tabPanels.award
     harness.assert_equal("selected", awardPanel.typeBurntButton.variant)
     harness.assert_equal("secondary", awardPanel.typeGoldenButton.variant)
+    harness.assert_true((awardPanel.typeBurntButton.backdropColor.red or 0) > ((awardPanel.typeGoldenButton.backdropColor.red or 0) + 0.08))
     awardPanel.typeGoldenButton:Click()
     harness.assert_equal("golden", awardPanel.selectedAwardType)
     harness.assert_equal("secondary", awardPanel.typeBurntButton.variant)
     harness.assert_equal("selected", awardPanel.typeGoldenButton.variant)
+    harness.assert_true((awardPanel.typeGoldenButton.backdropColor.red or 0) > ((awardPanel.typeBurntButton.backdropColor.red or 0) + 0.08))
     harness.assert_true(awardPanel.statusSection == nil)
     harness.assert_true((awardPanel.submitButton.point[5] or 0) - (awardPanel.submitButton.height or 0) >= -(awardPanel.formSection.height or 0))
+    harness.assert_equal(30, awardPanel.reasonInput.maxLetters)
 
     addon.mainFrame:SelectTab("nominations")
     local nominationsPanel = addon.mainFrame.tabPanels.nominations
@@ -1436,14 +1452,18 @@ return {
     harness.assert_true(nominationsPanel.selectedAwardPreview ~= nil)
     harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\burnt-rolling-pin.png", nominationsPanel.selectedAwardPreview.texturePath)
     harness.assert_equal("", nominationsPanel.statusLabel.text)
-    harness.assert_equal(-138, nominationsPanel.submitButton.point[5])
+    harness.assert_equal(nominationsPanel.nomineeInput.point[5], nominationsPanel.reasonInput.point[5])
+    harness.assert_equal(nominationsPanel.reasonInput.point[5], nominationsPanel.submitButton.point[5])
+    harness.assert_equal(30, nominationsPanel.reasonInput.maxLetters)
     harness.assert_true((nominationsPanel.submitButton.point[4] or 0) + (nominationsPanel.submitButton.width or 0) <= (nominationsPanel.formSection.width or 0) - 14)
     harness.assert_equal("selected", nominationsPanel.typeBurntButton.variant)
     harness.assert_equal("secondary", nominationsPanel.typeGoldenButton.variant)
+    harness.assert_true((nominationsPanel.typeBurntButton.backdropColor.red or 0) > ((nominationsPanel.typeGoldenButton.backdropColor.red or 0) + 0.08))
     nominationsPanel.typeGoldenButton:Click()
     harness.assert_equal("golden", nominationsPanel.selectedAwardType)
     harness.assert_equal("secondary", nominationsPanel.typeBurntButton.variant)
     harness.assert_equal("selected", nominationsPanel.typeGoldenButton.variant)
+    harness.assert_true((nominationsPanel.typeGoldenButton.backdropColor.red or 0) > ((nominationsPanel.typeBurntButton.backdropColor.red or 0) + 0.08))
     harness.assert_equal("Nominate A Guild Legend", nominationsPanel.formSection.titleText.text)
     harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\golden-rolling-pin.png", nominationsPanel.selectedAwardPreview.texturePath)
   end,
@@ -1527,9 +1547,13 @@ return {
     officerRow.manageNominationsCheck:Click()
     harness.assert_true(officerRow.manageNominationsCheck:GetChecked())
     harness.assert_true(officerRow.manageNominationsCheck.checkLabel.visible)
+    local saveRight = (officerRow.point[4] or 0) + (officerRow.saveButton.point[4] or 0) + (officerRow.saveButton.width or 0)
+    local scrollLeft = (adminPanel.rankSection.width or 0) + (adminPanel.rankSection.scrollBar.point[4] or 0)
+    harness.assert_true(saveRight <= scrollLeft - 24)
     harness.assert_true((adminPanel.aliasInput.point[5] or 0) - (adminPanel.aliasInput.height or 0) >= -(adminPanel.aliasFormSection.height or 0))
     harness.assert_true(adminPanel.moderationSection == nil)
     harness.assert_true(adminPanel.moderationButton ~= nil)
+    harness.assert_equal("Moderation Queue (0)", adminPanel.moderationButton.label.text)
     harness.assert_true(adminPanel.moderationDialog ~= nil)
   end,
 
@@ -1868,6 +1892,8 @@ return {
     harness.assert_equal("Officerthree-Stormrage", awardPanel.recipientInput.rosterSuggestionButtons[3].suggestedName)
     harness.assert_true(awardPanel.recipientInput.rosterSuggestionButtons[2].visible)
     harness.assert_true(awardPanel.recipientInput.rosterSuggestionButtons[3].visible)
+    harness.assert_equal(awardPanel.recipientSuggestionButton, awardPanel.recipientInput.rosterSuggestionButtons[2].point[2])
+    harness.assert_equal(awardPanel.recipientInput.rosterSuggestionButtons[2], awardPanel.recipientInput.rosterSuggestionButtons[3].point[2])
 
     awardPanel.recipientInput.rosterSuggestionButtons[2]:Click()
     harness.assert_equal("Officertwo-Stormrage", awardPanel.recipientInput:GetText())
@@ -1885,6 +1911,8 @@ return {
     harness.assert_equal("Officerthree-Stormrage", nominationsPanel.nomineeInput.rosterSuggestionButtons[3].suggestedName)
     harness.assert_true(nominationsPanel.nomineeInput.rosterSuggestionButtons[2].visible)
     harness.assert_true(nominationsPanel.nomineeInput.rosterSuggestionButtons[3].visible)
+    harness.assert_equal(nominationsPanel.nomineeSuggestionButton, nominationsPanel.nomineeInput.rosterSuggestionButtons[2].point[2])
+    harness.assert_equal(nominationsPanel.nomineeInput.rosterSuggestionButtons[2], nominationsPanel.nomineeInput.rosterSuggestionButtons[3].point[2])
 
     nominationsPanel.nomineeInput.rosterSuggestionButtons[3]:Click()
     harness.assert_equal("Officerthree-Stormrage", nominationsPanel.nomineeInput:GetText())

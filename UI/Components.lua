@@ -39,12 +39,24 @@ local function applyBackdrop(frame, backdrop, color, borderColor)
   else
     frame.backdropColor = color
   end
+  frame.backdropColor = {
+    red = (color or {})[1],
+    green = (color or {})[2],
+    blue = (color or {})[3],
+    alpha = (color or {})[4],
+  }
 
   if frame.SetBackdropBorderColor then
     frame:SetBackdropBorderColor(unpackColor(borderColor))
   else
     frame.backdropBorderColor = borderColor
   end
+  frame.backdropBorderColor = {
+    red = (borderColor or {})[1],
+    green = (borderColor or {})[2],
+    blue = (borderColor or {})[3],
+    alpha = (borderColor or {})[4],
+  }
 end
 
 local function applyTextTreatment(label, options)
@@ -513,12 +525,13 @@ function Components.CreateTabButton(parent, spec, index)
       )
     end
 
+    local tabLabelWidth = button.width - 16
     button.label = createFontString(
       button,
       "GameFontNormal",
       8,
       -6,
-      button.width - 28,
+      tabLabelWidth,
       "CENTER",
       "MIDDLE",
       spec.label,
@@ -532,6 +545,7 @@ function Components.CreateTabButton(parent, spec, index)
       end
       button.label:SetPoint("CENTER", button, "CENTER", 0, 0)
     end
+    button.labelWidth = tabLabelWidth
     if button.label.Show then
       button.label:Show()
     else
@@ -607,6 +621,14 @@ function Components.LayoutTabButtons(parent, buttons)
     button.height = layout.navButtonHeight or button.height
     if button.SetSize then
       button:SetSize(button.width, button.height)
+    end
+    if button.label then
+      button.labelWidth = button.width - 16
+      if button.label.SetWidth then
+        button.label:SetWidth(button.labelWidth)
+      else
+        button.label.width = button.labelWidth
+      end
     end
     if button.ClearAllPoints then
       button:ClearAllPoints()
@@ -798,7 +820,7 @@ function Components.CreateStatCard(parent, config)
 
   local labelX = card.iconFrame and 48 or 14
   local labelWidth = card.width - labelX - 14
-  card.label = createFontString(card, "GameFontNormal", labelX, -16, labelWidth, "CENTER", "TOP", config.label or "", {
+  card.label = createFontString(card, "GameFontNormal", labelX, -12, labelWidth, "CENTER", "TOP", config.label or "", {
     textRole = "cardHeader",
   })
   card.value = createFontString(card, "GameFontNormalLarge", 14, -54, card.width - 28, "CENTER", "TOP", config.value or "", {
@@ -815,6 +837,18 @@ function Components.CreateStatCard(parent, config)
   end
   if card.value.SetJustifyV then
     card.value:SetJustifyV("MIDDLE")
+  end
+  if card.label.SetPoint then
+    if card.label.ClearAllPoints then
+      card.label:ClearAllPoints()
+    end
+    card.label:SetPoint("TOP", card, "TOP", 0, -12)
+  end
+  if card.detail.SetPoint then
+    if card.detail.ClearAllPoints then
+      card.detail:ClearAllPoints()
+    end
+    card.detail:SetPoint("BOTTOM", card, "BOTTOM", 0, 10)
   end
 
   return card
@@ -919,6 +953,7 @@ end
 
 function Components.CreateButton(parent, config)
   local button = CreateFrame("Button", nil, parent, "BackdropTemplate")
+  button.parent = parent
   button.variant = config.variant or "primary"
   button.width = config.width or 120
   button.height = config.height or 24
@@ -928,7 +963,7 @@ function Components.CreateButton(parent, config)
   end
 
   if button.SetPoint then
-    button:SetPoint(config.anchor or "TOPLEFT", parent, config.relativeTo or "TOPLEFT", config.x or 0, config.y or 0)
+    button:SetPoint(config.anchor or "TOPLEFT", config.relativeFrame or parent, config.relativeTo or "TOPLEFT", config.x or 0, config.y or 0)
   end
 
   if config.iconPath then
@@ -1634,7 +1669,7 @@ function Components.AddPermissionMatrixRow(section, config)
   row.saveButton = Components.CreateButton(row, {
     text = config.saveText or "Save",
     width = 56,
-    x = config.saveX or 670,
+    x = config.saveX or 642,
     y = -4,
     variant = "secondary",
     onClick = config.onSave,
@@ -1684,15 +1719,20 @@ function Components.AttachRosterAutocomplete(input, suggestionButton, bridge, co
   input.rosterSuggestionButtons = buttons
 
   for index = 2, maxSuggestions do
-    local point = suggestionButton.point or {}
-    local x = point[4] or 0
-    local y = (point[5] or 0) - ((index - 1) * ((suggestionButton.height or 20) + (config.gap or 2)))
-    local button = Components.CreateButton(suggestionButton.parent, {
+    local previousButton = buttons[index - 1]
+    local parent = suggestionButton.parent
+      or (suggestionButton.GetParent and suggestionButton:GetParent())
+      or input.parent
+      or (input.GetParent and input:GetParent())
+    local button = Components.CreateButton(parent, {
       text = "",
       width = suggestionButton.width or config.width or 180,
       height = suggestionButton.height or config.height or 20,
-      x = x,
-      y = y,
+      anchor = "TOPLEFT",
+      relativeFrame = previousButton,
+      relativeTo = "BOTTOMLEFT",
+      x = 0,
+      y = -(config.gap or 2),
       variant = suggestionButton.variant or "secondary",
     })
     Components.SetVisible(button, false)

@@ -152,7 +152,7 @@ UITabs.dashboard = {
 
     Components.SetText(panel.statCards[1].label, "Total Rolling Pins")
     Components.SetText(panel.statCards[1].value, tostring(viewModel.awardCount or 0))
-    Components.SetText(panel.statCards[1].detail, "Awarded across the guild")
+    Components.SetText(panel.statCards[1].detail, "Total Guildwide")
 
     Components.SetText(panel.statCards[2].label, "Top Recipient")
     Components.SetText(panel.statCards[2].value, topRecipient)

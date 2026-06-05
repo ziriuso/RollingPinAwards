@@ -130,7 +130,7 @@ UITabs.nominations = {
       width = 320,
       x = 252,
       y = -124,
-      maxLetters = 180,
+      maxLetters = 30,
     })
     panel.selectedAwardPreview = Components.CreateArtworkFrame(panel.formSection, {
       texture = media.awardIcon,
@@ -144,7 +144,7 @@ UITabs.nominations = {
       width = 164,
       height = 36,
       x = 584,
-      y = -138,
+      y = -124,
       variant = "primary",
       onClick = function()
         local nomineeName = panel.nomineeInput.selectedRosterName

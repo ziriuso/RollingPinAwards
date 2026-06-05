@@ -241,7 +241,7 @@ UITabs.admin = {
     })
 
     panel.moderationButton = Components.CreateButton(panel, {
-      text = "Open Moderation Queue",
+      text = "Moderation Queue",
       width = 220,
       height = 34,
       x = 0,
@@ -468,7 +468,7 @@ UITabs.admin = {
       }
     end
 
-    Components.SetText(panel.moderationButton, ("Open Moderation Queue (%d)"):format(countPendingNominations(viewModel.nominations or {})))
+    Components.SetText(panel.moderationButton, ("Moderation Queue (%d)"):format(countPendingNominations(viewModel.nominations or {})))
     Components.SetButtonVariant(panel.moderationDialog.pendingFilterButton, selectedFilter == "pending" and "selected" or "secondary")
     Components.SetButtonVariant(panel.moderationDialog.approvedFilterButton, selectedFilter == "approved" and "selected" or "secondary")
     Components.SetButtonVariant(panel.moderationDialog.rejectedFilterButton, selectedFilter == "rejected" and "selected" or "secondary")
