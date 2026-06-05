@@ -16,13 +16,18 @@ local Utils = RPA.Utils or {}
 local Toast = RPA.Toast or {}
 RPA.Toast = Toast
 
+local SOLID_BACKDROP = "Interface\\Buttons\\WHITE8x8"
+
 local function applyToastBackdrop(frame)
+  local toastStyle = Styles.Toast or {}
+  local backgroundColor = toastStyle.backgroundColor or { 0.10, 0.07, 0.05, 0.92 }
+
   if frame.SetBackdrop then
     frame:SetBackdrop({
-      bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+      bgFile = SOLID_BACKDROP,
       edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-      tile = true,
-      tileSize = 16,
+      tile = false,
+      tileSize = 0,
       edgeSize = 12,
       insets = {
         left = 3,
@@ -34,7 +39,12 @@ local function applyToastBackdrop(frame)
   end
 
   if frame.SetBackdropColor then
-    frame:SetBackdropColor(0.10, 0.07, 0.05, 0.92)
+    frame:SetBackdropColor(
+      backgroundColor[1] or 0.10,
+      backgroundColor[2] or 0.07,
+      backgroundColor[3] or 0.05,
+      backgroundColor[4] or 0.92
+    )
   end
 end
 

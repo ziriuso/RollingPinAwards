@@ -1,6 +1,7 @@
 ## Interface: 120007, 120005
 ## Title: Rolling Pin Awards
 ## Notes: Guild awards and nominations for The Burnt Rolling Pin
+## Category: Guild
 ## Author: Ziri
 ## Version: 0.1.0
 ## SavedVariables: RollingPinAwardsDB

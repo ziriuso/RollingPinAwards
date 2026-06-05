@@ -3,10 +3,16 @@ local wow = require("tests.WoWStubs")
 
 local BROWN = { 115 / 255, 64 / 255, 30 / 255, 1 }
 local BUTTON_TAN = { 223 / 255, 198 / 255, 163 / 255, 1 }
+local CARD_VALUE_GOLD = { 223 / 255, 150 / 255, 10 / 255, 1 }
+local MODAL_FILL = { 197 / 255, 159 / 255, 107 / 255, 1 }
+local NAV_VISUAL_ALIGNMENT_OFFSET = -26
+local SOLID_BACKDROP = "Interface\\Buttons\\WHITE8x8"
 local BLACK = { 0, 0, 0, 1 }
 local WHITE = { 1, 1, 1, 1 }
 local REGULAR_FONT = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Regular.ttf"
 local BOLD_FONT = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf"
+local AMARANTE_FONT = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Amarante-Regular.ttf"
+local CLEAN_CARD = "Interface\\AddOns\\RollingPinAwards\\Media\\cleancard.png"
 
 local function assert_color(label, color)
   harness.assert_true(label.textColor ~= nil)
@@ -16,10 +22,25 @@ local function assert_color(label, color)
   harness.assert_equal(color[4], label.textColor.alpha)
 end
 
-local function assert_text_role(label, role, height, color, bold)
+local function assert_backdrop_color(frame, color)
+  harness.assert_true(frame.backdrop ~= nil)
+  harness.assert_equal(SOLID_BACKDROP, frame.backdrop.bgFile)
+  harness.assert_equal(false, frame.backdrop.tile)
+  harness.assert_true(frame.backdropColor ~= nil)
+  harness.assert_equal(color[1], frame.backdropColor.red)
+  harness.assert_equal(color[2], frame.backdropColor.green)
+  harness.assert_equal(color[3], frame.backdropColor.blue)
+  harness.assert_equal(color[4], frame.backdropColor.alpha)
+end
+
+local function assert_text_role(label, role, height, color, bold, fontFlags)
   harness.assert_equal(role, label.textRole)
   harness.assert_equal(height, label.fontHeight)
-  harness.assert_nil(label.fontFlags)
+  if fontFlags then
+    harness.assert_equal(fontFlags, label.fontFlags)
+  else
+    harness.assert_nil(label.fontFlags)
+  end
   harness.assert_equal(bold == true and "bold" or nil, label.fontWeight)
   harness.assert_equal(bold == true and BOLD_FONT or REGULAR_FONT, label.fontFile)
   assert_color(label, color)
@@ -246,18 +267,18 @@ return {
     harness.assert_true((panel.detailDialog.frameLevel or 0) > (addon.mainFrame.contentPanel.contentHost.frameLevel or 0))
     harness.assert_equal("Moonrustle", panel.detailDialog.titleLabel.text)
     harness.assert_equal("CENTER", panel.detailDialog.titleLabel.justifyH)
-    harness.assert_equal("GameFontNormalHuge", panel.detailDialog.titleLabel.template)
-    harness.assert_true((panel.detailDialog.width or 0) >= 720)
-    harness.assert_true((panel.detailDialog.height or 0) >= 620)
-    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\modal-background.png", panel.detailDialog.backgroundArt.texturePath)
+    harness.assert_equal(AMARANTE_FONT, panel.detailDialog.titleLabel.fontFile)
+    harness.assert_equal(28, panel.detailDialog.titleLabel.fontHeight)
+    assert_color(panel.detailDialog.titleLabel, CARD_VALUE_GOLD)
+    harness.assert_true((panel.detailDialog.width or 0) >= 760)
+    harness.assert_true((panel.detailDialog.height or 0) >= 820)
+    harness.assert_equal(CLEAN_CARD, panel.detailDialog.backgroundArt.texturePath)
     harness.assert_true(panel.detailDialog.contentHost ~= nil)
-    harness.assert_true((panel.detailDialog.contentHost.point[4] or 0) >= 130)
-    harness.assert_true(math.abs(panel.detailDialog.contentHost.point[5] or 0) <= 100)
-    harness.assert_true((panel.detailDialog.contentHost.width or 0) <= (panel.detailDialog.width or 0) - 240)
-    harness.assert_true((panel.detailDialog.contentHost.height or 0) >= 540)
+    harness.assert_equal(0, panel.detailDialog.contentHost.point[4])
+    harness.assert_equal(0, panel.detailDialog.contentHost.point[5])
+    harness.assert_equal(panel.detailDialog.width, panel.detailDialog.contentHost.width)
+    harness.assert_equal(panel.detailDialog.height, panel.detailDialog.contentHost.height)
     harness.assert_equal(panel.detailDialog.contentHost, panel.detailDialog.titleLabel.parent)
-    harness.assert_equal(panel.detailDialog.contentHost, panel.detailDialog.goldenIcon.parent)
-    harness.assert_equal(panel.detailDialog.contentHost, panel.detailDialog.burntIcon.parent)
     harness.assert_equal(panel.detailDialog.contentHost, panel.detailDialog.goldenCountLabel.parent)
     harness.assert_equal(panel.detailDialog.contentHost, panel.detailDialog.burntCountLabel.parent)
     harness.assert_equal(panel.detailDialog.contentHost, panel.detailDialog.listSection.parent)
@@ -267,26 +288,32 @@ return {
     harness.assert_equal("LeftButton", panel.detailDialog.dragButtons[1])
     harness.assert_true(type(panel.detailDialog.scripts.OnDragStart) == "function")
     harness.assert_true(type(panel.detailDialog.scripts.OnDragStop) == "function")
-    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\golden-rolling-pin.png", panel.detailDialog.goldenIcon.texturePath)
-    harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\burnt-rolling-pin.png", panel.detailDialog.burntIcon.texturePath)
-    harness.assert_equal(-30, panel.detailDialog.titleLabel.point[5])
-    harness.assert_equal(-74, panel.detailDialog.goldenIcon.point[5])
-    harness.assert_equal(-74, panel.detailDialog.burntIcon.point[5])
-    harness.assert_true((panel.detailDialog.goldenIcon.width or 0) > 88)
-    harness.assert_true((panel.detailDialog.burntIcon.width or 0) > 88)
+    harness.assert_nil(panel.detailDialog.goldenIcon)
+    harness.assert_nil(panel.detailDialog.burntIcon)
+    harness.assert_equal(-72, panel.detailDialog.titleLabel.point[5])
     harness.assert_equal("1", panel.detailDialog.goldenCountLabel.text)
     harness.assert_equal("1", panel.detailDialog.burntCountLabel.text)
-    assert_text_role(panel.detailDialog.goldenCountLabel, "leaderboardCount", 21, BROWN, true)
-    assert_text_role(panel.detailDialog.burntCountLabel, "leaderboardCount", 21, BROWN, true)
-    harness.assert_true((panel.detailDialog.goldenCountLabel.point[5] or 0) < (panel.detailDialog.goldenIcon.point[5] or 0) - (panel.detailDialog.goldenIcon.height or 0))
-    harness.assert_equal(-240, panel.detailDialog.listSection.point[5])
-    harness.assert_equal("GameFontNormalHuge", panel.detailDialog.goldenCountLabel.template)
+    harness.assert_equal(AMARANTE_FONT, panel.detailDialog.goldenCountLabel.fontFile)
+    harness.assert_equal(AMARANTE_FONT, panel.detailDialog.burntCountLabel.fontFile)
+    harness.assert_equal(24, panel.detailDialog.goldenCountLabel.fontHeight)
+    harness.assert_equal(24, panel.detailDialog.burntCountLabel.fontHeight)
+    assert_color(panel.detailDialog.goldenCountLabel, CARD_VALUE_GOLD)
+    assert_color(panel.detailDialog.burntCountLabel, CARD_VALUE_GOLD)
+    harness.assert_true((panel.detailDialog.burntCountLabel.point[4] or 0) < (panel.detailDialog.goldenCountLabel.point[4] or 0))
+    harness.assert_equal(107, panel.detailDialog.burntCountLabel.point[4])
+    harness.assert_equal(557, panel.detailDialog.goldenCountLabel.point[4])
+    harness.assert_equal(-245, panel.detailDialog.burntCountLabel.point[5])
+    harness.assert_equal(-245, panel.detailDialog.goldenCountLabel.point[5])
+    harness.assert_equal(-296, panel.detailDialog.listSection.point[5])
     harness.assert_equal("BOTTOMRIGHT", panel.detailDialog.closeButton.point[1])
-    harness.assert_equal(48, panel.detailDialog.closeButton.point[5])
+    harness.assert_equal(35, panel.detailDialog.closeButton.point[5])
+    harness.assert_nil(panel.detailDialog.closeButton.backdrop)
+    harness.assert_true(panel.detailDialog.closeButton.label == nil or panel.detailDialog.closeButton.label.text == "")
     harness.assert_equal("", panel.detailDialog.listSection.titleText.text)
     harness.assert_true(panel.detailDialog.listSection.iconFrame == nil)
     harness.assert_true(math.abs(panel.detailDialog.listSection.rows[1].point[5] or 0) <= 18)
-    harness.assert_true((panel.detailDialog.listSection.height or 0) >= 188)
+    harness.assert_true((panel.detailDialog.listSection.width or 0) >= 600)
+    harness.assert_true((panel.detailDialog.listSection.height or 0) >= 410)
     harness.assert_true(panel.detailDialog.listSection.scrollBar ~= nil)
     harness.assert_equal(2, #panel.detailDialog.listSection.rows)
   end,
@@ -414,6 +441,7 @@ return {
     panel.moderationButton:Click()
 
     harness.assert_equal("Moderation Queue (1)", panel.moderationButton.label.text)
+    assert_backdrop_color(panel.moderationDialog, MODAL_FILL)
     harness.assert_true(panel.moderationDialog.pendingFilterButton ~= nil)
     harness.assert_true(panel.moderationDialog.approvedFilterButton ~= nil)
     harness.assert_true(panel.moderationDialog.rejectedFilterButton ~= nil)
@@ -519,6 +547,7 @@ return {
     harness.assert_equal("Interface\\WorldMap\\GEAR_64GREY", addon.mainFrame.settingsGearButton.icon.texturePath)
     harness.assert_equal("BOTTOMRIGHT", addon.mainFrame.settingsGearButton.point[1])
     harness.assert_equal(addon.mainFrame.frame.backgroundArt, addon.mainFrame.settingsGearButton.point[2])
+    harness.assert_equal(-78, addon.mainFrame.settingsGearButton.point[4])
     harness.assert_true((addon.mainFrame.settingsGearButton.frameLevel or 0) > (addon.mainFrame.frame.backgroundArt.frameLevel or 0))
     harness.assert_true(addon.mainFrame.contentPanel ~= nil)
     harness.assert_equal("TOOLTIP", addon.mainFrame.contentPanel.frameStrata)
@@ -575,11 +604,14 @@ return {
 
     harness.assert_equal(background.width, tabRail.width)
     harness.assert_equal(backgroundLeft, railLeft)
-    harness.assert_true((nominationsButton.labelWidth or 0) >= #"Nominations" * 8)
+    harness.assert_true((nominationsButton.labelWidth or 0) >= #"Nominations" * 11)
     harness.assert_equal("Nominations", nominationsButton.label.text)
-    harness.assert_true((leaderboardButton.labelWidth or 0) >= #"Leaderboard" * 8)
+    harness.assert_true((leaderboardButton.labelWidth or 0) >= #"Leaderboard" * 11)
     harness.assert_equal("Leaderboard", leaderboardButton.label.text)
-    harness.assert_equal(math.floor(dashboardMiddleGapCenter + 0.5), math.floor(navMiddleGapCenter + 0.5))
+    harness.assert_equal(
+      math.floor(dashboardMiddleGapCenter + NAV_VISUAL_ALIGNMENT_OFFSET + 0.5),
+      math.floor(navMiddleGapCenter + 0.5)
+    )
     assert_text_role(nominationsButton.label, "buttonText", 16, BUTTON_TAN, true)
     harness.assert_nil(nominationsButton.label.outlineLabels)
   end,
@@ -607,14 +639,14 @@ return {
     harness.assert_true(awardButton.label.visible)
     harness.assert_equal("selected", dashboardButton.variant)
     harness.assert_equal("secondary", awardButton.variant)
-    harness.assert_true((dashboardButton.backdropColor.red or 0) > ((awardButton.backdropColor.red or 0) + 0.08))
+    harness.assert_true((dashboardButton.backdropColor.red or 0) < ((awardButton.backdropColor.red or 0) - 0.08))
     harness.assert_true((dashboardButton.backdropBorderColor.red or 0) > (awardButton.backdropBorderColor.red or 0))
 
     addon.mainFrame:SelectTab("award")
 
     harness.assert_equal("secondary", dashboardButton.variant)
     harness.assert_equal("selected", awardButton.variant)
-    harness.assert_true((awardButton.backdropColor.red or 0) > ((dashboardButton.backdropColor.red or 0) + 0.08))
+    harness.assert_true((awardButton.backdropColor.red or 0) < ((dashboardButton.backdropColor.red or 0) - 0.08))
   end,
 
   ["tab rail centers nominations on the visual centerline when admin is hidden"] = function()
@@ -657,7 +689,10 @@ return {
       + (((statCards[3].point[4] or 0) - ((statCards[2].point[4] or 0) + (statCards[2].width or 0))) / 2)
 
     harness.assert_equal("nominations", nominationsButton.id)
-    harness.assert_equal(math.floor(dashboardMiddleGapCenter + 0.5), math.floor(nominationsCenter + 0.5))
+    harness.assert_equal(
+      math.floor(dashboardMiddleGapCenter + NAV_VISUAL_ALIGNMENT_OFFSET + 0.5),
+      math.floor(nominationsCenter + 0.5)
+    )
   end,
 
   ["dashboard renders stats, content sections, and footer actions after recomposition"] = function()
@@ -703,7 +738,7 @@ return {
     harness.assert_equal("Interface\\ChatFrame\\ChatFrameBackground", panel.statCards[1].backdrop.bgFile)
     harness.assert_true((panel.statCards[1].backdropColor.red or 0) >= 0.80)
     assert_text_role(panel.statCards[1].label, "cardHeader", 18, BROWN, true)
-    assert_text_role(panel.statCards[1].value, "cardValue", 20, BROWN, true)
+    assert_text_role(panel.statCards[1].value, "cardValue", 20, CARD_VALUE_GOLD, true)
     harness.assert_equal(0, panel.statCards[1].label.shadowColor.alpha)
     harness.assert_equal(0, panel.statCards[1].label.shadowOffset.x)
     harness.assert_equal(0, panel.statCards[1].label.shadowOffset.y)
@@ -713,6 +748,7 @@ return {
     harness.assert_true((panel.leaderboardSection.backdropColor.red or 0) >= 0.80)
     harness.assert_true(panel.statCards[1].detail.text:match("ledger") == nil)
     harness.assert_equal("Total Guildwide", panel.statCards[1].detail.text)
+    harness.assert_equal("Nominations", panel.statCards[3].label.text)
     harness.assert_equal("MIDDLE", panel.nominationButton.label.justifyV)
 
     local frame = addon.mainFrame.frame
@@ -750,7 +786,7 @@ return {
     assert_text_role(dashboard.heroLabel, "tabDescription", 16, BLACK, false)
     assert_text_role(dashboard.permissionLabel, "tabDescription", 16, BLACK, false)
     assert_text_role(dashboard.statCards[1].label, "cardHeader", 18, BROWN, true)
-    assert_text_role(dashboard.statCards[1].value, "cardValue", 20, BROWN, true)
+    assert_text_role(dashboard.statCards[1].value, "cardValue", 20, CARD_VALUE_GOLD, true)
     assert_text_role(dashboard.statCards[1].detail, "cardDescription", 16, BLACK, false)
     assert_text_role(dashboard.leaderboardSection.titleText, "cardHeader", 18, BROWN, true)
     assert_text_role(dashboard.leaderboardSection.rows[1].label, "tableRow", 14, BLACK, false)
@@ -786,6 +822,9 @@ return {
     assert_text_role(addon.mainFrame.contentPanel.titleText, "tabHeader", 24, BROWN, true)
     assert_text_role(leaderboard.listSection.titleText, "cardHeader", 18, BROWN, true)
     assert_text_role(leaderboard.burntModeButton.label, "buttonText", 16, BUTTON_TAN, true)
+    harness.assert_equal("selected", leaderboard.combinedModeButton.variant)
+    harness.assert_true((leaderboard.combinedModeButton.backdropColor.red or 0) < ((leaderboard.burntModeButton.backdropColor.red or 0) - 0.08))
+    assert_color(leaderboard.combinedModeButton.label, CARD_VALUE_GOLD)
 
     addon.mainFrame:SelectTab("admin")
     local admin = addon.mainFrame.tabPanels.admin
@@ -793,14 +832,15 @@ return {
     assert_text_role(admin.rankSection.titleText, "cardHeader", 18, BROWN, true)
     assert_text_role(admin.permissionHelpLabel, "cardDescription", 16, BLACK, false)
     assert_text_role(admin.aliasSaveButton.label, "buttonText", 16, BUTTON_TAN, true)
-    assert_text_role(admin.aliasDialog.titleLabel, "modalHeader", 18, BUTTON_TAN, true)
-    assert_text_role(admin.moderationDialog.titleLabel, "modalHeader", 18, BUTTON_TAN, true)
+    assert_text_role(admin.aliasDialog.titleLabel, "cardHeader", 18, BROWN, true)
+    assert_text_role(admin.moderationDialog.titleLabel, "cardHeader", 18, BROWN, true)
 
     addon.mainFrame:ShowSettingsPage()
     local settings = addon.mainFrame.settingsPanel
     assert_text_role(addon.mainFrame.contentPanel.titleText, "tabHeader", 24, BROWN, true)
     assert_text_role(settings.toastSection.titleText, "cardHeader", 18, BROWN, true)
     assert_text_role(settings.toastsCheck.label, "cardDescription", 16, BLACK, false)
+    harness.assert_equal("Toggle Anchors", settings.anchorButton.label.text)
     assert_text_role(settings.testToastButton.label, "buttonText", 16, BUTTON_TAN, true)
   end,
 
@@ -1408,6 +1448,7 @@ return {
 
     local panel = addon.mainFrame.tabPanels.admin
     panel.aliasBrowseButton:Click()
+    assert_backdrop_color(panel.aliasDialog, MODAL_FILL)
     local section = panel.aliasDialog.listSection
 
     harness.assert_true(section.scrollBar ~= nil)
@@ -1435,12 +1476,14 @@ return {
     local awardPanel = addon.mainFrame.tabPanels.award
     harness.assert_equal("selected", awardPanel.typeBurntButton.variant)
     harness.assert_equal("secondary", awardPanel.typeGoldenButton.variant)
-    harness.assert_true((awardPanel.typeBurntButton.backdropColor.red or 0) > ((awardPanel.typeGoldenButton.backdropColor.red or 0) + 0.08))
+    harness.assert_true((awardPanel.typeBurntButton.backdropColor.red or 0) < ((awardPanel.typeGoldenButton.backdropColor.red or 0) - 0.08))
+    assert_color(awardPanel.typeBurntButton.label, CARD_VALUE_GOLD)
     awardPanel.typeGoldenButton:Click()
     harness.assert_equal("golden", awardPanel.selectedAwardType)
     harness.assert_equal("secondary", awardPanel.typeBurntButton.variant)
     harness.assert_equal("selected", awardPanel.typeGoldenButton.variant)
-    harness.assert_true((awardPanel.typeGoldenButton.backdropColor.red or 0) > ((awardPanel.typeBurntButton.backdropColor.red or 0) + 0.08))
+    harness.assert_true((awardPanel.typeGoldenButton.backdropColor.red or 0) < ((awardPanel.typeBurntButton.backdropColor.red or 0) - 0.08))
+    assert_color(awardPanel.typeGoldenButton.label, CARD_VALUE_GOLD)
     harness.assert_true(awardPanel.statusSection == nil)
     harness.assert_true((awardPanel.submitButton.point[5] or 0) - (awardPanel.submitButton.height or 0) >= -(awardPanel.formSection.height or 0))
     harness.assert_equal(30, awardPanel.reasonInput.maxLetters)
@@ -1458,12 +1501,14 @@ return {
     harness.assert_true((nominationsPanel.submitButton.point[4] or 0) + (nominationsPanel.submitButton.width or 0) <= (nominationsPanel.formSection.width or 0) - 14)
     harness.assert_equal("selected", nominationsPanel.typeBurntButton.variant)
     harness.assert_equal("secondary", nominationsPanel.typeGoldenButton.variant)
-    harness.assert_true((nominationsPanel.typeBurntButton.backdropColor.red or 0) > ((nominationsPanel.typeGoldenButton.backdropColor.red or 0) + 0.08))
+    harness.assert_true((nominationsPanel.typeBurntButton.backdropColor.red or 0) < ((nominationsPanel.typeGoldenButton.backdropColor.red or 0) - 0.08))
+    assert_color(nominationsPanel.typeBurntButton.label, CARD_VALUE_GOLD)
     nominationsPanel.typeGoldenButton:Click()
     harness.assert_equal("golden", nominationsPanel.selectedAwardType)
     harness.assert_equal("secondary", nominationsPanel.typeBurntButton.variant)
     harness.assert_equal("selected", nominationsPanel.typeGoldenButton.variant)
-    harness.assert_true((nominationsPanel.typeGoldenButton.backdropColor.red or 0) > ((nominationsPanel.typeBurntButton.backdropColor.red or 0) + 0.08))
+    harness.assert_true((nominationsPanel.typeGoldenButton.backdropColor.red or 0) < ((nominationsPanel.typeBurntButton.backdropColor.red or 0) - 0.08))
+    assert_color(nominationsPanel.typeGoldenButton.label, CARD_VALUE_GOLD)
     harness.assert_equal("Nominate A Guild Legend", nominationsPanel.formSection.titleText.text)
     harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\golden-rolling-pin.png", nominationsPanel.selectedAwardPreview.texturePath)
   end,
@@ -1618,6 +1663,7 @@ return {
     local panel = addon.mainFrame.tabPanels.history
     panel.listSection.rows[1].actions[1]:Click()
     harness.assert_true((panel.confirmDialog.frameLevel or 0) > (panel.listSection.rows[1].frameLevel or 0))
+    assert_backdrop_color(panel.confirmDialog, MODAL_FILL)
     panel.confirmDialog.confirmButton:Click()
 
     harness.assert_equal(0, #addon.uiBridge:GetPublicHistoryViewModel())
@@ -1892,6 +1938,7 @@ return {
     harness.assert_equal("Officerthree-Stormrage", awardPanel.recipientInput.rosterSuggestionButtons[3].suggestedName)
     harness.assert_true(awardPanel.recipientInput.rosterSuggestionButtons[2].visible)
     harness.assert_true(awardPanel.recipientInput.rosterSuggestionButtons[3].visible)
+    assert_backdrop_color(awardPanel.recipientInput.rosterSuggestionButtons[1], MODAL_FILL)
     harness.assert_equal(awardPanel.recipientSuggestionButton, awardPanel.recipientInput.rosterSuggestionButtons[2].point[2])
     harness.assert_equal(awardPanel.recipientInput.rosterSuggestionButtons[2], awardPanel.recipientInput.rosterSuggestionButtons[3].point[2])
 
@@ -1911,6 +1958,7 @@ return {
     harness.assert_equal("Officerthree-Stormrage", nominationsPanel.nomineeInput.rosterSuggestionButtons[3].suggestedName)
     harness.assert_true(nominationsPanel.nomineeInput.rosterSuggestionButtons[2].visible)
     harness.assert_true(nominationsPanel.nomineeInput.rosterSuggestionButtons[3].visible)
+    assert_backdrop_color(nominationsPanel.nomineeInput.rosterSuggestionButtons[1], MODAL_FILL)
     harness.assert_equal(nominationsPanel.nomineeSuggestionButton, nominationsPanel.nomineeInput.rosterSuggestionButtons[2].point[2])
     harness.assert_equal(nominationsPanel.nomineeInput.rosterSuggestionButtons[2], nominationsPanel.nomineeInput.rosterSuggestionButtons[3].point[2])
 
@@ -1986,7 +2034,27 @@ return {
           rankIndex = 5,
         },
         {
+          name = "Alttwo-Stormrage",
+          rankName = "Member",
+          rankIndex = 5,
+        },
+        {
+          name = "Altthree-Stormrage",
+          rankName = "Member",
+          rankIndex = 5,
+        },
+        {
           name = "Mainone-Stormrage",
+          rankName = "Member",
+          rankIndex = 5,
+        },
+        {
+          name = "Maintwo-Stormrage",
+          rankName = "Member",
+          rankIndex = 5,
+        },
+        {
+          name = "Mainthree-Stormrage",
           rankName = "Member",
           rankIndex = 5,
         },
@@ -2002,18 +2070,48 @@ return {
     harness.assert_equal("Character Mapping Controls", panel.aliasFormSection.titleText.text)
     harness.assert_equal("Alt Character", panel.aliasLabel.text)
     harness.assert_equal("Main Character", panel.canonicalLabel.text)
+    harness.assert_equal(panel.canonicalInput.width, panel.aliasInput.width)
+    harness.assert_true((panel.aliasInput.width or 0) >= 260)
+    harness.assert_true((panel.aliasSaveButton.point[5] or 0) < (panel.aliasInput.point[5] or 0))
+    harness.assert_true((panel.aliasBrowseButton.point[5] or 0) < (panel.canonicalInput.point[5] or 0))
 
     panel.aliasInput:SetText("Alt")
     harness.assert_true(panel.altSuggestionButton.visible)
     harness.assert_equal("Altone-Stormrage", panel.altSuggestionButton.suggestedName)
+    harness.assert_equal(3, #(panel.aliasInput.rosterSuggestionButtons or {}))
+    harness.assert_equal("Altone-Stormrage", panel.aliasInput.rosterSuggestionButtons[1].suggestedName)
+    harness.assert_equal("Alttwo-Stormrage", panel.aliasInput.rosterSuggestionButtons[2].suggestedName)
+    harness.assert_equal("Altthree-Stormrage", panel.aliasInput.rosterSuggestionButtons[3].suggestedName)
+    harness.assert_true(panel.aliasInput.rosterSuggestionButtons[2].visible)
+    harness.assert_true(panel.aliasInput.rosterSuggestionButtons[3].visible)
+    for _, suggestionButton in ipairs(panel.aliasInput.rosterSuggestionButtons) do
+      assert_backdrop_color(suggestionButton, MODAL_FILL)
+      assert_color(suggestionButton.label, BROWN)
+      harness.assert_true((suggestionButton.frameLevel or 0) > (panel.aliasSaveButton.frameLevel or 0))
+    end
+    panel.aliasInput.rosterSuggestionButtons[2]:Click()
+    harness.assert_equal("Alttwo-Stormrage", panel.aliasInput:GetText())
+
+    panel.aliasInput:SetText("Alt")
     panel.altSuggestionButton:Click()
     harness.assert_equal("Altone-Stormrage", panel.aliasInput:GetText())
 
     panel.canonicalInput:SetText("Main")
     harness.assert_true(panel.mainSuggestionButton.visible)
     harness.assert_equal("Mainone-Stormrage", panel.mainSuggestionButton.suggestedName)
-    panel.mainSuggestionButton:Click()
-    harness.assert_equal("Mainone-Stormrage", panel.canonicalInput:GetText())
+    harness.assert_equal(3, #(panel.canonicalInput.rosterSuggestionButtons or {}))
+    harness.assert_equal("Mainone-Stormrage", panel.canonicalInput.rosterSuggestionButtons[1].suggestedName)
+    harness.assert_equal("Maintwo-Stormrage", panel.canonicalInput.rosterSuggestionButtons[2].suggestedName)
+    harness.assert_equal("Mainthree-Stormrage", panel.canonicalInput.rosterSuggestionButtons[3].suggestedName)
+    harness.assert_true(panel.canonicalInput.rosterSuggestionButtons[2].visible)
+    harness.assert_true(panel.canonicalInput.rosterSuggestionButtons[3].visible)
+    for _, suggestionButton in ipairs(panel.canonicalInput.rosterSuggestionButtons) do
+      assert_backdrop_color(suggestionButton, MODAL_FILL)
+      assert_color(suggestionButton.label, BROWN)
+      harness.assert_true((suggestionButton.frameLevel or 0) > (panel.aliasBrowseButton.frameLevel or 0))
+    end
+    panel.canonicalInput.rosterSuggestionButtons[3]:Click()
+    harness.assert_equal("Mainthree-Stormrage", panel.canonicalInput:GetText())
   end,
 
   ["normal award and nomination UI hides realm names outside character mapping"] = function()

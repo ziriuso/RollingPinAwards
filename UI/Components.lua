@@ -5,6 +5,8 @@ local Components = RPA.UIComponents or {}
 local Styles = RPA.UIStyles or {}
 RPA.UIComponents = Components
 
+local SOLID_BACKDROP = "Interface\\Buttons\\WHITE8x8"
+
 local function unpackColor(color, fallback)
   local source = color or fallback or { 1, 1, 1, 1 }
   return source[1] or 1, source[2] or 1, source[3] or 1, source[4] or 1
@@ -92,12 +94,12 @@ local function applyTextTreatment(label, options)
     if fontFile and fontHeight then
       local nextFontFile = role and role.fontFile or fontFile
       local nextHeight = role and role.fontHeight or (fontHeight + (options.fontSizeDelta or 0))
-      label:SetFont(nextFontFile, nextHeight, nil)
+      label:SetFont(nextFontFile, nextHeight, role and role.fontFlags or nil)
     end
   else
     label.fontFile = role and role.fontFile or label.fontFile
     label.fontHeight = role and role.fontHeight or ((label.fontHeight or 12) + (options.fontSizeDelta or 0))
-    label.fontFlags = nil
+    label.fontFlags = role and role.fontFlags or nil
   end
 
   label.textRole = roleName
@@ -1058,18 +1060,27 @@ function Components.SetButtonVariant(button, variant)
 
   local buttonFill = colors.accent
   local border = colors.accentSoft
+  local bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background"
+  local tile = true
+  local tileSize = 16
   if button.variant == "secondary" then
     buttonFill = colors.parchmentMuted
     border = colors.brass
+  elseif button.variant == "suggestion" then
+    buttonFill = colors.modalFill or colors.parchmentMuted
+    border = colors.brass
+    bgFile = SOLID_BACKDROP
+    tile = false
+    tileSize = 0
   elseif button.variant == "selected" then
     buttonFill = colors.selected or colors.glow or colors.accent
     border = colors.selectedBorder or colors.accentSoft
   end
   applyBackdrop(button, {
-    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+    bgFile = bgFile,
     edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-    tile = true,
-    tileSize = 16,
+    tile = tile,
+    tileSize = tileSize,
     edgeSize = 8,
     insets = {
       left = 2,
@@ -1083,6 +1094,13 @@ function Components.SetButtonVariant(button, variant)
     applyTextTreatment(button.label, {
       textRole = button.label.textRole or "buttonText",
     })
+    if button.variant == "suggestion" then
+      local typography = Styles.Typography or {}
+      local headerRole = typography.cardHeader or {}
+      storeTextColor(button.label, headerRole.color or colors.ink or { 0.20, 0.14, 0.10, 1 })
+    elseif button.selected then
+      storeTextColor(button.label, { 223 / 255, 150 / 255, 10 / 255, 1 })
+    end
   end
 end
 
@@ -1242,10 +1260,10 @@ function Components.CreateConfirmationDialog(parent, config)
   end
 
   applyBackdrop(dialog, {
-    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+    bgFile = SOLID_BACKDROP,
     edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-    tile = true,
-    tileSize = 16,
+    tile = false,
+    tileSize = 0,
     edgeSize = 14,
     insets = {
       left = 4,
@@ -1253,7 +1271,7 @@ function Components.CreateConfirmationDialog(parent, config)
       top = 4,
       bottom = 4,
     },
-  }, colors.darkPanel, colors.brass)
+  }, config.backdropColor or colors.modalFill or colors.darkPanel, config.borderColor or colors.brass)
 
   dialog.titleLabel = Components.CreateLabel(dialog, {
     text = config.title or "Confirm",
@@ -1340,10 +1358,10 @@ function Components.CreateModalWindow(parent, config)
   end
 
   applyBackdrop(dialog, {
-    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+    bgFile = SOLID_BACKDROP,
     edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-    tile = true,
-    tileSize = 16,
+    tile = false,
+    tileSize = 0,
     edgeSize = 14,
     insets = {
       left = 4,
@@ -1351,7 +1369,7 @@ function Components.CreateModalWindow(parent, config)
       top = 4,
       bottom = 4,
     },
-  }, config.backdropColor or colors.darkPanel, config.borderColor or colors.brass)
+  }, config.backdropColor or colors.modalFill or colors.darkPanel, config.borderColor or colors.brass)
 
   if config.backgroundTexture then
     dialog.backgroundArt = createArtworkFrame(dialog, {
@@ -1718,6 +1736,27 @@ function Components.AttachRosterAutocomplete(input, suggestionButton, bridge, co
 
   input.rosterSuggestionButtons = buttons
 
+  local function getFrameLevel(frame)
+    if frame and frame.GetFrameLevel then
+      return frame:GetFrameLevel() or frame.frameLevel or 0
+    end
+
+    return frame and frame.frameLevel or 0
+  end
+
+  local function styleSuggestionButton(button)
+    if not button then
+      return
+    end
+
+    Components.SetButtonVariant(button, "suggestion")
+    if button.SetFrameLevel then
+      local parent = button.parent or (button.GetParent and button:GetParent()) or input.parent
+      local baseLevel = math.max(getFrameLevel(parent), getFrameLevel(input), getFrameLevel(suggestionButton))
+      button:SetFrameLevel(baseLevel + (config.frameLevelOffset or 80))
+    end
+  end
+
   for index = 2, maxSuggestions do
     local previousButton = buttons[index - 1]
     local parent = suggestionButton.parent
@@ -1737,6 +1776,10 @@ function Components.AttachRosterAutocomplete(input, suggestionButton, bridge, co
     })
     Components.SetVisible(button, false)
     buttons[index] = button
+  end
+
+  for _, button in ipairs(buttons) do
+    styleSuggestionButton(button)
   end
 
   local function selectSuggestion(button)

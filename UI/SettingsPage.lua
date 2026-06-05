@@ -91,7 +91,7 @@ function SettingsPage:Build(parent, mainFrame)
   })
 
   panel.anchorButton = Components.CreateButton(panel.toastSection, {
-    text = "Toggle Anchors Mode",
+    text = "Toggle Anchors",
     width = 174,
     height = 28,
     x = 18,

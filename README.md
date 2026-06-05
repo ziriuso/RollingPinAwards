@@ -16,7 +16,7 @@ Rolling Pin Awards is a guild-only World of Warcraft addon for managing nominati
 - Custom Lua UI with reusable tab and component modules
 - Interactive tabs for dashboard, nominations, direct awards, history, leaderboard, and rank-based admin management
 - Embedded custom artwork under `Media/` for the polished parchment shell, award-type previews, rows, showcase modal, and primary action treatments
-- Custom minimap button artwork for toggling the addon window open and closed
+- Custom draggable minimap button artwork for toggling the addon window open and closed from the minimap ring
 - Conservative guild-scoped sync validation helpers
 
 ## Slash Command
@@ -45,14 +45,14 @@ The current MVP ships a functional in-game window with:
 - high-strata window layering so the full addon shell sits above Blizzard action bars and other UI elements
 - Escape closes the addon while its main window is focused
 - the parchment background overhang can be used to drag the addon, not just the logical inner frame
-- a custom minimap button that toggles the addon window
+- a custom minimap button that toggles the addon window and can be dragged around the minimap ring
 - a close button
 - nomination submission and voting controls
 - nomination and direct-award type selection for Burnt or Golden rolling pins
 - rank-gated approve/reject controls inside the nominations view
 - rank-gated direct award controls
 - public award history with human-readable award dates and type icons
-- a leaderboard with Burnt, Golden, and Combined views plus draggable screenshot-friendly parchment showcase popups
+- a leaderboard with Burnt, Golden, and Combined views plus draggable clean-card recipient showcase popups
 - confirmed award deletion for ranks that have delete permission
 - admin-only rank permission matrix with checkbox editing by guild rank name
 - admin alias merge management with a modal alias list for collapsing nicknames and alternate typed names into one canonical character
@@ -74,7 +74,7 @@ Use `/rpa syncdebug` or `/rpa sync debug` in game to print copy-friendly sync st
 - Awards, nominations, alias mappings, and rank permissions broadcast guild-scoped sync payloads when local user actions mutate them.
 - On startup the addon sends a `sync_hello` message, and receiving a hello answers with a full guild snapshot stream for rank permissions, aliases, nominations, votes, and awards.
 - New award and nomination ids include the local character and timestamp, and inbound award/nomination rows reject stale same-id snapshots so a less-complete client cannot overwrite newer local history or resolved nominations.
-- The TOC continues to advertise `Ace3` as an optional dependency.
+- The TOC continues to advertise `Ace3` as an optional dependency and groups the addon under the `Guild` addon-list category.
 
 ## Testing
 

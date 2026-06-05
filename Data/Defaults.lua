@@ -7,6 +7,7 @@ RPA.Defaults = {
     localSettings = {
       toastsEnabled = true,
       toastDurationSeconds = 7,
+      minimapAngle = 225,
       seenAwardToastIds = {},
       toastAnchor = {
         point = "CENTER",

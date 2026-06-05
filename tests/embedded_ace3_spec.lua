@@ -27,6 +27,12 @@ return {
     harness.assert_equal("## Interface: 120007, 120005", lines[1])
   end,
 
+  ["toc groups the addon under the guild category"] = function()
+    local lines = readLines("RollingPinAwards.toc")
+
+    harness.assert_true(indexOf(lines, "## Category: Guild") ~= nil)
+  end,
+
   ["toc embeds required ace3 library files in load order"] = function()
     local lines = readLines("RollingPinAwards.toc")
 

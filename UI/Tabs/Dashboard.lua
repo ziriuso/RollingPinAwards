@@ -158,7 +158,7 @@ UITabs.dashboard = {
     Components.SetText(panel.statCards[2].value, topRecipient)
     Components.SetText(panel.statCards[2].detail, ("%d combined awards"):format(viewModel.topRecipientCount or 0))
 
-    Components.SetText(panel.statCards[3].label, "Pending Nominations")
+    Components.SetText(panel.statCards[3].label, "Nominations")
     Components.SetText(panel.statCards[3].value, tostring(viewModel.pendingCount or 0))
     Components.SetText(panel.statCards[3].detail, "Waiting for a verdict")
 

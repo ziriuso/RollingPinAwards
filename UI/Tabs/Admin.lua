@@ -145,7 +145,7 @@ UITabs.admin = {
       iconWidth = 20,
       iconHeight = 20,
       width = 762,
-      height = 126,
+      height = 170,
       x = 0,
       y = -236,
     })
@@ -156,35 +156,35 @@ UITabs.admin = {
       font = "GameFontNormalSmall",
     })
     panel.aliasInput = Components.CreateEditBox(panel.aliasFormSection, {
-      width = 150,
+      width = 290,
       x = 14,
       y = -58,
     })
     panel.canonicalLabel = Components.CreateLabel(panel.aliasFormSection, {
       text = "Main Character",
-      x = 180,
+      x = 334,
       y = -32,
       font = "GameFontNormalSmall",
     })
     panel.canonicalInput = Components.CreateEditBox(panel.aliasFormSection, {
-      width = 230,
-      x = 180,
+      width = 290,
+      x = 334,
       y = -58,
     })
     panel.aliasSaveButton = Components.CreateButton(panel.aliasFormSection, {
       text = "Add Mapping",
-      width = 144,
+      width = 290,
       height = 28,
-      x = 426,
-      y = -56,
+      x = 14,
+      y = -138,
       variant = "primary",
     })
     panel.aliasBrowseButton = Components.CreateButton(panel.aliasFormSection, {
       text = "View Mappings",
-      width = 168,
+      width = 290,
       height = 28,
-      x = 584,
-      y = -56,
+      x = 334,
+      y = -138,
       variant = "secondary",
       onClick = function()
         Components.SetVisible(panel.aliasDialog, true)
@@ -192,7 +192,7 @@ UITabs.admin = {
     })
     panel.altSuggestionButton = Components.CreateButton(panel.aliasFormSection, {
       text = "",
-      width = 150,
+      width = 290,
       height = 20,
       x = 14,
       y = -88,
@@ -200,9 +200,9 @@ UITabs.admin = {
     })
     panel.mainSuggestionButton = Components.CreateButton(panel.aliasFormSection, {
       text = "",
-      width = 230,
+      width = 290,
       height = 20,
-      x = 180,
+      x = 334,
       y = -88,
       variant = "secondary",
     })
@@ -212,7 +212,7 @@ UITabs.admin = {
     panel.aliasSummaryLabel = Components.CreateLabel(panel, {
       text = "",
       x = 0,
-      y = -374,
+      y = -418,
       width = 742,
       justifyH = "LEFT",
       font = "GameFontHighlightSmall",
@@ -224,7 +224,6 @@ UITabs.admin = {
       width = 640,
       height = 420,
       closeText = "Close",
-      titleTextRole = "modalHeader",
     })
     panel.aliasDialog.listSection = Components.CreateScrollableSection(panel.aliasDialog, {
       id = "RollingPinAwardsAliasMappingsSection",
@@ -245,7 +244,7 @@ UITabs.admin = {
       width = 220,
       height = 34,
       x = 0,
-      y = -398,
+      y = -442,
       variant = "secondary",
       onClick = function()
         Components.SetVisible(panel.moderationDialog, true)
@@ -257,7 +256,6 @@ UITabs.admin = {
       width = 700,
       height = 430,
       closeText = "Close",
-      titleTextRole = "modalHeader",
     })
     panel.moderationDialog.selectedFilter = panel.moderationDialog.selectedFilter or "pending"
     panel.moderationDialog.pendingFilterButton = Components.CreateButton(panel.moderationDialog, {
@@ -305,7 +303,7 @@ UITabs.admin = {
     panel.statusLabel = Components.CreateLabel(panel, {
       text = "",
       x = 0,
-      y = -454,
+      y = -498,
       width = 742,
       justifyH = "LEFT",
       fontSizeDelta = 2,
@@ -393,7 +391,10 @@ UITabs.admin = {
       panel.altAutocompleteRefresh = Components.AttachRosterAutocomplete(
         panel.aliasInput,
         panel.altSuggestionButton,
-        bridge
+        bridge,
+        {
+          maxSuggestions = 3,
+        }
       )
     end
 
@@ -401,7 +402,10 @@ UITabs.admin = {
       panel.mainAutocompleteRefresh = Components.AttachRosterAutocomplete(
         panel.canonicalInput,
         panel.mainSuggestionButton,
-        bridge
+        bridge,
+        {
+          maxSuggestions = 3,
+        }
       )
     end
 

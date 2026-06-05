@@ -3,6 +3,19 @@ local wow = require("tests.WoWStubs")
 
 local REGULAR_FONT = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Regular.ttf"
 local BOLD_FONT = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf"
+local TOAST_BACKGROUND = { 224 / 255, 188 / 255, 137 / 255, 0.5 }
+local SOLID_BACKDROP = "Interface\\Buttons\\WHITE8x8"
+
+local function assert_backdrop_color(frame, color)
+  harness.assert_true(frame.backdrop ~= nil)
+  harness.assert_equal(SOLID_BACKDROP, frame.backdrop.bgFile)
+  harness.assert_equal(false, frame.backdrop.tile)
+  harness.assert_true(frame.backdropColor ~= nil)
+  harness.assert_equal(color[1], frame.backdropColor.red)
+  harness.assert_equal(color[2], frame.backdropColor.green)
+  harness.assert_equal(color[3], frame.backdropColor.blue)
+  harness.assert_equal(color[4], frame.backdropColor.alpha)
+end
 
 local function setupPlayer(seed)
   seed = seed or {}
@@ -108,6 +121,7 @@ return {
     )
     harness.assert_equal("You've Received a Golden Rolling Pin", addon.toast.frame.titleLabel.text)
     harness.assert_equal("Saved the pull from certain doom", addon.toast.frame.reasonLabel.text)
+    assert_backdrop_color(addon.toast.frame, TOAST_BACKGROUND)
     harness.assert_equal("CENTER", addon.toast.frame.titleLabel.justifyH)
     harness.assert_equal("CENTER", addon.toast.frame.reasonLabel.justifyH)
     harness.assert_equal(BOLD_FONT, addon.toast.frame.titleLabel.fontFile)
@@ -245,6 +259,7 @@ return {
     harness.assert_true(anchor.visible)
     harness.assert_true(anchor.movable)
     harness.assert_equal("LeftButton", anchor.dragButtons[1])
+    assert_backdrop_color(anchor, TOAST_BACKGROUND)
 
     anchor:ClearAllPoints()
     anchor:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 25, -35)

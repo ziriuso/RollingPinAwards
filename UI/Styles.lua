@@ -27,8 +27,9 @@ RPA.UIStyles = {
     brassMuted = { 0.62, 0.51, 0.37, 1.0 },
     accent = { 0.85, 0.47, 0.25, 1.0 },
     accentSoft = { 0.79, 0.63, 0.41, 1.0 },
-    selected = { 1.00, 0.68, 0.20, 1.0 },
+    selected = { 0.38, 0.29, 0.19, 1.0 },
     selectedBorder = { 1.00, 0.96, 0.42, 1.0 },
+    modalFill = { 197 / 255, 159 / 255, 107 / 255, 1.0 },
     ink = { 0.20, 0.14, 0.10, 1.0 },
     inkMuted = { 0.47, 0.39, 0.30, 1.0 },
     darkPanel = { 0.12, 0.08, 0.06, 0.98 },
@@ -37,6 +38,7 @@ RPA.UIStyles = {
   Fonts = {
     regular = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Regular.ttf",
     bold = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf",
+    amarante = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Amarante-Regular.ttf",
   },
   Typography = {
     tabHeader = {
@@ -59,7 +61,7 @@ RPA.UIStyles = {
     cardValue = {
       fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf",
       fontHeight = 20,
-      color = { 115 / 255, 64 / 255, 30 / 255, 1 },
+      color = { 223 / 255, 150 / 255, 10 / 255, 1 },
       bold = true,
     },
     cardDescription = {
@@ -95,10 +97,14 @@ RPA.UIStyles = {
       bold = true,
     },
     leaderboardCount = {
-      fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf",
-      fontHeight = 21,
-      color = { 115 / 255, 64 / 255, 30 / 255, 1 },
-      bold = true,
+      fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Amarante-Regular.ttf",
+      fontHeight = 24,
+      color = { 223 / 255, 150 / 255, 10 / 255, 1 },
+    },
+    leaderboardShowcaseName = {
+      fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Amarante-Regular.ttf",
+      fontHeight = 28,
+      color = { 223 / 255, 150 / 255, 10 / 255, 1 },
     },
     actionButtonText = {
       fontFile = "Interface\\AddOns\\RollingPinAwards\\Media\\Fonts\\Roboto-Bold.ttf",
@@ -119,10 +125,10 @@ RPA.UIStyles = {
     tabWidth = 108,
     tabGap = 10,
     navButtonHeight = 45,
-    navMarginWithAdmin = 160,
-    navMarginWithoutAdmin = 220,
-    navCenterOffsetWithAdmin = 0,
-    navCenterOffsetWithoutAdmin = 0,
+    navMarginWithAdmin = 60,
+    navMarginWithoutAdmin = 170,
+    navCenterOffsetWithAdmin = -26,
+    navCenterOffsetWithoutAdmin = -26,
     contentInset = 22,
     panelX = 59,
     panelY = -42,
@@ -144,6 +150,7 @@ RPA.UIStyles = {
     leaderboardIcon = "Interface\\AddOns\\RollingPinAwards\\Media\\golden-rolling-pin.png",
     minimapIcon = "Interface\\AddOns\\RollingPinAwards\\Media\\minimap-button.png",
     modalBackground = "Interface\\AddOns\\RollingPinAwards\\Media\\modal-background.png",
+    leaderboardShowcaseBackground = "Interface\\AddOns\\RollingPinAwards\\Media\\cleancard.png",
     standardPinIcon = "Interface\\AddOns\\RollingPinAwards\\Media\\rollingpin.png",
     settingsGearIcon = "Interface\\WorldMap\\GEAR_64GREY",
   },
@@ -151,6 +158,7 @@ RPA.UIStyles = {
     width = 360,
     height = 220,
     iconSize = 96,
+    backgroundColor = { 224 / 255, 188 / 255, 137 / 255, 0.5 },
     durationSeconds = 7,
   },
   Dashboard = {

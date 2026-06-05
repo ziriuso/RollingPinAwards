@@ -70,6 +70,8 @@ local function ensureLocalSettingsShape(settings)
     math.max(3, tonumber(settings.toastDurationSeconds) or 7)
   )
 
+  settings.minimapAngle = tonumber(settings.minimapAngle) or 225
+
   if type(settings.seenAwardToastIds) ~= "table" then
     settings.seenAwardToastIds = {}
   end

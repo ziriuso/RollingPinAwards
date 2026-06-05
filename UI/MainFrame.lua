@@ -223,7 +223,7 @@ function MainFrame:EnsureRendered()
       anchor = "BOTTOMRIGHT",
       relativeFrame = self.frame.backgroundArt or self.frame,
       relativeTo = "BOTTOMRIGHT",
-      x = -110,
+      x = -78,
       y = 70,
       tooltipText = "Settings",
       onClick = function()

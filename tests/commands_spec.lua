@@ -133,4 +133,58 @@ return {
 
     harness.assert_false(addon.mainFrame.frame.visible)
   end,
+
+  ["minimap button anchors to the minimap ring and updates while dragged"] = function()
+    wow.reset({ guildName = "Raid Bakery" })
+    _G.Minimap = {
+      frameLevel = 7,
+      frameStrata = "MEDIUM",
+      children = {},
+      GetCenter = function()
+        return 400, 300
+      end,
+      GetEffectiveScale = function()
+        return 1
+      end,
+    }
+    local cursorX = 400
+    local cursorY = 382
+    _G.GetCursorPosition = function()
+      return cursorX, cursorY
+    end
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    local minimapButton = addon.minimapButton.button
+    harness.assert_equal(_G.Minimap, minimapButton.parent)
+    harness.assert_true(minimapButton.movable)
+    harness.assert_true(minimapButton.mouseEnabled)
+    harness.assert_equal("LeftButton", minimapButton.dragButtons[1])
+    harness.assert_equal("CENTER", minimapButton.point[1])
+    harness.assert_equal(_G.Minimap, minimapButton.point[2])
+    harness.assert_equal("CENTER", minimapButton.point[3])
+    harness.assert_true(math.abs((minimapButton.ringRadius or 0) - 82) < 0.001)
+
+    minimapButton.scripts.OnDragStart(minimapButton)
+    harness.assert_true(type(minimapButton.scripts.OnUpdate) == "function")
+    minimapButton.scripts.OnUpdate(minimapButton)
+
+    harness.assert_true(math.abs((minimapButton.minimapAngle or 0) - 90) < 0.001)
+    harness.assert_true(math.abs((addon.db:GetLocalSettings().minimapAngle or 0) - 90) < 0.001)
+    harness.assert_true(math.abs((minimapButton.point[4] or 0) - 0) < 0.001)
+    harness.assert_true(math.abs((minimapButton.point[5] or 0) - 82) < 0.001)
+
+    cursorX = 482
+    cursorY = 300
+    minimapButton.scripts.OnUpdate(minimapButton)
+
+    harness.assert_true(math.abs((minimapButton.minimapAngle or 0) - 0) < 0.001)
+    harness.assert_true(math.abs((addon.db:GetLocalSettings().minimapAngle or 0) - 0) < 0.001)
+    harness.assert_true(math.abs((minimapButton.point[4] or 0) - 82) < 0.001)
+    harness.assert_true(math.abs((minimapButton.point[5] or 0) - 0) < 0.001)
+
+    minimapButton.scripts.OnDragStop(minimapButton)
+    harness.assert_nil(minimapButton.scripts.OnUpdate)
+  end,
 }
