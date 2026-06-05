@@ -80,6 +80,12 @@ Use `/rpa syncdebug` or `/rpa sync debug` in game to print copy-friendly sync st
 
 See [docs/testing.md](docs/testing.md).
 
+## Release
+
+CurseForge publishing is tag-driven through GitHub Actions. Stable release tags such as `v1.0.0` run the Lua suite, build `RollingPinAwards-<version>.zip`, upload it to CurseForge, and attach the same zip to the matching GitHub Release.
+
+Release setup and the maintainer checklist live in [docs/curseforge-release-workflow.md](docs/curseforge-release-workflow.md). The CurseForge project description copy lives in [docs/curseforge-description.md](docs/curseforge-description.md).
+
 ## Core Docs
 
 - [Permissions](docs/permissions.md)
