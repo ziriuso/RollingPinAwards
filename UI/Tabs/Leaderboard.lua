@@ -40,7 +40,7 @@ UITabs.leaderboard = {
       if index > 5 then
         break
       end
-      lines[#lines + 1] = ("%s - %d pins"):format(row.recipient, row.pinCount)
+      lines[#lines + 1] = ("%s - %d pins"):format(row.shortRecipient or stripRealm(row.recipient), row.pinCount)
     end
 
     if #lines == 1 then
@@ -213,14 +213,14 @@ UITabs.leaderboard = {
       Components.AddListRow(section, {
         text = mode == "combined"
             and ("%s\nGolden: %d  Burnt: %d  Total: %d\nMost Recent: %s"):format(
-              row.recipient,
+              row.shortRecipient or stripRealm(row.recipient),
               row.goldenCount or 0,
               row.burntCount or 0,
               row.totalCount or row.pinCount or 0,
               row.mostRecentAwardText or "Unknown date"
             )
           or ("%s\nPins: %d\nMost Recent: %s"):format(
-            row.recipient,
+            row.shortRecipient or stripRealm(row.recipient),
             row.pinCount,
             row.mostRecentAwardText or "Unknown date"
           ),

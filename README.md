@@ -41,7 +41,7 @@ Current command support:
 The current MVP ships a functional in-game window with:
 
 - a movable framed window
-- a calibrated parchment background shell with the Rolling Pin Awards banner built into the main artwork
+- a calibrated 1000x925 parchment background shell with the Rolling Pin Awards banner built into the top 150 pixels of the main artwork
 - high-strata window layering so the full addon shell sits above Blizzard action bars and other UI elements
 - Escape closes the addon while its main window is focused
 - the parchment background overhang can be used to drag the addon, not just the logical inner frame

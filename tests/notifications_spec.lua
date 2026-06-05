@@ -193,4 +193,46 @@ return {
     harness.assert_true(#_G.__RPA_TEST_STATE.chatMessages > beforeInbound)
     harness.assert_true(_G.__RPA_TEST_STATE.chatMessages[#_G.__RPA_TEST_STATE.chatMessages]:match("New Rolling Pin nomination") ~= nil)
   end,
+
+  ["reward toasts queue during combat and flush after combat ends"] = function()
+    local addon = setupPlayer()
+
+    _G.InCombatLockdown = function()
+      return true
+    end
+
+    local accepted = dispatchRemoteAward(addon, {
+      awardId = "award:remote:combat",
+      reason = "Saved the pull during combat",
+    })
+
+    harness.assert_true(accepted)
+    harness.assert_true(addon.toast.frame == nil or addon.toast.frame.visible == false)
+    harness.assert_equal(1, #(addon.toast.queuedAwards or {}))
+
+    _G.InCombatLockdown = function()
+      return false
+    end
+    wow.fireEvent("PLAYER_REGEN_ENABLED")
+
+    harness.assert_true(addon.toast.frame.visible)
+    harness.assert_equal("Saved the pull during combat", addon.toast.frame.reasonLabel.text)
+    harness.assert_equal(0, #(addon.toast.queuedAwards or {}))
+  end,
+
+  ["reward toast close button hides the visible toast"] = function()
+    local addon = setupPlayer()
+
+    dispatchRemoteAward(addon, {
+      awardId = "award:remote:close",
+      reason = "Close button preview",
+    })
+
+    harness.assert_true(addon.toast.frame.visible)
+    harness.assert_true(addon.toast.frame.closeButton ~= nil)
+
+    addon.toast.frame.closeButton:Click()
+
+    harness.assert_false(addon.toast.frame.visible)
+  end,
 }

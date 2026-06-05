@@ -4,6 +4,7 @@ _G.RollingPinAwards = RPA
 local UITabs = RPA.UITabs or {}
 local Components = RPA.UIComponents or {}
 local Styles = RPA.UIStyles or {}
+local Utils = RPA.Utils or {}
 RPA.UITabs = UITabs
 
 local function stripRealm(name)
@@ -18,7 +19,7 @@ local function buildModerationText(row)
   local flagText = row.moderationFlagged and "Flagged" or "Review"
 
   return ("%s %s\n%s\nSubmitted by %s\nUpvotes: %d  Downvotes: %d  %s"):format(
-    row.nominee,
+    Utils.GetShortCharacterName(row.shortNominee or row.nominee),
     row.status,
     row.reason or "",
     stripRealm(row.nominatedBy),
@@ -61,7 +62,7 @@ UITabs.admin = {
     }
 
     lines[#lines + 1] = ("Configured ranks: %d"):format(#((viewModel.permissions or {}).rows or {}))
-    lines[#lines + 1] = ("Alias merges: %d"):format(#((viewModel.aliases or {}).rows or {}))
+    lines[#lines + 1] = ("Character mappings: %d"):format(#((viewModel.aliases or {}).rows or {}))
     lines[#lines + 1] = ("Moderation queue: %d"):format(countPendingNominations(viewModel.nominations or {}))
 
     return {
@@ -139,7 +140,7 @@ UITabs.admin = {
 
     panel.aliasFormSection = Components.CreateSection(panel, {
       id = "RollingPinAwardsAliasFormSection",
-      title = "Alias Merge Controls",
+      title = "Character Mapping Controls",
       iconPath = media.standardPinIcon,
       iconWidth = 20,
       iconHeight = 20,
@@ -149,7 +150,7 @@ UITabs.admin = {
       y = -236,
     })
     panel.aliasLabel = Components.CreateLabel(panel.aliasFormSection, {
-      text = "Alias",
+      text = "Alt Character",
       x = 14,
       y = -32,
       font = "GameFontNormalSmall",
@@ -160,7 +161,7 @@ UITabs.admin = {
       y = -58,
     })
     panel.canonicalLabel = Components.CreateLabel(panel.aliasFormSection, {
-      text = "Canonical Character",
+      text = "Main Character",
       x = 180,
       y = -32,
       font = "GameFontNormalSmall",
@@ -171,7 +172,7 @@ UITabs.admin = {
       y = -58,
     })
     panel.aliasSaveButton = Components.CreateButton(panel.aliasFormSection, {
-      text = "Add Merge",
+      text = "Add Mapping",
       width = 144,
       height = 28,
       x = 426,
@@ -179,7 +180,7 @@ UITabs.admin = {
       variant = "primary",
     })
     panel.aliasBrowseButton = Components.CreateButton(panel.aliasFormSection, {
-      text = "View Alias Merges",
+      text = "View Mappings",
       width = 168,
       height = 28,
       x = 584,
@@ -189,7 +190,15 @@ UITabs.admin = {
         Components.SetVisible(panel.aliasDialog, true)
       end,
     })
-    panel.aliasSuggestionButton = Components.CreateButton(panel.aliasFormSection, {
+    panel.altSuggestionButton = Components.CreateButton(panel.aliasFormSection, {
+      text = "",
+      width = 150,
+      height = 20,
+      x = 14,
+      y = -88,
+      variant = "secondary",
+    })
+    panel.mainSuggestionButton = Components.CreateButton(panel.aliasFormSection, {
       text = "",
       width = 230,
       height = 20,
@@ -197,6 +206,8 @@ UITabs.admin = {
       y = -88,
       variant = "secondary",
     })
+    panel.aliasSuggestionButton = panel.mainSuggestionButton
+    Components.SetVisible(panel.altSuggestionButton, false)
     Components.SetVisible(panel.aliasSuggestionButton, false)
     panel.aliasSummaryLabel = Components.CreateLabel(panel, {
       text = "",
@@ -209,14 +220,14 @@ UITabs.admin = {
     })
     panel.aliasDialog = Components.CreateModalWindow(panel, {
       id = "RollingPinAwardsAliasMappingsDialog",
-      title = "Alias Merges",
+      title = "Character Mappings",
       width = 640,
       height = 420,
       closeText = "Close",
     })
     panel.aliasDialog.listSection = Components.CreateScrollableSection(panel.aliasDialog, {
       id = "RollingPinAwardsAliasMappingsSection",
-      title = "Active Alias Merges",
+      title = "Active Character Mappings",
       iconPath = media.standardPinIcon,
       iconWidth = 18,
       iconHeight = 18,
@@ -366,40 +377,31 @@ UITabs.admin = {
       )
 
       if aliasRow then
-        Components.SetText(panel.statusLabel, ("Saved alias merge for %s."):format(aliasRow.aliasDisplay))
+        Components.SetText(panel.statusLabel, ("Saved character mapping for %s."):format(aliasRow.aliasDisplay))
         Components.SetText(panel.aliasInput, "")
         Components.SetText(panel.canonicalInput, "")
       else
-        Components.SetText(panel.statusLabel, ("Unable to save alias merge: %s"):format(err or "unknown error"))
+        Components.SetText(panel.statusLabel, ("Unable to save character mapping: %s"):format(err or "unknown error"))
       end
 
       mainFrame:RenderActiveTab()
     end)
 
-    local function refreshAliasSuggestion()
-      local suggestions = bridge:GetGuildRosterNameSuggestions(panel.canonicalInput:GetText(), 1)
-      local suggestion = suggestions and suggestions[1] or nil
-      if suggestion and suggestion.name then
-        panel.aliasSuggestionButton.suggestedName = suggestion.name
-        Components.SetText(panel.aliasSuggestionButton, ("Use %s"):format(suggestion.name))
-        Components.SetVisible(panel.aliasSuggestionButton, true)
-      else
-        panel.aliasSuggestionButton.suggestedName = nil
-        Components.SetText(panel.aliasSuggestionButton, "")
-        Components.SetVisible(panel.aliasSuggestionButton, false)
-      end
+    if Components.AttachRosterAutocomplete and not panel.altAutocompleteRefresh then
+      panel.altAutocompleteRefresh = Components.AttachRosterAutocomplete(
+        panel.aliasInput,
+        panel.altSuggestionButton,
+        bridge
+      )
     end
 
-    if panel.canonicalInput.SetScript then
-      panel.canonicalInput:SetScript("OnTextChanged", refreshAliasSuggestion)
+    if Components.AttachRosterAutocomplete and not panel.mainAutocompleteRefresh then
+      panel.mainAutocompleteRefresh = Components.AttachRosterAutocomplete(
+        panel.canonicalInput,
+        panel.mainSuggestionButton,
+        bridge
+      )
     end
-    Components.SetButtonHandler(panel.aliasSuggestionButton, function()
-      if panel.aliasSuggestionButton.suggestedName then
-        Components.SetText(panel.canonicalInput, panel.aliasSuggestionButton.suggestedName)
-      end
-      refreshAliasSuggestion()
-    end)
-    refreshAliasSuggestion()
 
     local aliasRows = ((viewModel.aliases or {}).rows or {})
     if #aliasRows == 0 then
@@ -410,12 +412,12 @@ UITabs.admin = {
       }
     end
 
-    Components.SetText(panel.aliasSummaryLabel, ("Configured alias merges: %d"):format(#((viewModel.aliases or {}).rows or {})))
+    Components.SetText(panel.aliasSummaryLabel, ("Configured character mappings: %d"):format(#((viewModel.aliases or {}).rows or {})))
 
     Components.SetScrollableItems(panel.aliasDialog.listSection, aliasRows, function(section, row)
       if row.emptyState then
         Components.AddListRow(section, {
-          text = "No alias merges configured.",
+          text = "No character mappings configured.",
           rowHeight = 34,
           actions = {},
         })
@@ -436,8 +438,8 @@ UITabs.admin = {
               local ok, err = bridge:DeleteAliasMapping(row.aliasKey)
               Components.SetText(
                 panel.statusLabel,
-                ok and ("Removed alias merge for %s."):format(row.aliasDisplay or row.aliasKey or "")
-                  or ("Unable to remove alias merge: %s"):format(err or "unknown error")
+                ok and ("Removed character mapping for %s."):format(row.aliasDisplay or row.aliasKey or "")
+                  or ("Unable to remove character mapping: %s"):format(err or "unknown error")
               )
               Components.SetVisible(panel.aliasDialog, false)
               mainFrame:RenderActiveTab()

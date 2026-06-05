@@ -59,11 +59,16 @@ function Toast:New(addon)
   local obj = {
     addon = addon,
     anchorMode = false,
+    queuedAwards = {},
   }
 
   self.__index = self
 
   return setmetatable(obj, self)
+end
+
+function Toast:IsInCombat()
+  return type(_G.InCombatLockdown) == "function" and _G.InCombatLockdown() == true
 end
 
 function Toast:GetSettings()
@@ -174,6 +179,16 @@ function Toast:EnsureToastFrame()
     outline = true,
   })
 
+  frame.closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
+  if frame.closeButton.SetPoint then
+    frame.closeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -4, -4)
+  end
+  if frame.closeButton.SetScript then
+    frame.closeButton:SetScript("OnClick", function()
+      Components.SetVisible(frame, false)
+    end)
+  end
+
   Components.SetVisible(frame, false)
   self.frame = frame
 
@@ -186,6 +201,22 @@ function Toast:ShowAwardToast(award)
     if self.frame then
       Components.SetVisible(self.frame, false)
     end
+    self.queuedAwards = {}
+    return false
+  end
+
+  if self:IsInCombat() then
+    self.queuedAwards = self.queuedAwards or {}
+    self.queuedAwards[#self.queuedAwards + 1] = award
+    return true
+  end
+
+  return self:DisplayAwardToast(award)
+end
+
+function Toast:DisplayAwardToast(award)
+  local settings = self:GetSettings()
+  if settings.toastsEnabled == false then
     return false
   end
 
@@ -213,6 +244,27 @@ function Toast:ShowAwardToast(award)
   end
 
   return true
+end
+
+function Toast:FlushQueuedToasts()
+  if self:IsInCombat() then
+    return false
+  end
+
+  local settings = self:GetSettings()
+  if settings.toastsEnabled == false then
+    self.queuedAwards = {}
+    return false
+  end
+
+  self.queuedAwards = self.queuedAwards or {}
+  if #self.queuedAwards == 0 then
+    return false
+  end
+
+  local award = table.remove(self.queuedAwards, 1)
+
+  return self:DisplayAwardToast(award)
 end
 
 function Toast:SaveAnchorFromFrame()

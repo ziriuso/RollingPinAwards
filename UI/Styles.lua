@@ -50,6 +50,13 @@ RPA.UIStyles = {
     panelWidth = 762,
     pageHeaderFontSizeDelta = 5,
     cardGap = 14,
+    backgroundArt = {
+      width = 1000,
+      height = 925,
+      x = -28,
+      y = 145,
+      titleBannerHeight = 150,
+    },
   },
   Media = {
     addonBackground = "Interface\\AddOns\\RollingPinAwards\\Media\\addon-background.png",

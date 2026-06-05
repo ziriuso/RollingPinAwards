@@ -4,11 +4,12 @@ _G.RollingPinAwards = RPA
 local UITabs = RPA.UITabs or {}
 local Components = RPA.UIComponents or {}
 local Styles = RPA.UIStyles or {}
+local Utils = RPA.Utils or {}
 RPA.UITabs = UITabs
 
 local function buildNominationText(row)
   local lines = {
-    row.nominee or "Unknown",
+    row.shortNominee or row.nominee or "Unknown",
     row.reason or "",
     ("Upvotes: %d"):format(row.upvotes or 0),
   }
@@ -36,7 +37,7 @@ UITabs.nominations = {
     }
 
     for _, row in ipairs(viewModel.pendingNominations or {}) do
-      lines[#lines + 1] = ("%s - %s"):format(row.nominee, row.reason)
+      lines[#lines + 1] = ("%s - %s"):format(row.shortNominee or row.nominee, row.reason)
     end
 
     if #lines == 1 then
@@ -108,6 +109,15 @@ UITabs.nominations = {
       y = -124,
       maxLetters = 64,
     })
+    panel.nomineeSuggestionButton = Components.CreateButton(panel.formSection, {
+      text = "",
+      width = 220,
+      height = 20,
+      x = 14,
+      y = -148,
+      variant = "secondary",
+    })
+    Components.SetVisible(panel.nomineeSuggestionButton, false)
     panel.reasonLabel = Components.CreateLabel(panel.formSection, {
       text = "Reason",
       x = 252,
@@ -142,7 +152,7 @@ UITabs.nominations = {
         )
 
         if nomination then
-          Components.SetText(panel.statusLabel, ("Submitted nomination for %s."):format(nomination.nominee))
+          Components.SetText(panel.statusLabel, ("Submitted nomination for %s."):format(Utils.GetShortCharacterName(nomination.nominee)))
           Components.SetText(panel.nomineeInput, "")
           Components.SetText(panel.reasonInput, "")
         else
@@ -177,6 +187,14 @@ UITabs.nominations = {
     return panel
   end,
   RefreshPanel = function(panel, viewModel, bridge, mainFrame)
+    if Components.AttachRosterAutocomplete and not panel.nomineeAutocompleteRefresh then
+      panel.nomineeAutocompleteRefresh = Components.AttachRosterAutocomplete(
+        panel.nomineeInput,
+        panel.nomineeSuggestionButton,
+        bridge
+      )
+    end
+
     local rows = viewModel.pendingNominations or {}
     if #rows == 0 then
       rows = {

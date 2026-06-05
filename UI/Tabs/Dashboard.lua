@@ -182,7 +182,7 @@ UITabs.dashboard = {
       Components.AddListRow(section, {
         text = ("%d. %s\n    %d rolling pins"):format(
           row.rank or 0,
-          row.recipient or "Unknown",
+          row.shortRecipient or stripRealm(row.recipient) or "Unknown",
           row.pinCount or 0
         ),
         iconPath = row.rank == 1 and (Styles.Media or {}).leaderboardIcon or (Styles.Media or {}).standardPinIcon,

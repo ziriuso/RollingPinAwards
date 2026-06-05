@@ -4,6 +4,7 @@ _G.RollingPinAwards = RPA
 local UITabs = RPA.UITabs or {}
 local Components = RPA.UIComponents or {}
 local Styles = RPA.UIStyles or {}
+local Utils = RPA.Utils or {}
 RPA.UITabs = UITabs
 
 UITabs.award = {
@@ -44,7 +45,7 @@ UITabs.award = {
       iconWidth = 24,
       iconHeight = 24,
       width = 500,
-      height = 296,
+      height = 316,
       x = 0,
       y = 0,
     })
@@ -93,16 +94,25 @@ UITabs.award = {
       y = -124,
       maxLetters = 64,
     })
+    panel.recipientSuggestionButton = Components.CreateButton(panel.formSection, {
+      text = "",
+      width = 300,
+      height = 20,
+      x = 14,
+      y = -150,
+      variant = "secondary",
+    })
+    Components.SetVisible(panel.recipientSuggestionButton, false)
     panel.reasonLabel = Components.CreateLabel(panel.formSection, {
       text = "Reason",
       x = 14,
-      y = -164,
+      y = -176,
       font = "GameFontNormal",
     })
     panel.reasonInput = Components.CreateEditBox(panel.formSection, {
       width = 462,
       x = 14,
-      y = -186,
+      y = -198,
       maxLetters = 180,
     })
     panel.submitButton = Components.CreateButton(panel.formSection, {
@@ -110,7 +120,7 @@ UITabs.award = {
       width = 280,
       height = 40,
       x = 14,
-      y = -234,
+      y = -246,
       variant = "primary",
       iconPath = media.awardIcon,
       iconWidth = 20,
@@ -123,7 +133,7 @@ UITabs.award = {
         )
 
         if award then
-          Components.SetText(panel.statusLabel, ("Awarded %s."):format(award.recipient))
+          Components.SetText(panel.statusLabel, ("Awarded %s."):format(Utils.GetShortCharacterName(award.recipient)))
           Components.SetText(panel.recipientInput, "")
           Components.SetText(panel.reasonInput, "")
         else
@@ -136,7 +146,7 @@ UITabs.award = {
     panel.statusLabel = Components.CreateLabel(panel.formSection, {
       text = "",
       x = 14,
-      y = -278,
+      y = -294,
       width = 470,
       justifyH = "LEFT",
       font = "GameFontHighlightSmall",
@@ -149,7 +159,7 @@ UITabs.award = {
       iconWidth = 22,
       iconHeight = 22,
       width = 246,
-      height = 296,
+      height = 316,
       x = 516,
       y = 0,
     })
@@ -175,7 +185,15 @@ UITabs.award = {
 
     return panel
   end,
-  RefreshPanel = function(panel, viewModel)
+  RefreshPanel = function(panel, viewModel, bridge)
+    if Components.AttachRosterAutocomplete and not panel.recipientAutocompleteRefresh then
+      panel.recipientAutocompleteRefresh = Components.AttachRosterAutocomplete(
+        panel.recipientInput,
+        panel.recipientSuggestionButton,
+        bridge
+      )
+    end
+
     local awardType = panel.selectedAwardType or "burnt"
     local isGolden = awardType == "golden"
     Components.SetButtonVariant(panel.typeBurntButton, isGolden and "secondary" or "selected")

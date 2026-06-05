@@ -20,7 +20,7 @@ UITabs.history = {
     }
 
     for _, award in ipairs(viewModel.awards or {}) do
-      lines[#lines + 1] = ("%s - %s"):format(award.recipient, award.reason)
+      lines[#lines + 1] = ("%s - %s"):format(award.shortRecipient or award.recipient, award.reason)
     end
 
     if #lines == 1 then
@@ -106,7 +106,7 @@ UITabs.history = {
               Components.SetVisible(panel.confirmDialog, false)
               Components.SetText(
                 panel.statusLabel,
-                ok and ("Deleted award for %s."):format(award.recipient)
+                ok and ("Deleted award for %s."):format(award.shortRecipient or award.recipient)
                   or ("Unable to delete award: %s"):format(err or "unknown error")
               )
               panel.pendingDeleteAwardId = nil
@@ -119,7 +119,7 @@ UITabs.history = {
 
       Components.AddListRow(section, {
         text = ("%s\n%s\n%s  Awarded by %s"):format(
-          award.recipient,
+          award.shortRecipient or award.recipient,
           award.reason,
           award.dateText or "Unknown date",
           award.displayAwardedBy or award.awardedBy

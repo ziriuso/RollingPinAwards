@@ -202,8 +202,18 @@ function Components.CreateWindow(config)
       frame:SetPropagateKeyboardInput(true)
     end
 
+    local backgroundLayout = layout.backgroundArt or {}
+    local backgroundWidth = backgroundLayout.width or 1000
+    local backgroundHeight = backgroundLayout.height or 925
+    local backgroundX = backgroundLayout.x or -28
+    local backgroundY = backgroundLayout.y or 145
+    local leftOverhang = math.max(0, -backgroundX)
+    local rightOverhang = math.max(0, backgroundWidth + backgroundX - (config.width or 0))
+    local topOverhang = math.max(0, backgroundY)
+    local bottomOverhang = math.max(0, backgroundHeight - backgroundY - (config.height or 0))
+
     if frame.SetHitRectInsets then
-      frame:SetHitRectInsets(-52, -112, -92, -44)
+      frame:SetHitRectInsets(-leftOverhang, -rightOverhang, -topOverhang, -bottomOverhang)
     end
 
     if frame.SetPoint then
@@ -216,12 +226,12 @@ function Components.CreateWindow(config)
 
     frame.backgroundArt = createArtworkFrame(frame, {
       texture = ((Styles.Media or {}).addonBackground) or "Interface\\AddOns\\RollingPinAwards\\Media\\addon-background.png",
-      width = 1048,
-      height = 872,
+      width = backgroundWidth,
+      height = backgroundHeight,
       anchor = "TOPLEFT",
       relativeTo = "TOPLEFT",
-      x = -52,
-      y = 92,
+      x = backgroundX,
+      y = backgroundY,
     })
 
     if frame.EnableMouse then
@@ -315,7 +325,7 @@ function Components.CreateWindow(config)
     end
     local closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
     if closeButton.SetPoint then
-      closeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 106, 86)
+      closeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", rightOverhang - 6, topOverhang - 6)
     end
     if closeButton.SetScript then
       closeButton:SetScript("OnClick", function()
@@ -1628,6 +1638,44 @@ function Components.SetButtonHandler(button, handler)
   if type(button.SetScript) == "function" then
     button:SetScript("OnClick", handler)
   end
+end
+
+function Components.AttachRosterAutocomplete(input, suggestionButton, bridge)
+  if not input or not suggestionButton or not bridge then
+    return nil
+  end
+
+  local function refreshSuggestion()
+    local suggestions = bridge:GetGuildRosterNameSuggestions(input:GetText(), 1)
+    local suggestion = suggestions and suggestions[1] or nil
+
+    if suggestion and suggestion.name then
+      suggestionButton.suggestedName = suggestion.name
+      suggestionButton.targetInput = input
+      Components.SetText(suggestionButton, ("Use %s"):format(suggestion.name))
+      Components.SetVisible(suggestionButton, true)
+    else
+      suggestionButton.suggestedName = nil
+      suggestionButton.targetInput = input
+      Components.SetText(suggestionButton, "")
+      Components.SetVisible(suggestionButton, false)
+    end
+  end
+
+  if input.SetScript then
+    input:SetScript("OnTextChanged", refreshSuggestion)
+  end
+
+  Components.SetButtonHandler(suggestionButton, function()
+    if suggestionButton.suggestedName then
+      Components.SetText(input, suggestionButton.suggestedName)
+    end
+    refreshSuggestion()
+  end)
+
+  refreshSuggestion()
+
+  return refreshSuggestion
 end
 
 function Components.RenderContent(panel, content)

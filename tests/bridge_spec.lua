@@ -451,21 +451,21 @@ return {
     harness.assert_true(addon.mainFrame.frame.toplevel)
     harness.assert_true(addon.mainFrame.frame.keyboardEnabled)
     harness.assert_true(addon.mainFrame.frame.propagateKeyboardInput)
-    harness.assert_equal(-52, addon.mainFrame.frame.hitRectInsets.left)
-    harness.assert_equal(-112, addon.mainFrame.frame.hitRectInsets.right)
-    harness.assert_equal(-92, addon.mainFrame.frame.hitRectInsets.top)
+    harness.assert_equal(-28, addon.mainFrame.frame.hitRectInsets.left)
+    harness.assert_equal(-88, addon.mainFrame.frame.hitRectInsets.right)
+    harness.assert_equal(-145, addon.mainFrame.frame.hitRectInsets.top)
     harness.assert_equal(-44, addon.mainFrame.frame.hitRectInsets.bottom)
     harness.assert_equal("RollingPinAwardsMainFrame", _G.UISpecialFrames[1])
     harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\addon-background.png", addon.mainFrame.frame.backgroundArt.texturePath)
     harness.assert_equal(addon.mainFrame.frame, addon.mainFrame.frame.backgroundArt.parent)
     harness.assert_equal("TOOLTIP", addon.mainFrame.frame.backgroundArt.frameStrata)
     harness.assert_true(addon.mainFrame.frame.backgroundArt.visible)
-    harness.assert_equal(1048, addon.mainFrame.frame.backgroundArt.width)
-    harness.assert_equal(872, addon.mainFrame.frame.backgroundArt.height)
+    harness.assert_equal(1000, addon.mainFrame.frame.backgroundArt.width)
+    harness.assert_equal(925, addon.mainFrame.frame.backgroundArt.height)
     harness.assert_equal("TOPLEFT", addon.mainFrame.frame.backgroundArt.point[1])
     harness.assert_equal("TOPLEFT", addon.mainFrame.frame.backgroundArt.point[3])
-    harness.assert_equal(-52, addon.mainFrame.frame.backgroundArt.point[4])
-    harness.assert_equal(92, addon.mainFrame.frame.backgroundArt.point[5])
+    harness.assert_equal(-28, addon.mainFrame.frame.backgroundArt.point[4])
+    harness.assert_equal(145, addon.mainFrame.frame.backgroundArt.point[5])
     harness.assert_nil(addon.mainFrame.frame.shadowFrame)
     harness.assert_nil(addon.mainFrame.frame.headerBand)
     harness.assert_nil(addon.mainFrame.frame.headerAccent)
@@ -476,8 +476,8 @@ return {
     harness.assert_true(addon.mainFrame.frame.closeButton ~= nil)
     harness.assert_equal("TOPRIGHT", addon.mainFrame.frame.closeButton.point[1])
     harness.assert_equal("TOPRIGHT", addon.mainFrame.frame.closeButton.point[3])
-    harness.assert_equal(106, addon.mainFrame.frame.closeButton.point[4])
-    harness.assert_equal(86, addon.mainFrame.frame.closeButton.point[5])
+    harness.assert_equal(82, addon.mainFrame.frame.closeButton.point[4])
+    harness.assert_equal(139, addon.mainFrame.frame.closeButton.point[5])
     harness.assert_true(addon.mainFrame.settingsGearButton ~= nil)
     harness.assert_equal("Interface\\WorldMap\\GEAR_64GREY", addon.mainFrame.settingsGearButton.texturePath)
     harness.assert_equal("Interface\\WorldMap\\GEAR_64GREY", addon.mainFrame.settingsGearButton.icon.texturePath)
@@ -655,8 +655,8 @@ return {
     local leftMargin = dashboardLeft - backgroundLeft
     local rightMargin = backgroundRight - (dashboardLeft + dashboardWidth)
 
-    harness.assert_equal(143, leftMargin)
-    harness.assert_equal(143, rightMargin)
+    harness.assert_equal(119, leftMargin)
+    harness.assert_equal(119, rightMargin)
     harness.assert_equal(dashboardWidth, panel.leaderboardSection.width + 16 + panel.recentAwardsSection.width)
     harness.assert_equal(dashboardWidth, panel.nominationButton.width + 16 + panel.awardButton.width)
   end,
@@ -1501,7 +1501,8 @@ return {
     addon.mainFrame:SelectTab("history")
 
     local historyText = addon.mainFrame.tabPanels.history.listSection.rows[1].label.text
-    harness.assert_true(historyText:match("Newpin%-Stormrage") ~= nil)
+    harness.assert_true(historyText:match("Newpin%-Stormrage") == nil)
+    harness.assert_true(historyText:match("Newpin") ~= nil)
     harness.assert_true(addon.uiBridge:GetPublicHistoryViewModel()[1].recipient:match("Newpin") ~= nil)
 
     addon.mainFrame:SelectTab("dashboard")
@@ -1557,7 +1558,8 @@ return {
     section.scrollBar:SetValue(1)
 
     harness.assert_true(section.rows[1].label.text ~= firstBefore)
-    harness.assert_true(section.rows[1].label.text:match("Burny2%-Stormrage") ~= nil)
+    harness.assert_true(section.rows[1].label.text:match("Burny2%-Stormrage") == nil)
+    harness.assert_true(section.rows[1].label.text:match("Burny2") ~= nil)
   end,
 
   ["mouse wheel scrolling advances a large nominations list"] = function()
@@ -1579,7 +1581,8 @@ return {
     section:MouseWheel(-1)
 
     harness.assert_true(section.rows[1].label.text ~= firstBefore)
-    harness.assert_true(section.rows[1].label.text:match("Burny2%-Stormrage") ~= nil)
+    harness.assert_true(section.rows[1].label.text:match("Burny2%-Stormrage") == nil)
+    harness.assert_true(section.rows[1].label.text:match("Burny2") ~= nil)
   end,
 
   ["nominations row keeps public voting separate from moderation actions"] = function()
@@ -1670,5 +1673,149 @@ return {
 
     panel.aliasSuggestionButton:Click()
     harness.assert_equal("Officerone-Stormrage", panel.canonicalInput:GetText())
+  end,
+
+  ["award and nomination character fields autocomplete guild roster names"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.mainFrame:EnsureRendered()
+
+    addon.mainFrame:SelectTab("award")
+    local awardPanel = addon.mainFrame.tabPanels.award
+    awardPanel.recipientInput:SetText("Off")
+
+    harness.assert_true(awardPanel.recipientSuggestionButton.visible)
+    harness.assert_equal("Officerone-Stormrage", awardPanel.recipientSuggestionButton.suggestedName)
+
+    awardPanel.recipientSuggestionButton:Click()
+    harness.assert_equal("Officerone-Stormrage", awardPanel.recipientInput:GetText())
+
+    addon.mainFrame:SelectTab("nominations")
+    local nominationsPanel = addon.mainFrame.tabPanels.nominations
+    nominationsPanel.nomineeInput:SetText("Off")
+
+    harness.assert_true(nominationsPanel.nomineeSuggestionButton.visible)
+    harness.assert_equal("Officerone-Stormrage", nominationsPanel.nomineeSuggestionButton.suggestedName)
+
+    nominationsPanel.nomineeSuggestionButton:Click()
+    harness.assert_equal("Officerone-Stormrage", nominationsPanel.nomineeInput:GetText())
+  end,
+
+  ["admin character mapping labels and both character fields autocomplete guild roster names"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Altone-Stormrage",
+          rankName = "Member",
+          rankIndex = 5,
+        },
+        {
+          name = "Mainone-Stormrage",
+          rankName = "Member",
+          rankIndex = 5,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.mainFrame:EnsureRendered()
+    addon.mainFrame:SelectTab("admin")
+
+    local panel = addon.mainFrame.tabPanels.admin
+    harness.assert_equal("Character Mapping Controls", panel.aliasFormSection.titleText.text)
+    harness.assert_equal("Alt Character", panel.aliasLabel.text)
+    harness.assert_equal("Main Character", panel.canonicalLabel.text)
+
+    panel.aliasInput:SetText("Alt")
+    harness.assert_true(panel.altSuggestionButton.visible)
+    harness.assert_equal("Altone-Stormrage", panel.altSuggestionButton.suggestedName)
+    panel.altSuggestionButton:Click()
+    harness.assert_equal("Altone-Stormrage", panel.aliasInput:GetText())
+
+    panel.canonicalInput:SetText("Main")
+    harness.assert_true(panel.mainSuggestionButton.visible)
+    harness.assert_equal("Mainone-Stormrage", panel.mainSuggestionButton.suggestedName)
+    panel.mainSuggestionButton:Click()
+    harness.assert_equal("Mainone-Stormrage", panel.canonicalInput:GetText())
+  end,
+
+  ["normal award and nomination UI hides realm names outside character mapping"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      serverTime = 1717336800,
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Burny-Stormrage",
+          rankName = "Member",
+          rankIndex = 5,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.mainFrame:EnsureRendered()
+
+    addon.mainFrame:SelectTab("award")
+    local awardPanel = addon.mainFrame.tabPanels.award
+    awardPanel.recipientInput:SetText("Burny-Stormrage")
+    awardPanel.reasonInput:SetText("Set the oven to lava")
+    awardPanel.submitButton:Click()
+    harness.assert_true(awardPanel.statusLabel.text:match("Burny%-Stormrage") == nil)
+    harness.assert_true(awardPanel.statusLabel.text:match("Burny") ~= nil)
+
+    addon.mainFrame:SelectTab("nominations")
+    local nominationsPanel = addon.mainFrame.tabPanels.nominations
+    nominationsPanel.nomineeInput:SetText("Burny-Stormrage")
+    nominationsPanel.reasonInput:SetText("Pulled the boss")
+    nominationsPanel.submitButton:Click()
+    harness.assert_true(nominationsPanel.statusLabel.text:match("Burny%-Stormrage") == nil)
+    harness.assert_true(nominationsPanel.statusLabel.text:match("Burny") ~= nil)
+
+    local nominationRow = nominationsPanel.listSection.rows[1].label.text
+    harness.assert_true(nominationRow:match("Burny%-Stormrage") == nil)
+    harness.assert_true(nominationRow:match("Burny") ~= nil)
+
+    addon.mainFrame:SelectTab("history")
+    local historyRow = addon.mainFrame.tabPanels.history.listSection.rows[1].label.text
+    harness.assert_true(historyRow:match("Burny%-Stormrage") == nil)
+    harness.assert_true(historyRow:match("Burny") ~= nil)
   end,
 }

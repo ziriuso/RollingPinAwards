@@ -296,10 +296,11 @@ end
 
 function MainFrame:EnsureBackgroundCalibrator()
   if not self.backgroundCalibrator then
+    local backgroundLayout = (Styles.Layout or {}).backgroundArt or {}
     self.backgroundCalibrator = Components.CreateBackgroundCalibrationWindow(self.frame, {
       id = "RollingPinAwardsBackgroundCalibrator",
-      width = Styles.Window.width,
-      height = Styles.Window.height,
+      width = backgroundLayout.width or Styles.Window.width,
+      height = backgroundLayout.height or Styles.Window.height,
     })
   end
 

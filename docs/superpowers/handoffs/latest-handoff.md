@@ -25,6 +25,18 @@
   - `tests/notifications_spec.lua` covers toast rendering, disabled toasts, settings persistence, anchor save, login reminders, and inbound nomination chat reminders.
   - `tests/bridge_spec.lua` covers the gear texture, anchor target, and frame level above the background art.
   - `docs/superpowers/plans/2026-06-05-toast-settings-implementation.md` captures the implementation plan.
+- Current local roster/name-display/toast-combat follow-up:
+  - Award Recipient and Nomination Nominee fields now use guild roster autocomplete and fill full `Character-Realm` names when a suggestion is selected.
+  - Admin character mapping copy now uses `Alt Character` and `Main Character` wording while preserving the existing alias mapping storage/sync shape.
+  - Admin Alt Character and Main Character fields both use guild roster autocomplete.
+  - Full realm/server names are kept to input/suggestion fields and the character mapping screen; normal Award, Nomination, History, Leaderboard, Dashboard, and moderation UI text uses short character names.
+  - Reward toasts queue during combat and flush on `PLAYER_REGEN_ENABLED`.
+  - Reward toasts now have a top-right X close button.
+  - `docs/superpowers/specs/2026-06-05-roster-autocomplete-name-display-and-toast-combat-design.md` and `docs/superpowers/plans/2026-06-05-roster-autocomplete-name-display-and-toast-combat.md` capture this slice.
+- Current local background art follow-up:
+  - `Media/addon-background.png` has been replaced with the provided Rolling Pin Awards parchment art resized to `1000x925`.
+  - `Styles.Layout.backgroundArt` owns the background size and offset: `1000x925`, `TOPLEFT` offset `-28, 145`, with the top `150` pixels reserved for the title banner.
+  - Main window hit rect, close-button offset, nav rail measurement, settings gear anchor, and `/rpa background` calibration helper now derive from the current background artwork geometry.
 - Current local UI polish follow-up after sync validation looked good:
   - all tab panels now use the Dashboard parchment-safe content offset and width.
   - Dashboard Recent Awards renders three visible rows so list rows do not collide with footer buttons.
@@ -81,7 +93,7 @@
   - Burnt and Golden rolling pin media now use `Media/burnt-rolling-pin.png` and `Media/golden-rolling-pin.png`.
   - `UI/MinimapButton.lua` creates a custom minimap button using `Media/minimap-button.png`; clicking it toggles the main addon window open/closed.
   - Standalone header logo, header box, and accent chrome are removed because the banner is built into the main shell background.
-  - Main addon shell renders `Media/addon-background.png` visibly at `1048x872` with a `TOPLEFT` offset of `-52, 92`, based on the live calibration screenshot.
+  - Main addon shell renders `Media/addon-background.png` visibly at `1000x925` with a `TOPLEFT` offset of `-28, 145`; the top `150` pixels are the title banner.
   - `/rpa background` and `/rpa bg` still toggle a temporary movable/resizable background calibration frame for future live placement checks.
   - The separate header logo/banner texture, old shell shadow, nav-rail backdrop, and visible content-panel backdrop/inner shade are removed; the close X remains as a standalone top-right control.
   - Reusable section and stat-card backdrops use a lighter banner-toned fill.
@@ -187,7 +199,7 @@
   - `contentHost` frame level is above the content panel
   - content-panel backdrop, `innerShade`, and `innerShadeTexture` are not created
   - showcase modal parent/frame level sit above the content host
-  - main background art is visible with calibrated dimensions and the close X is offset to the parchment corner
+  - main background art is visible at `1000x925` with calibrated dimensions and the close X is offset to the parchment corner
   - main shell, background art, tab rail, content panel, and content host use the raised strata
   - the frame hit rect expands over the parchment overhang for dragging
   - Esc closes the focused main window while non-Esc keys propagate
@@ -240,6 +252,7 @@
 - Full suite command:
   - `powershell -ExecutionPolicy Bypass -File .\tests\run.ps1`
 - Last known result:
+  - 2026-06-05 full suite passed after roster autocomplete, short-name display, and combat-queued toast changes with `RPA_LUA=C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards\tools\lua\lua54.exe`.
   - 2026-06-05 full suite passed after the settings gear visibility fix with `RPA_LUA=C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards\tools\lua\lua54.exe`.
   - 2026-06-05 full suite passed after toast/settings implementation with `RPA_LUA=C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards\tools\lua\lua54.exe`.
   - 2026-06-05 full suite passed with `RPA_LUA=C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards\tools\lua\lua54.exe`.
