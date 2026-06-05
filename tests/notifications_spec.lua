@@ -109,6 +109,41 @@ return {
     harness.assert_equal("CENTER", addon.toast.frame.reasonLabel.justifyH)
   end,
 
+  ["accepted inbound award toast only shows once across duplicate sync and reload"] = function()
+    local addon = setupPlayer()
+    local shown = 0
+    local originalShowAwardToast = addon.toast.ShowAwardToast
+    addon.toast.ShowAwardToast = function(toast, award)
+      shown = shown + 1
+      return originalShowAwardToast(toast, award)
+    end
+
+    harness.assert_true(dispatchRemoteAward(addon, {
+      awardId = "award:remote:once",
+    }))
+    harness.assert_true(dispatchRemoteAward(addon, {
+      awardId = "award:remote:once",
+    }))
+    harness.assert_equal(1, shown)
+
+    local savedVariables = addon.db.storage
+    local reloaded = setupPlayer({
+      savedVariables = savedVariables,
+    })
+    local reloadedShown = 0
+    local reloadedOriginalShowAwardToast = reloaded.toast.ShowAwardToast
+    reloaded.toast.ShowAwardToast = function(toast, award)
+      reloadedShown = reloadedShown + 1
+      return reloadedOriginalShowAwardToast(toast, award)
+    end
+
+    harness.assert_true(dispatchRemoteAward(reloaded, {
+      awardId = "award:remote:once",
+    }))
+    harness.assert_equal(0, reloadedShown)
+    harness.assert_true(reloaded.db:HasSeenAwardToast("award:remote:once"))
+  end,
+
   ["disabled reward toasts suppress accepted inbound award popup"] = function()
     local addon = setupPlayer()
 
@@ -139,6 +174,59 @@ return {
 
     panel.toastsCheck:Click()
     harness.assert_true(addon.db:GetLocalSettings().toastsEnabled)
+  end,
+
+  ["settings page adjusts reward toast duration"] = function()
+    local addon = setupPlayer()
+
+    addon.mainFrame:EnsureRendered()
+    addon.mainFrame.settingsGearButton:Click()
+
+    local panel = addon.mainFrame.settingsPanel
+    harness.assert_true(panel.visible)
+    harness.assert_equal(7, addon.db:GetLocalSettings().toastDurationSeconds)
+    harness.assert_equal("7 seconds", panel.toastDurationValueLabel.text)
+
+    panel.toastDurationIncreaseButton:Click()
+    harness.assert_equal(8, addon.db:GetLocalSettings().toastDurationSeconds)
+    harness.assert_equal("8 seconds", panel.toastDurationValueLabel.text)
+
+    panel.toastDurationDecreaseButton:Click()
+    panel.toastDurationDecreaseButton:Click()
+    harness.assert_equal(6, addon.db:GetLocalSettings().toastDurationSeconds)
+    harness.assert_equal("6 seconds", panel.toastDurationValueLabel.text)
+
+    for _ = 1, 10 do
+      panel.toastDurationDecreaseButton:Click()
+    end
+    harness.assert_equal(3, addon.db:GetLocalSettings().toastDurationSeconds)
+    harness.assert_equal("3 seconds", panel.toastDurationValueLabel.text)
+
+    for _ = 1, 20 do
+      panel.toastDurationIncreaseButton:Click()
+    end
+    harness.assert_equal(15, addon.db:GetLocalSettings().toastDurationSeconds)
+    harness.assert_equal("15 seconds", panel.toastDurationValueLabel.text)
+  end,
+
+  ["reward toast auto-hide uses saved duration setting"] = function()
+    local addon = setupPlayer()
+    local timerDelay
+
+    _G.C_Timer = {
+      After = function(delay)
+        timerDelay = delay
+      end,
+    }
+
+    addon.db:SetToastDurationSeconds(11)
+    dispatchRemoteAward(addon, {
+      awardId = "award:remote:duration",
+      reason = "Timer preview",
+    })
+
+    harness.assert_true(addon.toast.frame.visible)
+    harness.assert_equal(11, timerDelay)
   end,
 
   ["settings anchor mode saves toast anchor on right click"] = function()

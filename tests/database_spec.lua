@@ -33,6 +33,65 @@ return {
     harness.assert_true(addon.db.storage.profile.guildDatasets ~= addon.defaults.profile.guildDatasets)
   end,
 
+  ["database validates and clamps local toast duration setting"] = function()
+    local savedVariables = {
+      profile = {
+        guildDatasets = {},
+        localSettings = {
+          toastDurationSeconds = "forever",
+        },
+      },
+    }
+
+    wow.reset({
+      guildName = "Raid Bakery",
+      savedVariables = savedVariables,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    local settings = addon.db:GetLocalSettings()
+    harness.assert_equal(7, settings.toastDurationSeconds)
+
+    harness.assert_equal(3, addon.db:SetToastDurationSeconds(2))
+    harness.assert_equal(3, addon.db:GetLocalSettings().toastDurationSeconds)
+
+    harness.assert_equal(15, addon.db:SetToastDurationSeconds(16))
+    harness.assert_equal(15, addon.db:GetLocalSettings().toastDurationSeconds)
+
+    harness.assert_equal(9, addon.db:SetToastDurationSeconds(9))
+    harness.assert_equal(9, addon.db:GetLocalSettings().toastDurationSeconds)
+  end,
+
+  ["database persists seen reward toast ids in local settings"] = function()
+    local savedVariables = {
+      profile = {
+        guildDatasets = {},
+        localSettings = {
+          seenAwardToastIds = "legacy",
+        },
+      },
+    }
+
+    wow.reset({
+      guildName = "Raid Bakery",
+      savedVariables = savedVariables,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    harness.assert_false(addon.db:HasSeenAwardToast("award:remote:once"))
+    harness.assert_true(addon.db:MarkAwardToastSeen("award:remote:once"))
+    harness.assert_true(addon.db:HasSeenAwardToast("award:remote:once"))
+    harness.assert_true(savedVariables.profile.localSettings.seenAwardToastIds["award:remote:once"])
+
+    local missingOk, missingErr = addon.db:MarkAwardToastSeen("")
+    harness.assert_false(missingOk)
+    harness.assert_equal("missing awardId", missingErr)
+  end,
+
   ["database creates a guild dataset on demand"] = function()
     wow.reset({ guildName = "Raid Bakery" })
     local addon = wow.loadAddon()

@@ -56,6 +56,7 @@ UITabs.dashboard = {
       width = 540,
       font = "GameFontHighlight",
       justifyH = "LEFT",
+      textRole = "tabDescription",
     })
     panel.permissionLabel = Components.CreateLabel(panel, {
       text = "",
@@ -64,6 +65,7 @@ UITabs.dashboard = {
       width = 760,
       justifyH = "LEFT",
       font = "GameFontHighlightSmall",
+      textRole = "tabDescription",
     })
 
     panel.statsSection = CreateFrame("Frame", nil, panel)

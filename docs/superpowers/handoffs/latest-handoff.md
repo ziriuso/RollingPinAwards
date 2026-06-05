@@ -15,14 +15,15 @@
   - `Core/Notifications.lua` sends local player-facing notifications after accepted inbound sync payloads.
   - Accepted inbound awards toast only for the current player when they are the award recipient.
   - The toast uses the Burnt or Golden rolling pin icon based on `award.awardType`, the centered title `You've Received a Burnt/Golden Rolling Pin`, and the centered award reason.
+  - Reward toast award ids are recorded under local profile settings once handled, so duplicate sync snapshots after reload/login do not replay the same reward toast.
   - Accepted inbound pending nominations write a chat reminder when the current player has not voted.
   - Addon enable writes one chat reminder for pending unvoted nominations in the active guild dataset.
-  - `profile.localSettings` now stores local-only `toastsEnabled` and `toastAnchor` placement.
+  - `profile.localSettings` now stores local-only `toastsEnabled`, `toastDurationSeconds`, `toastAnchor` placement, and seen reward-toast ids.
   - The main background artwork has a bottom-right gear icon that opens a Settings page.
-  - Settings includes `Enable reward toasts`, `Toggle Anchors Mode`, and `Test Toast`.
+  - Settings includes `Enable reward toasts`, a `Toast duration` stepper clamped from 3 to 15 seconds, `Toggle Anchors Mode`, and `Test Toast`.
   - Anchor mode shows a movable toast anchor; right-click locks it and saves position.
   - Follow-up fix: the settings gear now uses Blizzard's visible `Interface\WorldMap\GEAR_64GREY` texture and is explicitly frame-leveled above the parchment background art.
-  - `tests/notifications_spec.lua` covers toast rendering, disabled toasts, settings persistence, anchor save, login reminders, and inbound nomination chat reminders.
+  - `tests/notifications_spec.lua` covers toast rendering, duplicate/reload replay suppression, disabled toasts, duration settings, settings persistence, anchor save, login reminders, and inbound nomination chat reminders.
   - `tests/bridge_spec.lua` covers the gear texture, anchor target, and frame level above the background art.
   - `docs/superpowers/plans/2026-06-05-toast-settings-implementation.md` captures the implementation plan.
 - Current local roster/name-display/toast-combat follow-up:
@@ -50,9 +51,17 @@
   - shared page headers align to the page content safe offset and render five font points larger.
   - Dashboard top-recipient and Leaderboard visible rows stay inside their table chrome and use scrollbars for extra records.
   - navbar buttons now use the provided `Media/NavBar/<tab>.png` art and swap to `<tab>-selected.png` for the active page.
-  - navbar button backdrops are hidden behind the art; the full Admin-visible nav uses the 188px sizing margin plus a 60px left centerline offset, and the no-Admin nav centers its Nominations button on that same visual centerline.
+  - navbar button backdrops are hidden behind the art; the full Admin-visible nav uses the 188px sizing margin and aligns the Nominations/History gap with the Dashboard `Top Recipient`/`Pending Nominations` gap, while the no-Admin nav centers its Nominations button on that same gap.
+  - shared typography roles now remove WoW outline flags across page text:
+    - Tab Header: 24pt, bold role, `#73401E`.
+    - Tab Description: 16pt, black.
+    - Card Header and Card Value: 20pt, bold role, `#73401E`.
+    - Card Descriptor: 16pt, black.
+    - Button Text: 20pt, bold role, `#DFC6A3`.
+  - `UI/Styles.lua` owns the shared typography tokens, and `UI/Components.lua` applies them through reusable content panel, section, stat-card, label, button, nav-button, row, checkbox, and modal factories.
   - award and linked nomination deletes are retained as hidden sync tombstones so offline clients receive deletes during catch-up snapshots and cannot resurrect older rows.
   - `docs/superpowers/specs/2026-06-04-ui-polish-followup-design.md` and `docs/superpowers/plans/2026-06-04-ui-polish-followup.md` capture this slice.
+  - `docs/superpowers/specs/2026-06-05-typography-readability-design.md` and `docs/superpowers/plans/2026-06-05-typography-readability.md` capture the typography slice.
 - UI polish pass is largely implemented. Current key files match the deployed Retail addon folder, but the PTR addon folder still contains the older pre-refactor flat module layout and is not ready for validating the current build until redeployed.
 - Custom media icons are wired in under `Media/`.
 - Burnt and Golden rolling pin award types are implemented across direct awards, nominations, history, dashboard, and leaderboard.
@@ -107,13 +116,13 @@
   - Leaderboard showcase modal is draggable independently from the main addon frame, parents above the main frame content so it does not disappear inside clipped tab layers, uses slightly larger trophy icons, and gives the award record list a headerless full-box scroll area.
 - Latest card/form polish pass is implemented:
   - Dashboard stat cards no longer render decorative icons.
-  - Addon text now uses WoW's native thin `OUTLINE` font flag, matching Chattynator's thin outline approach; gold text is back to default `GameFontNormal` color rather than the temporary brown override.
+  - Addon text now uses shared outline-free typography roles instead of WoW outline flags.
   - Nominations form title no longer has a small left icon.
   - Nominations form shows a larger selected Burnt/Golden pin preview above the submit button and the submit button is raised slightly.
   - Admin moderation queue button count now reflects only pending nominations, not approved/rejected history.
 - Latest text readability pass is implemented:
-  - reusable light row backdrops now render their dark row text without WoW outline flags, so Dashboard, Nominations, History, Leaderboard, Admin alias rows, and the moderation modal avoid heavy black-on-light outlines.
-  - Admin helper/status text and rank names are bumped by two font points while retaining the thin outline for readability over the parchment background.
+  - reusable light row backdrops render dark row text without WoW outline flags.
+  - Admin helper/status text, rank names, tab descriptions, card descriptors, card headers, card values, and buttons now flow through shared typography roles for consistent size/color choices.
 - The updated build has been copied to both documented local Retail and PTR AddOns folders.
 - Test suite is green.
 - Live visual inspection after the readability pass looked better.
@@ -200,10 +209,12 @@
   - content-panel backdrop, `innerShade`, and `innerShadeTexture` are not created
   - showcase modal parent/frame level sit above the content host
   - main background art is visible at `1000x925` with calibrated dimensions and the close X is offset to the parchment corner
+  - six-button tab rail aligns the Nominations/History gap with the Dashboard `Top Recipient`/`Pending Nominations` gap
+  - five-button tab rail centers the Nominations button on that same dashboard gap
   - main shell, background art, tab rail, content panel, and content host use the raised strata
   - the frame hit rect expands over the parchment overhang for dragging
   - Esc closes the focused main window while non-Esc keys propagate
-  - light row text opts out of outline while Admin helper/status text is two points larger
+  - shared typography roles remove outline flags and apply requested Tab Header, Tab Description, Card Header/Card Value, Card Descriptor, and Button Text sizing/colors
 - Continue validating all visual polish in the live WoW client because the harness cannot fully reproduce Blizzard frame/backdrop draw ordering.
 
 ## Most Relevant Files

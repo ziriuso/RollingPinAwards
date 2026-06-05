@@ -1,6 +1,26 @@
 local harness = require("tests.TestHarness")
 local wow = require("tests.WoWStubs")
 
+local BROWN = { 115 / 255, 64 / 255, 30 / 255, 1 }
+local BUTTON_TAN = { 223 / 255, 198 / 255, 163 / 255, 1 }
+local BLACK = { 0, 0, 0, 1 }
+
+local function assert_color(label, color)
+  harness.assert_true(label.textColor ~= nil)
+  harness.assert_equal(color[1], label.textColor.red)
+  harness.assert_equal(color[2], label.textColor.green)
+  harness.assert_equal(color[3], label.textColor.blue)
+  harness.assert_equal(color[4], label.textColor.alpha)
+end
+
+local function assert_text_role(label, role, height, color, bold)
+  harness.assert_equal(role, label.textRole)
+  harness.assert_equal(height, label.fontHeight)
+  harness.assert_nil(label.fontFlags)
+  harness.assert_equal(bold == true and "bold" or nil, label.fontWeight)
+  assert_color(label, color)
+end
+
 return {
   ["leaderboard aggregates approved awards by recipient and sorts by count then recency"] = function()
     wow.reset({
@@ -496,10 +516,10 @@ return {
     harness.assert_true((addon.mainFrame.contentPanel.contentHost.frameLevel or 0) > (addon.mainFrame.contentPanel.frameLevel or 0))
     harness.assert_equal("", addon.mainFrame.frame.titleText.text)
     harness.assert_equal("", addon.mainFrame.frame.subtitleText.text)
-    harness.assert_equal("OUTLINE", addon.mainFrame.frame.subtitleText.fontFlags)
+    harness.assert_nil(addon.mainFrame.frame.subtitleText.fontFlags)
     harness.assert_equal(59, addon.mainFrame.contentPanel.titleText.point[4])
-    harness.assert_equal(17, addon.mainFrame.contentPanel.titleText.fontHeight)
-    harness.assert_equal("OUTLINE", addon.mainFrame.contentPanel.bodyText.fontFlags)
+    assert_text_role(addon.mainFrame.contentPanel.titleText, "tabHeader", 24, BROWN, true)
+    assert_text_role(addon.mainFrame.contentPanel.bodyText, "tabDescription", 16, BLACK, false)
   end,
 
   ["tab rail layout centers nav buttons inside a tighter rail"] = function()
@@ -516,21 +536,31 @@ return {
 
     local tabRail = addon.mainFrame.frame.tabRail
     local background = addon.mainFrame.frame.backgroundArt
-    local firstButton = addon.mainFrame.tabButtons[1]
-    local lastButton = addon.mainFrame.tabButtons[#addon.mainFrame.tabButtons]
+    local nominationsButton = addon.mainFrame.tabButtons[3]
+    local historyButton = addon.mainFrame.tabButtons[4]
+    local dashboardPanel = addon.mainFrame.tabPanels.dashboard
+    local statCards = dashboardPanel.statCards
     local railLeft = tabRail.point and tabRail.point[4] or 0
     local backgroundLeft = background.point and background.point[4] or 0
-    local firstLeft = railLeft + (firstButton.point and firstButton.point[4] or 0)
-    local lastRight = railLeft + (lastButton.point and lastButton.point[4] or 0) + (lastButton.width or 0)
-    local groupCenter = firstLeft + ((lastRight - firstLeft) / 2)
-    local targetCenter = backgroundLeft + ((background.width or 0) / 2) - 60
+    local nominationRight = railLeft
+      + (nominationsButton.point and nominationsButton.point[4] or 0)
+      + (nominationsButton.width or 0)
+    local historyLeft = railLeft + (historyButton.point and historyButton.point[4] or 0)
+    local navMiddleGapCenter = nominationRight + ((historyLeft - nominationRight) / 2)
+    local dashboardLeft = (addon.mainFrame.contentPanel.point[4] or 0)
+      + (addon.mainFrame.contentPanel.contentHost.point[4] or 0)
+      + (dashboardPanel.point[4] or 0)
+      + (dashboardPanel.statsSection.point[4] or 0)
+    local dashboardMiddleGapCenter = dashboardLeft
+      + (statCards[2].point[4] or 0)
+      + (statCards[2].width or 0)
+      + (((statCards[3].point[4] or 0) - ((statCards[2].point[4] or 0) + (statCards[2].width or 0))) / 2)
 
     harness.assert_equal(background.width, tabRail.width)
     harness.assert_equal(backgroundLeft, railLeft)
-    harness.assert_equal(math.floor(targetCenter + 0.5), math.floor(groupCenter + 0.5))
-    harness.assert_nil(firstButton.label.textColor)
-    harness.assert_equal("OUTLINE", firstButton.label.fontFlags)
-    harness.assert_nil(firstButton.label.outlineLabels)
+    harness.assert_equal(math.floor(dashboardMiddleGapCenter + 0.5), math.floor(navMiddleGapCenter + 0.5))
+    assert_text_role(nominationsButton.label, "buttonText", 20, BUTTON_TAN, true)
+    harness.assert_nil(nominationsButton.label.outlineLabels)
   end,
 
   ["tab rail uses art textures for active and inactive page states"] = function()
@@ -583,15 +613,23 @@ return {
 
     harness.assert_equal(5, #visibleButtons)
     local nominationsButton = visibleButtons[3]
+    local dashboardPanel = addon.mainFrame.tabPanels.dashboard
+    local statCards = dashboardPanel.statCards
     local railLeft = tabRail.point and tabRail.point[4] or 0
-    local backgroundLeft = background.point and background.point[4] or 0
     local nominationsCenter = railLeft
       + (nominationsButton.point and nominationsButton.point[4] or 0)
       + ((nominationsButton.width or 0) / 2)
-    local targetCenter = backgroundLeft + ((background.width or 0) / 2) - 60
+    local dashboardLeft = (addon.mainFrame.contentPanel.point[4] or 0)
+      + (addon.mainFrame.contentPanel.contentHost.point[4] or 0)
+      + (dashboardPanel.point[4] or 0)
+      + (dashboardPanel.statsSection.point[4] or 0)
+    local dashboardMiddleGapCenter = dashboardLeft
+      + (statCards[2].point[4] or 0)
+      + (statCards[2].width or 0)
+      + (((statCards[3].point[4] or 0) - ((statCards[2].point[4] or 0) + (statCards[2].width or 0))) / 2)
 
     harness.assert_equal("nominations", nominationsButton.id)
-    harness.assert_equal(math.floor(targetCenter + 0.5), math.floor(nominationsCenter + 0.5))
+    harness.assert_equal(math.floor(dashboardMiddleGapCenter + 0.5), math.floor(nominationsCenter + 0.5))
   end,
 
   ["dashboard renders stats, content sections, and footer actions after recomposition"] = function()
@@ -632,11 +670,10 @@ return {
     harness.assert_equal("CENTER", panel.statCards[1].value.point[3])
     harness.assert_equal("Interface\\ChatFrame\\ChatFrameBackground", panel.statCards[1].backdrop.bgFile)
     harness.assert_true((panel.statCards[1].backdropColor.red or 0) >= 0.80)
-    harness.assert_nil(panel.statCards[1].label.textColor)
+    assert_text_role(panel.statCards[1].label, "cardHeader", 20, BROWN, true)
     harness.assert_equal(0, panel.statCards[1].label.shadowColor.alpha)
     harness.assert_equal(0, panel.statCards[1].label.shadowOffset.x)
     harness.assert_equal(0, panel.statCards[1].label.shadowOffset.y)
-    harness.assert_equal("OUTLINE", panel.statCards[1].label.fontFlags)
     harness.assert_nil(panel.statCards[1].label.outlineLabels)
     harness.assert_nil(panel.statCards[1].label.outlineColor)
     harness.assert_equal("Interface\\ChatFrame\\ChatFrameBackground", panel.leaderboardSection.backdrop.bgFile)
@@ -659,6 +696,71 @@ return {
     harness.assert_equal(119, rightMargin)
     harness.assert_equal(dashboardWidth, panel.leaderboardSection.width + 16 + panel.recentAwardsSection.width)
     harness.assert_equal(dashboardWidth, panel.nominationButton.width + 16 + panel.awardButton.width)
+  end,
+
+  ["typography applies shared readable roles across pages"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.awards:CreateDirectAward("Zirleficent-Stormrage", "Good job")
+    addon.nominations:Create("Moonrustle-Stormrage", "Helpful nomination")
+    addon.mainFrame:EnsureRendered()
+
+    local dashboard = addon.mainFrame.tabPanels.dashboard
+    assert_text_role(addon.mainFrame.contentPanel.titleText, "tabHeader", 24, BROWN, true)
+    assert_text_role(dashboard.heroLabel, "tabDescription", 16, BLACK, false)
+    assert_text_role(dashboard.permissionLabel, "tabDescription", 16, BLACK, false)
+    assert_text_role(dashboard.statCards[1].label, "cardHeader", 20, BROWN, true)
+    assert_text_role(dashboard.statCards[1].value, "cardHeader", 20, BROWN, true)
+    assert_text_role(dashboard.statCards[1].detail, "cardDescription", 16, BLACK, false)
+    assert_text_role(dashboard.leaderboardSection.titleText, "cardHeader", 20, BROWN, true)
+    assert_text_role(dashboard.leaderboardSection.rows[1].label, "cardDescription", 16, BLACK, false)
+    assert_text_role(dashboard.nominationButton.label, "buttonText", 20, BUTTON_TAN, true)
+
+    addon.mainFrame:SelectTab("award")
+    local award = addon.mainFrame.tabPanels.award
+    assert_text_role(addon.mainFrame.contentPanel.titleText, "tabHeader", 24, BROWN, true)
+    assert_text_role(award.formSection.titleText, "cardHeader", 20, BROWN, true)
+    assert_text_role(award.helperLabel, "cardDescription", 16, BLACK, false)
+    assert_text_role(award.submitButton.label, "buttonText", 20, BUTTON_TAN, true)
+
+    addon.mainFrame:SelectTab("nominations")
+    local nominations = addon.mainFrame.tabPanels.nominations
+    assert_text_role(addon.mainFrame.contentPanel.titleText, "tabHeader", 24, BROWN, true)
+    assert_text_role(nominations.formSection.titleText, "cardHeader", 20, BROWN, true)
+    assert_text_role(nominations.helperLabel, "cardDescription", 16, BLACK, false)
+    assert_text_role(nominations.submitButton.label, "buttonText", 20, BUTTON_TAN, true)
+
+    addon.mainFrame:SelectTab("history")
+    local history = addon.mainFrame.tabPanels.history
+    assert_text_role(addon.mainFrame.contentPanel.titleText, "tabHeader", 24, BROWN, true)
+    assert_text_role(history.listSection.titleText, "cardHeader", 20, BROWN, true)
+
+    addon.mainFrame:SelectTab("leaderboard")
+    local leaderboard = addon.mainFrame.tabPanels.leaderboard
+    assert_text_role(addon.mainFrame.contentPanel.titleText, "tabHeader", 24, BROWN, true)
+    assert_text_role(leaderboard.listSection.titleText, "cardHeader", 20, BROWN, true)
+    assert_text_role(leaderboard.burntModeButton.label, "buttonText", 20, BUTTON_TAN, true)
+
+    addon.mainFrame:SelectTab("admin")
+    local admin = addon.mainFrame.tabPanels.admin
+    assert_text_role(addon.mainFrame.contentPanel.titleText, "tabHeader", 24, BROWN, true)
+    assert_text_role(admin.rankSection.titleText, "cardHeader", 20, BROWN, true)
+    assert_text_role(admin.permissionHelpLabel, "cardDescription", 16, BLACK, false)
+    assert_text_role(admin.aliasSaveButton.label, "buttonText", 20, BUTTON_TAN, true)
+
+    addon.mainFrame:ShowSettingsPage()
+    local settings = addon.mainFrame.settingsPanel
+    assert_text_role(addon.mainFrame.contentPanel.titleText, "tabHeader", 24, BROWN, true)
+    assert_text_role(settings.toastSection.titleText, "cardHeader", 20, BROWN, true)
+    assert_text_role(settings.toastsCheck.label, "cardDescription", 16, BLACK, false)
+    assert_text_role(settings.testToastButton.label, "buttonText", 20, BUTTON_TAN, true)
   end,
 
   ["dashboard list polish removes realms and indents recipient totals"] = function()
@@ -1199,12 +1301,9 @@ return {
     harness.assert_true(panel.permissionHelpLabel.text:match("Admin:") ~= nil)
     harness.assert_true(panel.permissionHelpLabel.text:match("Manage Nominations:") == nil)
     harness.assert_true(panel.permissionHelpLabel.text:match("Rank 0") == nil)
-    harness.assert_equal(14, panel.permissionHelpLabel.fontHeight)
-    harness.assert_equal("OUTLINE", panel.permissionHelpLabel.fontFlags)
-    harness.assert_equal(14, panel.aliasSummaryLabel.fontHeight)
-    harness.assert_equal("OUTLINE", panel.aliasSummaryLabel.fontFlags)
-    harness.assert_equal(14, panel.statusLabel.fontHeight)
-    harness.assert_equal("OUTLINE", panel.statusLabel.fontFlags)
+    assert_text_role(panel.permissionHelpLabel, "cardDescription", 16, BLACK, false)
+    assert_text_role(panel.aliasSummaryLabel, "cardDescription", 16, BLACK, false)
+    assert_text_role(panel.statusLabel, "cardDescription", 16, BLACK, false)
   end,
 
   ["admin rank permissions list exposes a scrollbar for many guild ranks"] = function()

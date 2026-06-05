@@ -236,7 +236,7 @@ function Toast:DisplayAwardToast(award)
   Components.SetVisible(frame, true)
 
   if _G.C_Timer and type(_G.C_Timer.After) == "function" then
-    _G.C_Timer.After(Styles.Toast.durationSeconds or 7, function()
+    _G.C_Timer.After(settings.toastDurationSeconds or Styles.Toast.durationSeconds or 7, function()
       if frame == self.frame then
         Components.SetVisible(frame, false)
       end

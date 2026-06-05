@@ -151,6 +151,17 @@ function Notifications:HandleAward(payload, sender)
     return false
   end
 
+  local awardId = payload.awardId
+  if self.addon.db and type(self.addon.db.HasSeenAwardToast) == "function" then
+    if self.addon.db:HasSeenAwardToast(awardId) then
+      return false
+    end
+  end
+
+  if self.addon.db and type(self.addon.db.MarkAwardToastSeen) == "function" then
+    self.addon.db:MarkAwardToastSeen(awardId)
+  end
+
   if self.addon.toast and type(self.addon.toast.ShowAwardToast) == "function" then
     return self.addon.toast:ShowAwardToast(payload)
   end

@@ -34,6 +34,31 @@ RPA.UIStyles = {
     darkPanel = { 0.12, 0.08, 0.06, 0.98 },
     glow = { 0.98, 0.86, 0.45, 0.26 },
   },
+  Typography = {
+    tabHeader = {
+      fontHeight = 24,
+      color = { 115 / 255, 64 / 255, 30 / 255, 1 },
+      bold = true,
+    },
+    tabDescription = {
+      fontHeight = 16,
+      color = { 0, 0, 0, 1 },
+    },
+    cardHeader = {
+      fontHeight = 20,
+      color = { 115 / 255, 64 / 255, 30 / 255, 1 },
+      bold = true,
+    },
+    cardDescription = {
+      fontHeight = 16,
+      color = { 0, 0, 0, 1 },
+    },
+    buttonText = {
+      fontHeight = 20,
+      color = { 223 / 255, 198 / 255, 163 / 255, 1 },
+      bold = true,
+    },
+  },
   Layout = {
     headerHeight = 86,
     tabRailHeight = 52,
@@ -42,8 +67,8 @@ RPA.UIStyles = {
     navButtonHeight = 45,
     navMarginWithAdmin = 188,
     navMarginWithoutAdmin = 257,
-    navCenterOffsetWithAdmin = -60,
-    navCenterOffsetWithoutAdmin = -60,
+    navCenterOffsetWithAdmin = 0,
+    navCenterOffsetWithoutAdmin = 0,
     contentInset = 22,
     panelX = 59,
     panelY = -42,

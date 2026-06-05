@@ -65,6 +65,15 @@ local function ensureLocalSettingsShape(settings)
     settings.toastsEnabled = settings.toastsEnabled == true
   end
 
+  settings.toastDurationSeconds = math.min(
+    15,
+    math.max(3, tonumber(settings.toastDurationSeconds) or 7)
+  )
+
+  if type(settings.seenAwardToastIds) ~= "table" then
+    settings.seenAwardToastIds = {}
+  end
+
   if type(settings.toastAnchor) ~= "table" then
     settings.toastAnchor = {}
   end
@@ -170,6 +179,34 @@ function Database:SetToastsEnabled(enabled)
   settings.toastsEnabled = enabled == true
 
   return settings.toastsEnabled
+end
+
+function Database:SetToastDurationSeconds(seconds)
+  local settings = self:GetLocalSettings()
+  settings.toastDurationSeconds = math.min(15, math.max(3, tonumber(seconds) or 7))
+
+  return settings.toastDurationSeconds
+end
+
+function Database:HasSeenAwardToast(awardId)
+  if isMissingString(awardId) then
+    return false
+  end
+
+  local settings = self:GetLocalSettings()
+
+  return settings.seenAwardToastIds[awardId] == true
+end
+
+function Database:MarkAwardToastSeen(awardId)
+  if isMissingString(awardId) then
+    return false, "missing awardId"
+  end
+
+  local settings = self:GetLocalSettings()
+  settings.seenAwardToastIds[awardId] = true
+
+  return true
 end
 
 function Database:SaveToastAnchor(point, relativePoint, x, y)

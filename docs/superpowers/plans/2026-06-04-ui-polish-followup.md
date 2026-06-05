@@ -16,7 +16,7 @@
   - Dashboard top-recipient and Leaderboard last visible rows staying inside table chrome.
   - navbar art paths switching between inactive and active selected textures.
   - legacy navbar button backdrops hidden behind rendered art.
-  - background-relative navbar sizing margins of 188px with Admin and 257px without Admin, with both the Admin-visible middle gap and the no-Admin Nominations button centered to the header jewel using a 60px left offset.
+  - background-relative navbar sizing margins of 188px with Admin and 257px without Admin, with the Admin-visible Nominations/History gap and the no-Admin Nominations button centered to the Dashboard `Top Recipient`/`Pending Nominations` gap.
 
 ## Implementation
 - Add shared content geometry tokens to `UI/Styles.lua`.

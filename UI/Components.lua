@@ -10,6 +10,23 @@ local function unpackColor(color, fallback)
   return source[1] or 1, source[2] or 1, source[3] or 1, source[4] or 1
 end
 
+local function storeTextColor(label, color)
+  if not label or not color then
+    return
+  end
+
+  if label.SetTextColor then
+    label:SetTextColor(unpackColor(color))
+  else
+    label.textColor = {
+      red = color[1] or 1,
+      green = color[2] or 1,
+      blue = color[3] or 1,
+      alpha = color[4] or 1,
+    }
+  end
+end
+
 local function applyBackdrop(frame, backdrop, color, borderColor)
   if frame.SetBackdrop then
     frame:SetBackdrop(backdrop)
@@ -35,6 +52,8 @@ local function applyTextTreatment(label, options)
     return
   end
   options = options or {}
+  local roleName = options.textRole
+  local role = roleName and (Styles.Typography or {})[roleName] or nil
 
   if label.SetShadowColor then
     label:SetShadowColor(0, 0, 0, 0)
@@ -59,19 +78,18 @@ local function applyTextTreatment(label, options)
   if label.GetFont and label.SetFont then
     local fontFile, fontHeight = label:GetFont()
     if fontFile and fontHeight then
-      local fontFlags = "OUTLINE"
-      if options.outline == false then
-        fontFlags = nil
-      end
-      label:SetFont(fontFile, fontHeight + (options.fontSizeDelta or 0), fontFlags)
+      local nextHeight = role and role.fontHeight or (fontHeight + (options.fontSizeDelta or 0))
+      label:SetFont(fontFile, nextHeight, nil)
     end
   else
-    label.fontHeight = (label.fontHeight or 12) + (options.fontSizeDelta or 0)
-    if options.outline == false then
-      label.fontFlags = nil
-    else
-      label.fontFlags = "OUTLINE"
-    end
+    label.fontHeight = role and role.fontHeight or ((label.fontHeight or 12) + (options.fontSizeDelta or 0))
+    label.fontFlags = nil
+  end
+
+  label.textRole = roleName
+  label.fontWeight = role and role.bold and "bold" or nil
+  if role and role.color then
+    storeTextColor(label, role.color)
   end
 end
 
@@ -509,7 +527,10 @@ function Components.CreateTabButton(parent, spec, index)
       button.width - 28,
       "CENTER",
       "TOP",
-      spec.label
+      spec.label,
+      {
+        textRole = "buttonText",
+      }
     )
     if button.label.Hide then
       button.label:Hide()
@@ -654,9 +675,11 @@ function Components.CreateContentPanel(parent, config)
     titleText = panel.contentHost:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     bodyText = panel.contentHost:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     applyTextTreatment(titleText, {
-      fontSizeDelta = (Styles.Layout or {}).pageHeaderFontSizeDelta or 5,
+      textRole = "tabHeader",
     })
-    applyTextTreatment(bodyText)
+    applyTextTreatment(bodyText, {
+      textRole = "tabDescription",
+    })
 
     if titleText.SetPoint then
       titleText:SetPoint("TOPLEFT", panel.contentHost, "TOPLEFT", (Styles.Layout or {}).panelX or 59, -16)
@@ -729,6 +752,7 @@ function Components.CreateSection(parent, config)
     x = section.iconFrame and ((config.iconWidth or 20) + 20) or 12,
     y = -10,
     font = "GameFontNormal",
+    textRole = config.titleTextRole or "cardHeader",
   })
 
   section.titleText = title
@@ -777,9 +801,15 @@ function Components.CreateStatCard(parent, config)
 
   local labelX = card.iconFrame and 48 or 14
   local labelWidth = card.width - labelX - 14
-  card.label = createFontString(card, "GameFontNormal", labelX, -16, labelWidth, "CENTER", "TOP", config.label or "")
-  card.value = createFontString(card, "GameFontNormalLarge", 14, -54, card.width - 28, "CENTER", "TOP", config.value or "")
-  card.detail = createFontString(card, "GameFontHighlightSmall", 14, -78, card.width - 28, "CENTER", "TOP", config.detail or "")
+  card.label = createFontString(card, "GameFontNormal", labelX, -16, labelWidth, "CENTER", "TOP", config.label or "", {
+    textRole = "cardHeader",
+  })
+  card.value = createFontString(card, "GameFontNormalLarge", 14, -54, card.width - 28, "CENTER", "TOP", config.value or "", {
+    textRole = "cardHeader",
+  })
+  card.detail = createFontString(card, "GameFontHighlightSmall", 14, -78, card.width - 28, "CENTER", "TOP", config.detail or "", {
+    textRole = "cardDescription",
+  })
   if card.value.SetPoint then
     if card.value.ClearAllPoints then
       card.value:ClearAllPoints()
@@ -885,6 +915,7 @@ function Components.CreateLabel(parent, config)
     {
       outline = config.outline,
       fontSizeDelta = config.fontSizeDelta,
+      textRole = config.textRole or "cardDescription",
     }
   )
 end
@@ -913,7 +944,9 @@ function Components.CreateButton(parent, config)
 
   local labelX = button.iconFrame and 46 or 8
   local labelWidth = (config.width or 120) - labelX - 10
-  button.label = createFontString(button, "GameFontNormal", labelX, -6, labelWidth, button.iconFrame and "LEFT" or "CENTER", "MIDDLE", config.text or "")
+  button.label = createFontString(button, "GameFontNormal", labelX, -6, labelWidth, button.iconFrame and "LEFT" or "CENTER", "MIDDLE", config.text or "", {
+    textRole = config.textRole or "buttonText",
+  })
   if button.label.SetPoint then
     if button.label.ClearAllPoints then
       button.label:ClearAllPoints()
@@ -1012,12 +1045,10 @@ function Components.SetButtonVariant(button, variant)
     },
   }, buttonFill, border)
 
-  if button.label and button.label.SetTextColor then
-    if button.variant == "selected" then
-      button.label:SetTextColor(unpackColor(colors.ink or { 0.1, 0.07, 0.04, 1 }))
-    else
-      button.label:SetTextColor(unpackColor(colors.selectedBorder or { 1, 0.92, 0.48, 1 }))
-    end
+  if button.label then
+    applyTextTreatment(button.label, {
+      textRole = button.label.textRole or "buttonText",
+    })
   end
 end
 
@@ -1111,7 +1142,9 @@ function Components.CreateCheckButton(parent, config)
   button.chrome = button
 
   button.checkLabel = button:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-  applyTextTreatment(button.checkLabel)
+  applyTextTreatment(button.checkLabel, {
+    textRole = "buttonText",
+  })
   if button.checkLabel.SetPoint then
     button.checkLabel:SetPoint("CENTER", button, "CENTER", 0, 0)
   end
@@ -1193,6 +1226,7 @@ function Components.CreateConfirmationDialog(parent, config)
     x = 16,
     y = -16,
     font = "GameFontNormalLarge",
+    textRole = "cardHeader",
   })
   dialog.messageLabel = Components.CreateLabel(dialog, {
     text = config.message or "",
@@ -1331,6 +1365,7 @@ function Components.CreateModalWindow(parent, config)
     width = config.centerTitle and (chromeWidth - 48) or nil,
     justifyH = config.centerTitle and "CENTER" or "LEFT",
     font = config.titleFont or "GameFontNormalLarge",
+    textRole = config.titleTextRole or "cardHeader",
   })
   dialog.closeButton = Components.CreateButton(chromeParent, {
     text = config.closeText or "Close",
@@ -1459,10 +1494,6 @@ function Components.AddListRow(section, config)
   end
 
   local labelX = row.iconFrame and ((config.iconWidth or 20) + 22) or (config.textPaddingLeft or 12)
-  local labelOutline = config.outline
-  if labelOutline == nil then
-    labelOutline = not useRowHighlight
-  end
   local label = Components.CreateLabel(row, {
     text = config.text or "",
     x = labelX,
@@ -1470,7 +1501,7 @@ function Components.AddListRow(section, config)
     width = config.labelWidth or ((rowWidth or section.width or 100) - labelX - (config.labelRightPadding or 18)),
     justifyH = "LEFT",
     justifyV = config.justifyV or "MIDDLE",
-    outline = labelOutline,
+    textRole = config.textRole or "cardDescription",
   })
   if label.SetPoint then
     if label.ClearAllPoints then
@@ -1478,7 +1509,7 @@ function Components.AddListRow(section, config)
     end
     label:SetPoint("LEFT", row, "LEFT", labelX, 0)
   end
-  if useRowHighlight and label.SetTextColor then
+  if useRowHighlight and label.SetTextColor and config.textColor then
     local textColor = config.textColor or colors.ink or { 0, 0, 0, 1 }
     label:SetTextColor(unpackColor(textColor))
   end
@@ -1572,7 +1603,7 @@ function Components.AddPermissionMatrixRow(section, config)
     y = -8,
     width = config.rankLabelWidth or 180,
     justifyH = "LEFT",
-    fontSizeDelta = config.rankFontSizeDelta,
+    textRole = "cardDescription",
   })
   row.manageNominationsCheck = Components.CreateCheckButton(row, {
     text = config.nominationText or "",
