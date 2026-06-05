@@ -54,6 +54,33 @@ local function ensureGuildDatasetShape(dataset, guildKey)
   return dataset
 end
 
+local function ensureLocalSettingsShape(settings)
+  if type(settings) ~= "table" then
+    settings = {}
+  end
+
+  if settings.toastsEnabled == nil then
+    settings.toastsEnabled = true
+  else
+    settings.toastsEnabled = settings.toastsEnabled == true
+  end
+
+  if type(settings.toastAnchor) ~= "table" then
+    settings.toastAnchor = {}
+  end
+
+  settings.toastAnchor.point = type(settings.toastAnchor.point) == "string"
+      and settings.toastAnchor.point
+    or "CENTER"
+  settings.toastAnchor.relativePoint = type(settings.toastAnchor.relativePoint) == "string"
+      and settings.toastAnchor.relativePoint
+    or settings.toastAnchor.point
+  settings.toastAnchor.x = tonumber(settings.toastAnchor.x) or 0
+  settings.toastAnchor.y = tonumber(settings.toastAnchor.y) or 180
+
+  return settings
+end
+
 local function rebuildNominationRows(dataset)
   local nominationIds = {}
 
@@ -130,6 +157,31 @@ function Database:GetGuildDataset(guildKey)
   end
 
   return ensureGuildDatasetShape(datasets[guildKey], guildKey)
+end
+
+function Database:GetLocalSettings()
+  self.storage.profile.localSettings = ensureLocalSettingsShape(self.storage.profile.localSettings)
+
+  return self.storage.profile.localSettings
+end
+
+function Database:SetToastsEnabled(enabled)
+  local settings = self:GetLocalSettings()
+  settings.toastsEnabled = enabled == true
+
+  return settings.toastsEnabled
+end
+
+function Database:SaveToastAnchor(point, relativePoint, x, y)
+  local settings = self:GetLocalSettings()
+  settings.toastAnchor = {
+    point = type(point) == "string" and point or "CENTER",
+    relativePoint = type(relativePoint) == "string" and relativePoint or point or "CENTER",
+    x = tonumber(x) or 0,
+    y = tonumber(y) or 0,
+  }
+
+  return settings.toastAnchor
 end
 
 function Database:MigrateGuildDatasetKey(fromGuildKey, toGuildKey)

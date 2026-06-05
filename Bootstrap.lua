@@ -37,10 +37,12 @@ local Database = RPA.Database
 local MainFrame = RPA.MainFrame or {}
 local MinimapButton = RPA.MinimapButton or {}
 local Nominations = RPA.Nominations or {}
+local Notifications = RPA.Notifications or {}
 local Permissions = RPA.Permissions or {}
 local RosterPermissions = RPA.RosterPermissions or {}
 local Sync = RPA.Sync or {}
 local Time = RPA.Time or {}
+local Toast = RPA.Toast or {}
 local Bridge = RPA.UIBridge or {}
 local Utils = RPA.Utils
 
@@ -50,12 +52,14 @@ RPA.GuildContext = GuildContext
 RPA.Awards = Awards
 RPA.Commands = Commands
 RPA.Nominations = Nominations
+RPA.Notifications = Notifications
 RPA.MainFrame = MainFrame
 RPA.MinimapButton = MinimapButton
 RPA.Permissions = Permissions
 RPA.RosterPermissions = RosterPermissions
 RPA.Sync = Sync
 RPA.Time = Time
+RPA.Toast = Toast
 RPA.UIBridge = Bridge
 
 RPA.ADDON_NAME = Constants.ADDON_NAME
@@ -123,6 +127,18 @@ function RPA:OnInitialize()
     self.uiBridge = Bridge:New(self)
   else
     self.uiBridge = nil
+  end
+
+  if type(Toast.New) == "function" then
+    self.toast = Toast:New(self)
+  else
+    self.toast = nil
+  end
+
+  if type(Notifications.New) == "function" then
+    self.notifications = Notifications:New(self)
+  else
+    self.notifications = nil
   end
 
   if type(MainFrame.New) == "function" then
@@ -219,6 +235,10 @@ function RPA:OnEnable()
 
   self.__rpaEnabling = nil
   self.__rpaEnabled = true
+
+  if self.notifications and type(self.notifications.PrintPendingNominationReminders) == "function" then
+    self.notifications:PrintPendingNominationReminders()
+  end
 
   return true
 end

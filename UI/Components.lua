@@ -919,6 +919,45 @@ function Components.CreateButton(parent, config)
   return button
 end
 
+function Components.CreateIconButton(parent, config)
+  local button = CreateFrame("Button", config.id, parent, config.template or "BackdropTemplate")
+  button.width = config.width or 32
+  button.height = config.height or 32
+
+  if button.SetSize then
+    button:SetSize(button.width, button.height)
+  end
+
+  if button.SetPoint then
+    button:SetPoint(
+      config.anchor or "TOPLEFT",
+      config.relativeFrame or parent,
+      config.relativeTo or "TOPLEFT",
+      config.x or 0,
+      config.y or 0
+    )
+  end
+
+  if button.CreateTexture then
+    button.icon = button:CreateTexture(nil, "ARTWORK")
+    if button.icon.SetAllPoints then
+      button.icon:SetAllPoints(button)
+    end
+    if button.icon.SetTexture then
+      button.icon:SetTexture(config.texture or config.iconPath)
+    end
+  end
+
+  button.texturePath = config.texture or config.iconPath
+  button.tooltipText = config.tooltipText
+
+  if config.onClick then
+    Components.SetButtonHandler(button, config.onClick)
+  end
+
+  return button
+end
+
 function Components.SetButtonVariant(button, variant)
   if not button then
     return

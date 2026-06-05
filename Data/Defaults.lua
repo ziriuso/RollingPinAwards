@@ -4,6 +4,15 @@ _G.RollingPinAwards = RPA
 RPA.Defaults = {
   profile = {
     guildDatasets = {},
+    localSettings = {
+      toastsEnabled = true,
+      toastAnchor = {
+        point = "CENTER",
+        relativePoint = "CENTER",
+        x = 0,
+        y = 180,
+      },
+    },
   },
 }
 

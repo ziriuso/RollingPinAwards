@@ -18,8 +18,13 @@ if not RPA.UITabs or not RPA.UITabs.dashboard then
   dofile("UI/Tabs/Admin.lua")
 end
 
+if not RPA.SettingsPage then
+  dofile("UI/SettingsPage.lua")
+end
+
 local Components = RPA.UIComponents or {}
 local MainFrame = RPA.MainFrame or {}
+local SettingsPage = RPA.SettingsPage or {}
 local Styles = RPA.UIStyles or {}
 local UITabs = RPA.UITabs or {}
 
@@ -47,6 +52,8 @@ function MainFrame:New(deps)
       height = Styles.Window.height,
     }),
     contentPanel = nil,
+    settingsPanel = nil,
+    showingSettings = false,
     tabPanels = {},
     tabButtons = {},
   }
@@ -123,6 +130,32 @@ function MainFrame:RenderActiveTab()
     end
   end
 
+  if self.showingSettings then
+    for _, panel in pairs(self.tabPanels) do
+      Components.SetVisible(panel, false)
+    end
+
+    if self.contentPanel.bodyText and self.contentPanel.bodyText.Hide then
+      self.contentPanel.bodyText:Hide()
+    end
+
+    local panel = self:EnsureSettingsPanel()
+    if SettingsPage.Refresh then
+      SettingsPage:Refresh(panel, self)
+    end
+    Components.SetVisible(panel, true)
+    if self.contentPanel.titleText then
+      Components.SetText(self.contentPanel.titleText, "Settings")
+    end
+
+    return {
+      title = "Settings",
+      lines = {},
+    }
+  elseif self.settingsPanel then
+    Components.SetVisible(self.settingsPanel, false)
+  end
+
   local tab = self:GetActiveTab()
   if not tab then
     return nil
@@ -181,6 +214,24 @@ function MainFrame:EnsureRendered()
     height = (Styles.Window.height or 736) - 190,
   })
 
+  if Components.CreateIconButton then
+    self.settingsGearButton = Components.CreateIconButton(self.frame, {
+      id = "RollingPinAwardsSettingsGearButton",
+      texture = (Styles.Media or {}).settingsGearIcon,
+      width = 34,
+      height = 34,
+      anchor = "BOTTOMRIGHT",
+      relativeFrame = self.frame.backgroundArt or self.frame,
+      relativeTo = "BOTTOMRIGHT",
+      x = -110,
+      y = 70,
+      tooltipText = "Settings",
+      onClick = function()
+        self:ShowSettingsPage()
+      end,
+    })
+  end
+
   self.rendered = true
   self:RefreshTabVisibility()
   self:RenderActiveTab()
@@ -211,12 +262,29 @@ function MainFrame:SelectTab(tabId)
   for _, tab in ipairs(self.tabs) do
     if tab.id == tabId and self:IsTabVisible(tab) then
       self.activeTabId = tabId
+      self.showingSettings = false
       self:RenderActiveTab()
       return true
     end
   end
 
   return false
+end
+
+function MainFrame:EnsureSettingsPanel()
+  if not self.settingsPanel and SettingsPage.Build then
+    self.settingsPanel = SettingsPage:Build(self.contentPanel.contentHost or self.contentPanel, self)
+  end
+
+  return self.settingsPanel
+end
+
+function MainFrame:ShowSettingsPage()
+  self:EnsureRendered()
+  self.showingSettings = true
+  self:RenderActiveTab()
+
+  return true
 end
 
 function MainFrame:Toggle()

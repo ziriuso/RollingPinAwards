@@ -3,14 +3,26 @@
 ## Repo
 - Path: `C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards`
 - Branch: `codex/rolling-pin-awards-mvp`
-- Pushed checkpoint: `bd207b4ffc76ec728a91bd881bbdc2dd8dc23b75` (`fix: preserve offline delete sync tombstones`)
-- Current working tree is clean against `origin/codex/rolling-pin-awards-mvp` except local-only untracked folders:
+- Last pushed checkpoint before current toast/settings implementation: `e602e2c` (`docs: refresh rolling pin handoff truth`)
+- Current working tree has local toast/settings implementation changes plus local-only untracked folders:
   - `.figma-make-inspect/`
   - `.research/`
   - `tools/`
 - Do not stage the local-only folders unless explicitly instructed.
 
 ## Current State
+- Current local toast/settings implementation:
+  - `Core/Notifications.lua` sends local player-facing notifications after accepted inbound sync payloads.
+  - Accepted inbound awards toast only for the current player when they are the award recipient.
+  - The toast uses the Burnt or Golden rolling pin icon based on `award.awardType`, the centered title `You've Received a Burnt/Golden Rolling Pin`, and the centered award reason.
+  - Accepted inbound pending nominations write a chat reminder when the current player has not voted.
+  - Addon enable writes one chat reminder for pending unvoted nominations in the active guild dataset.
+  - `profile.localSettings` now stores local-only `toastsEnabled` and `toastAnchor` placement.
+  - The main background artwork has a bottom-right gear icon that opens a Settings page.
+  - Settings includes `Enable reward toasts`, `Toggle Anchors Mode`, and `Test Toast`.
+  - Anchor mode shows a movable toast anchor; right-click locks it and saves position.
+  - `tests/notifications_spec.lua` covers toast rendering, disabled toasts, settings persistence, anchor save, login reminders, and inbound nomination chat reminders.
+  - `docs/superpowers/plans/2026-06-05-toast-settings-implementation.md` captures the implementation plan.
 - Current local UI polish follow-up after sync validation looked good:
   - all tab panels now use the Dashboard parchment-safe content offset and width.
   - Dashboard Recent Awards renders three visible rows so list rows do not collide with footer buttons.
@@ -226,6 +238,7 @@
 - Full suite command:
   - `powershell -ExecutionPolicy Bypass -File .\tests\run.ps1`
 - Last known result:
+  - 2026-06-05 full suite passed after toast/settings implementation with `RPA_LUA=C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards\tools\lua\lua54.exe`.
   - 2026-06-05 full suite passed with `RPA_LUA=C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards\tools\lua\lua54.exe`.
   - full suite passed after setting `RPA_LUA=C:\Users\Ziri\Documents\Codex\2026-05-11\GBankManager\.worktrees\gbankmanager-v1\tools\lua\lua.exe`
   - native comm fallback slice passed with the same `RPA_LUA`
@@ -247,7 +260,7 @@
 
 ## Resume Order
 1. Read this handoff.
-2. Run `git status --short` and confirm the branch is clean against origin except `.figma-make-inspect/`, `.research/`, and local `tools/` Lua runtime.
+2. Run `git status --short` and confirm whether the local toast/settings implementation has been committed; leave `.figma-make-inspect/`, `.research/`, and local `tools/` Lua runtime untracked.
 3. Run the full test suite with `RPA_LUA=tools\lua\lua54.exe` if making new code changes.
 4. `/reload` both Retail clients so they load the copied `bd207b4` build. Redeploy PTR first if testing there; it was stale on 2026-06-05.
 5. Validate sync in the real WoW client with two clients, using `/rpa syncdebug` and `/rpa sync now`.

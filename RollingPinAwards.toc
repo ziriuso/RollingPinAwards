@@ -28,6 +28,7 @@ Domain/Permissions.lua
 Domain/Awards.lua
 Domain/Nominations.lua
 Core/SlashCommands.lua
+Core/Notifications.lua
 Sync/Codec.lua
 Sync/Transport.lua
 Sync/Snapshot.lua
@@ -38,6 +39,8 @@ Bootstrap.lua
 UI\Bridge.lua
 UI\Styles.lua
 UI\Components.lua
+UI\SettingsPage.lua
+UI\Toast.lua
 UI\Tabs\Dashboard.lua
 UI\Tabs\Award.lua
 UI\Tabs\Nominations.lua

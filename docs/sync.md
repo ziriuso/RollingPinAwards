@@ -41,6 +41,9 @@ Privileged payload mapping:
 - Receiving `sync_hello` answers with a full flat record stream for rank permissions, aliases, nominations, votes, awards, and hidden delete tombstones, followed by `sync_snapshot_complete`.
 - `/rpa sync now` and `/rpa sync all` force the same hello plus full snapshot stream for live two-client testing.
 - Inbound accepted payloads rerender the active tab when the main window has already been rendered.
+- Inbound accepted award payloads notify only the award recipient. If reward toasts are enabled locally, the recipient sees a centered toast using the Burnt or Golden rolling pin icon, a `You've Received a ... Rolling Pin` title, and the award reason.
+- Inbound accepted pending nomination payloads write a chat reminder when the local player has not voted yet.
+- On addon enable, pending unvoted nominations in the active guild dataset write one local chat reminder so players know to open `/rpa` and vote.
 
 ## Record Identity
 
@@ -70,6 +73,7 @@ Use `/rpa syncdebug` or `/rpa sync debug` to print copy-friendly chat diagnostic
 - When `AceDB-3.0` is available, Rolling Pin Awards uses the active Ace profile as the storage backing for the domain database.
 - Without AceDB, the addon falls back to the plain `RollingPinAwardsDB.profile` table path already covered by the Lua-only tests.
 - Delete tombstones stay in the guild dataset id maps for sync conflict checks and snapshot catch-up, but normal UI/database reads filter them out so deleted awards and nominations remain absent from History, Dashboard, Leaderboard, and Nominations views.
+- Player notification preferences and toast anchor placement are stored under `profile.localSettings`. They are intentionally local/profile scoped and are not synced through guild datasets.
 
 ## Current Service Surface
 

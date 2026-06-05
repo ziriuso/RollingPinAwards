@@ -105,8 +105,11 @@ function Sync:DispatchEnvelope(envelope, distribution, sender)
     self.addon.mainFrame:RenderActiveTab()
   end
 
+  if ok and self.addon.notifications and type(self.addon.notifications.HandleAcceptedInbound) == "function" then
+    self.addon.notifications:HandleAcceptedInbound(envelope.payloadType, payload, sender)
+  end
+
   return ok, err
 end
 
 return RPA.Sync
-
