@@ -226,7 +226,7 @@ return {
   end,
 
   ["admin tab replaces settings after leaderboard"] = function()
-    local MainFrame = dofile("UI/MainFrame.lua")
+    local MainFrame = harness.dofile_addon("UI/MainFrame.lua")
     local frame = MainFrame:New({
       uiBridge = {
         GetPendingNominationsViewModel = function()
@@ -474,7 +474,7 @@ return {
   end,
 
   ["main frame registers the expected tab ids"] = function()
-    local MainFrame = dofile("UI/MainFrame.lua")
+    local MainFrame = harness.dofile_addon("UI/MainFrame.lua")
     local frame = MainFrame:New({
       uiBridge = {
         GetPendingNominationsViewModel = function()

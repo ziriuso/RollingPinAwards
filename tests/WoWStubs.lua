@@ -2,6 +2,16 @@ local state = {}
 local wow = {}
 local originalOs = _G.os
 local serializedSequence = 0
+local DEFAULT_TOC_PATH = "RollingPinAwards/RollingPinAwards.toc"
+
+local function getDirectory(path)
+  local directory = path:match("^(.*)[/\\][^/\\]+$")
+  if directory == "" then
+    return nil
+  end
+
+  return directory
+end
 
 local function copyTable(input)
   local output = {}
@@ -607,11 +617,15 @@ local function storeNativeComm(prefix, message, distribution, target)
 end
 
 local function loadAddonFromToc(path)
-  for line in io.lines(path or "RollingPinAwards.toc") do
+  local tocPath = path or DEFAULT_TOC_PATH
+  local addonDirectory = getDirectory(tocPath)
+
+  for line in io.lines(tocPath) do
     local entry = line:match("^%s*(.-)%s*$")
     if entry ~= "" and not entry:match("^##") then
       if not entry:match("^Libs[\\/]") then
-        dofile(entry)
+        local entryPath = addonDirectory and (addonDirectory .. "/" .. entry) or entry
+        dofile(entryPath)
       end
     end
   end

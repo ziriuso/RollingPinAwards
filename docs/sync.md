@@ -2,6 +2,8 @@
 
 Rolling Pin Awards keeps all synced data scoped to the active guild dataset.
 
+Runtime sync files live under the installable addon folder, `RollingPinAwards/`. Paths in this document such as `Bootstrap.lua`, `Core/Events.lua`, and `Sync/Transport.lua` are relative to that addon folder.
+
 ## Validation Rules
 
 - Incoming payloads must match the active `guildKey`.

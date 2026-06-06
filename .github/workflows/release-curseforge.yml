@@ -83,7 +83,7 @@ jobs:
           -ReleaseType "${{ steps.build.outputs.release_type }}"
           -TagName "${{ github.ref_name }}"
           -DisplayName "${{ steps.build.outputs.release_name }}"
-          -TocPath ".\RollingPinAwards.toc"
+          -TocPath ".\RollingPinAwards\RollingPinAwards.toc"
           -GameVersionIds "$env:CF_GAME_VERSION_IDS"
 
       - name: Create GitHub Release and attach zip

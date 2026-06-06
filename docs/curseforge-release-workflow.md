@@ -33,10 +33,11 @@ Behavior:
 1. checks out the repo
 2. installs Lua on the Windows runner
 3. runs `.\tests\run.ps1`
-4. builds `RollingPinAwards-<version>.zip`
-5. uploads that zip to CurseForge
-6. creates or updates the matching GitHub Release
-7. attaches the same zip to the GitHub Release
+4. copies the installable `RollingPinAwards/` addon folder into a staging package
+5. builds `RollingPinAwards-<version>.zip`
+6. uploads that zip to CurseForge
+7. creates or updates the matching GitHub Release
+8. attaches the same zip to the GitHub Release
 
 ## Maintainer Release Checklist
 
@@ -53,8 +54,8 @@ git rev-parse --short HEAD
 
 2. Update release version surfaces before tagging:
 
-- `RollingPinAwards.toc`: update `## Version:` to the semantic version without `v`.
-- `RollingPinAwards.toc`: keep `## Interface:` aligned with supported WoW clients. For the 1.0.0 release this is `120007, 120005`.
+- `RollingPinAwards/RollingPinAwards.toc`: update `## Version:` to the semantic version without `v`.
+- `RollingPinAwards/RollingPinAwards.toc`: keep `## Interface:` aligned with supported WoW clients. For the 1.0.0 release this is `120007, 120005`.
 - `tests/release_workflow_spec.lua`: update the expected version when the release version changes.
 - User-facing docs that mention release behavior, usually `README.md`, `docs/testing.md`, and `docs/superpowers/handoffs/latest-handoff.md` when the current checkpoint changes.
 
@@ -74,7 +75,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\release\Build-CurseForgePackage
 5. Commit and push the release-prep checkpoint:
 
 ```powershell
-git add RollingPinAwards.toc README.md docs tests .github/workflows/release-curseforge.yml tools/release
+git add RollingPinAwards README.md docs tests .github/workflows/release-curseforge.yml tools/release
 git commit -m "chore: prepare 1.0.0 curseforge release"
 git push origin codex/rolling-pin-awards-mvp
 ```
@@ -137,6 +138,6 @@ This can be a single CurseForge game version id or a comma-separated list if aut
 
 If `CF_GAME_VERSION_IDS` is not set, the publish script will:
 
-1. read `## Interface:` from `RollingPinAwards.toc`
+1. read `## Interface:` from `RollingPinAwards/RollingPinAwards.toc`
 2. convert the first interface value to a retail version string like `12.0.7`
 3. query CurseForge for the matching WoW game version id

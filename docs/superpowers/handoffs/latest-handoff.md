@@ -5,21 +5,27 @@
 - Path: `C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards`
 - Branch: `codex/rolling-pin-awards-mvp`
 - Remote: `https://github.com/ziriuso/RollingPinAwards.git`
-- Current pushed checkpoint: `fd7533e` (`feat: polish typography and roster selection`)
+- Current pushed checkpoint before the addon-folder restructure: `aba3a80` (`fix: find chocolatey lua install path`)
 - Recent commits:
-  - `fd7533e feat: polish typography and roster selection`
-  - `8e9274d feat: bundle roboto typography fonts`
-  - `d0f49f7 feat: polish toast settings and typography`
+  - `aba3a80 fix: find chocolatey lua install path`
+  - `9e3361f fix: resolve lua runtime in release workflow`
+  - `4cc18e7 chore: prepare curseforge release`
 - `git status -sb` is clean against `origin/codex/rolling-pin-awards-mvp` except local-only untracked folders:
   - `.figma-make-inspect/`
   - `.research/`
-  - `tools/`
-- Current local uncommitted screenshot-fix/minimap slice also modifies UI files, tests, docs, TOC metadata, and adds:
-  - `docs/superpowers/specs/2026-06-05-screenshot-ui-fixes-design.md`
-  - `docs/superpowers/specs/2026-06-05-minimap-and-addon-category-design.md`
-  - `docs/superpowers/specs/2026-06-05-leaderboard-showcase-card-design.md`
-  - `Media/cleancard.png`
-  - `Media/Fonts/Amarante-Regular.ttf`
+  - `tools/lua/`
+- Release `v1.0.0` was published successfully from tag `v1.0.0` pointing at `aba3a80`.
+- The installable addon payload now lives under `RollingPinAwards/`:
+  - `RollingPinAwards/RollingPinAwards.toc`
+  - `RollingPinAwards/Bootstrap.lua`
+  - `RollingPinAwards/Core/`
+  - `RollingPinAwards/Data/`
+  - `RollingPinAwards/Domain/`
+  - `RollingPinAwards/Libs/`
+  - `RollingPinAwards/Media/`
+  - `RollingPinAwards/Sync/`
+  - `RollingPinAwards/UI/`
+- Root-level `.github/`, `docs/`, `tests/`, `tools/`, `README.md`, and `LICENSE` are repository infrastructure and should stay outside the packaged addon folder.
 - Do not stage the local-only folders unless explicitly instructed.
 - `AGENTS.md` was requested as a read-first file, but there is no root `AGENTS.md` file in the repo as of this handoff refresh. Treat the active project instructions from the resume prompt as authoritative:
   - keep documentation up to date
@@ -80,9 +86,9 @@
     - SHA-256: `0235CA97EE9399CB6C217A537D21D0AB05B7B9BC7DEBA18521F36B1DC50BE618`
   - `UI/Toast.lua`
     - SHA-256: `59E1F28C222E851306A1643AFACD807C2064521020938A033B4177D40D4A27F5`
-  - `Media/burnt-rolling-pin.png`
+  - `RollingPinAwards/Media/burnt-rolling-pin.png`
     - SHA-256: `034E1CB1350AE7F476B5F116A0F7277A2D8EAC6A903D94042E99F7245F5245A5`
-  - `Media/golden-rolling-pin.png`
+  - `RollingPinAwards/Media/golden-rolling-pin.png`
     - SHA-256: `A0455126EEADFC85EEB780ABF5279715825500F15F7F9D82F11888912C84E989`
 - Solid-backdrop opacity fix redeployed the full runtime payload to both Retail and PTR; the changed shared UI files hash as:
   - `UI/Components.lua`
@@ -97,7 +103,7 @@
   - `UI/Tabs/Admin.lua`
     - SHA-256: `F7703A6C14BD00E2093E17C9F309F11E36CDFC89CA759AFFCA3613FA13B3CCE8`
 - Draggable minimap ring positioning and `Guild` addon-list category metadata redeployed the full runtime payload to both Retail and PTR; the changed runtime files hash as:
-  - `RollingPinAwards.toc`
+  - `RollingPinAwards/RollingPinAwards.toc`
     - SHA-256: `B4F45F993F7F475C85638D097CA2570F62C81D377F26C20F0DF99C1D5755EFAE`
   - `UI/MinimapButton.lua`
     - SHA-256: `7EB7CAC3B67EAAE84067ED8596916385E3F991C1C736BAC4977C7A00F02D513D`
@@ -110,9 +116,9 @@
     - SHA-256: `CCD0771FB6EBDABF5ED55DA7A08C31D0D64F03E6C682DEE7F3DB98D36B1FE43F`
   - `UI/Styles.lua`
     - SHA-256: `1FF1A6798F3FBEC565718371EA9AF9F237D26342B97FF737761075BF12F3F7E7`
-  - `Media/cleancard.png`
+  - `RollingPinAwards/Media/cleancard.png`
     - SHA-256: `67CBBC393D18ED3B367B450E61F0AF114B66C35C70488084E2821CCB0E61DC23`
-  - `Media/Fonts/Amarante-Regular.ttf`
+  - `RollingPinAwards/Media/Fonts/Amarante-Regular.ttf`
     - SHA-256: `33883758BD97923064FF9AF521397FB616942346F8F949B8ECC061BFBB9C7373`
 - Leaderboard showcase text positioning tune redeployed the full runtime/media payload to both Retail and PTR; the changed runtime files hash as:
   - `UI/Tabs/Leaderboard.lua`
@@ -127,7 +133,7 @@
 ## Current Implemented Surface
 
 - Typography polish:
-  - Roboto Regular and Bold are bundled under `Media/Fonts/`.
+  - Roboto Regular and Bold are bundled under `RollingPinAwards/Media/Fonts/`.
   - `UI/Styles.lua` owns shared typography roles.
   - `UI/Components.lua` applies outline-free reusable text roles across labels, buttons, rows, cards, modals, and tab chrome.
 - Roster selection:
@@ -142,13 +148,13 @@
   - Toast settings, duration, anchor placement, seen-award ids, combat queueing, and close button are implemented.
   - Pending inbound nominations and login reminders write local chat reminders.
 - Minimap/addon-list work:
-  - `RollingPinAwards.toc` declares `## Category: Guild` so Retail groups the addon under the Guild heading.
+  - `RollingPinAwards/RollingPinAwards.toc` declares `## Category: Guild` so Retail groups the addon under the Guild heading.
   - The custom minimap button is parented to `Minimap`, anchored to the outer ring with a saved angle, and can be dragged around the ring with the left mouse button.
   - `localSettings.minimapAngle` persists the minimap button angle across reloads.
 - Leaderboard showcase card work:
-  - Leaderboard recipient popups use `Media/cleancard.png` as a full-card background.
-  - Character name uses `Media/Fonts/Amarante-Regular.ttf` at 28 pt in the shared card-value gold and sits 20 px lower than the initial showcase pass.
-  - Burnt count and Golden count use `Media/Fonts/Amarante-Regular.ttf` at 24 pt in the shared card-value gold.
+  - Leaderboard recipient popups use `RollingPinAwards/Media/cleancard.png` as a full-card background.
+  - Character name uses `RollingPinAwards/Media/Fonts/Amarante-Regular.ttf` at 28 pt in the shared card-value gold and sits 20 px lower than the initial showcase pass.
+  - Burnt count and Golden count use `RollingPinAwards/Media/Fonts/Amarante-Regular.ttf` at 24 pt in the shared card-value gold.
   - Burnt and Golden counts share the same lower vertical plane; Golden moved down 35 px and left 35 px from the prior pass, while Burnt moved onto that plane and right 44 px.
   - Burnt count is placed on the left, Golden count on the right, and the award-history scroll table sits in the lower parchment region.
   - The close control is an invisible hitbox over the background's built-in close-button graphic.

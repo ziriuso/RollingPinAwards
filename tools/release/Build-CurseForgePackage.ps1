@@ -57,38 +57,18 @@ $metadata = Get-ReleaseMetadata -Tag $TagName
 $resolvedOutputDirectory = [System.IO.Path]::GetFullPath((Join-Path $repoRoot $OutputDirectory))
 $stagingRoot = Join-Path $resolvedOutputDirectory "staging"
 $packageRoot = Join-Path $stagingRoot "package"
-$addonRoot = Join-Path $packageRoot "RollingPinAwards"
+$sourceAddonRoot = Join-Path $repoRoot "RollingPinAwards"
 $packagePath = Join-Path $resolvedOutputDirectory $metadata.FileName
 
 New-Item -ItemType Directory -Force -Path $resolvedOutputDirectory | Out-Null
 if (Test-Path $stagingRoot) {
     Remove-Item -Recurse -Force $stagingRoot
 }
-New-Item -ItemType Directory -Force -Path $addonRoot | Out-Null
-
-$runtimeEntries = @(
-    "RollingPinAwards.toc",
-    "Bootstrap.lua",
-    "Core",
-    "Data",
-    "Domain",
-    "Libs",
-    "Media",
-    "Sync",
-    "UI"
-)
-
-foreach ($entry in $runtimeEntries) {
-    $sourcePath = Join-Path $repoRoot $entry
-    if (-not (Test-Path $sourcePath)) {
-        throw "Required package entry '$entry' was not found under $repoRoot."
-    }
-
-    $destinationPath = Join-Path $addonRoot $entry
-    $destinationParent = Split-Path -Parent $destinationPath
-    New-Item -ItemType Directory -Force -Path $destinationParent | Out-Null
-    Copy-Item -Recurse -Force -Path $sourcePath -Destination $destinationParent
+if (-not (Test-Path $sourceAddonRoot)) {
+    throw "Required addon folder 'RollingPinAwards' was not found under $repoRoot."
 }
+New-Item -ItemType Directory -Force -Path $packageRoot | Out-Null
+Copy-Item -Recurse -Force -Path $sourceAddonRoot -Destination $packageRoot
 
 if (Test-Path $packagePath) {
     Remove-Item -Force $packagePath

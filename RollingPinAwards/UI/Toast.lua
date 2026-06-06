@@ -2,11 +2,11 @@ local RPA = _G.RollingPinAwards or {}
 _G.RollingPinAwards = RPA
 
 if not RPA.UIStyles then
-  dofile("UI/Styles.lua")
+  dofile("RollingPinAwards/UI/Styles.lua")
 end
 
 if not RPA.UIComponents then
-  dofile("UI/Components.lua")
+  dofile("RollingPinAwards/UI/Components.lua")
 end
 
 local Components = RPA.UIComponents or {}

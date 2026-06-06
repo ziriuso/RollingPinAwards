@@ -1,5 +1,13 @@
 local harness = {}
 
+function harness.addon_path(relativePath)
+  return "RollingPinAwards/" .. relativePath
+end
+
+function harness.dofile_addon(relativePath)
+  return dofile(harness.addon_path(relativePath))
+end
+
 function harness.assert_equal(expected, actual)
   if expected ~= actual then
     error(("expected %s, got %s"):format(tostring(expected), tostring(actual)), 2)

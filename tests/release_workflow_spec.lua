@@ -18,7 +18,7 @@ end
 
 return {
   ["toc declares the 1.0.0 release version"] = function()
-    local toc = readFile("RollingPinAwards.toc")
+    local toc = readFile(harness.addon_path("RollingPinAwards.toc"))
 
     assertContains(toc, "## Version: 1.0.0")
   end,
@@ -37,13 +37,14 @@ return {
     assertContains(workflow, ".\\tests\\run.ps1")
     assertContains(workflow, ".\\tools\\release\\Build-CurseForgePackage.ps1")
     assertContains(workflow, ".\\tools\\release\\Publish-CurseForgePackage.ps1")
-    assertContains(workflow, ".\\RollingPinAwards.toc")
+    assertContains(workflow, ".\\RollingPinAwards\\RollingPinAwards.toc")
   end,
 
   ["release scripts and documentation are present"] = function()
     assertContains(readFile("tools/release/Build-CurseForgePackage.ps1"), "RollingPinAwards-$version.zip")
-    assertContains(readFile("tools/release/Build-CurseForgePackage.ps1"), "RollingPinAwards")
+    assertContains(readFile("tools/release/Build-CurseForgePackage.ps1"), "$sourceAddonRoot")
     assertContains(readFile("tools/release/Publish-CurseForgePackage.ps1"), "upload-file")
+    assertContains(readFile("tools/release/Publish-CurseForgePackage.ps1"), ".\\RollingPinAwards\\RollingPinAwards.toc")
     assertContains(readFile("docs/curseforge-release-workflow.md"), "CF_PROJECT_ID")
     assertContains(readFile("docs/curseforge-description.md"), "Rolling Pin Awards")
   end,

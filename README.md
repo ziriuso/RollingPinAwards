@@ -2,10 +2,12 @@
 
 Rolling Pin Awards is a guild-only World of Warcraft addon for managing nominations, advisory voting, moderation, and awards for `The Burnt Rolling Pin`.
 
+The installable addon lives under `RollingPinAwards/`. Root-level folders such as `tests/`, `tools/`, `docs/`, and `.github/` are repository infrastructure and are not part of the in-game addon folder.
+
 ## MVP Scope
 
 - Ace3-aware addon lifecycle using `AceAddon-3.0`, `AceConsole-3.0`, `AceComm-3.0`, `AceSerializer-3.0`, and `AceDB-3.0` when available
-- Embedded Ace3 library payload under `Libs/` for self-contained local and packaged installs
+- Embedded Ace3 library payload under `RollingPinAwards/Libs/` for self-contained local and packaged installs
 - Guild-scoped datasets for the player's current guild only
 - Exact-rank guild permission matrix with GM always retaining full access
 - Public pending nominations with advisory upvotes
@@ -15,7 +17,7 @@ Rolling Pin Awards is a guild-only World of Warcraft addon for managing nominati
 - Guild-shared alias merges for canonical nominee and recipient display without rewriting stored records
 - Custom Lua UI with reusable tab and component modules
 - Interactive tabs for dashboard, nominations, direct awards, history, leaderboard, and rank-based admin management
-- Embedded custom artwork under `Media/` for the polished parchment shell, award-type previews, rows, showcase modal, and primary action treatments
+- Embedded custom artwork under `RollingPinAwards/Media/` for the polished parchment shell, award-type previews, rows, showcase modal, and primary action treatments
 - Custom draggable minimap button artwork for toggling the addon window open and closed from the minimap ring
 - Conservative guild-scoped sync validation helpers
 
@@ -68,7 +70,7 @@ Use `/rpa syncdebug` or `/rpa sync debug` in game to print copy-friendly sync st
 ## Runtime Notes
 
 - The addon now directly embeds AceComm/AceSerializer through `LibStub`, matching the proven GBankManager pattern, when the Ace3 libraries are available in-game.
-- The repo now vendors the required Ace3 libraries under `Libs/` and also includes `.pkgmeta` externals so packager-driven releases stay reproducible.
+- The repo vendors the required Ace3 libraries under `RollingPinAwards/Libs/` for reproducible local and packaged installs.
 - When `AceDB-3.0` is available, the domain database is backed by the active Ace profile instead of the plain SavedVariables fallback table.
 - When AceComm/AceSerializer are unavailable in-game, sync falls back to native `C_ChatInfo` addon messages with a flat guild-scoped payload serializer.
 - Awards, nominations, alias mappings, and rank permissions broadcast guild-scoped sync payloads when local user actions mutate them.

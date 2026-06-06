@@ -22,19 +22,19 @@ end
 
 return {
   ["toc declares support for retail 12.0.7"] = function()
-    local lines = readLines("RollingPinAwards.toc")
+    local lines = readLines(harness.addon_path("RollingPinAwards.toc"))
 
     harness.assert_equal("## Interface: 120007, 120005", lines[1])
   end,
 
   ["toc groups the addon under the guild category"] = function()
-    local lines = readLines("RollingPinAwards.toc")
+    local lines = readLines(harness.addon_path("RollingPinAwards.toc"))
 
     harness.assert_true(indexOf(lines, "## Category: Guild") ~= nil)
   end,
 
   ["toc embeds required ace3 library files in load order"] = function()
-    local lines = readLines("RollingPinAwards.toc")
+    local lines = readLines(harness.addon_path("RollingPinAwards.toc"))
 
     local libStubIndex = indexOf(lines, "Libs/LibStub/LibStub.lua")
     local callbackIndex = indexOf(lines, "Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua")
@@ -112,7 +112,7 @@ return {
     }
 
     for _, path in ipairs(requiredFiles) do
-      local handle = io.open(path, "r")
+      local handle = io.open(harness.addon_path(path), "r")
       harness.assert_true(handle ~= nil)
       if handle then
         handle:close()

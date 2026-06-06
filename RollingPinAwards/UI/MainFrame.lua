@@ -2,24 +2,24 @@ local RPA = _G.RollingPinAwards or {}
 _G.RollingPinAwards = RPA
 
 if not RPA.UIStyles then
-  dofile("UI/Styles.lua")
+  dofile("RollingPinAwards/UI/Styles.lua")
 end
 
 if not RPA.UIComponents then
-  dofile("UI/Components.lua")
+  dofile("RollingPinAwards/UI/Components.lua")
 end
 
 if not RPA.UITabs or not RPA.UITabs.dashboard then
-  dofile("UI/Tabs/Dashboard.lua")
-  dofile("UI/Tabs/Award.lua")
-  dofile("UI/Tabs/Nominations.lua")
-  dofile("UI/Tabs/History.lua")
-  dofile("UI/Tabs/Leaderboard.lua")
-  dofile("UI/Tabs/Admin.lua")
+  dofile("RollingPinAwards/UI/Tabs/Dashboard.lua")
+  dofile("RollingPinAwards/UI/Tabs/Award.lua")
+  dofile("RollingPinAwards/UI/Tabs/Nominations.lua")
+  dofile("RollingPinAwards/UI/Tabs/History.lua")
+  dofile("RollingPinAwards/UI/Tabs/Leaderboard.lua")
+  dofile("RollingPinAwards/UI/Tabs/Admin.lua")
 end
 
 if not RPA.SettingsPage then
-  dofile("UI/SettingsPage.lua")
+  dofile("RollingPinAwards/UI/SettingsPage.lua")
 end
 
 local Components = RPA.UIComponents or {}

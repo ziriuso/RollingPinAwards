@@ -12,7 +12,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$TagName,
     [string]$DisplayName,
-    [string]$TocPath = ".\RollingPinAwards.toc",
+    [string]$TocPath = ".\RollingPinAwards\RollingPinAwards.toc",
     [string]$GameVersionIds = ""
 )
 
