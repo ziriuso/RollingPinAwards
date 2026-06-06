@@ -27,14 +27,41 @@ jobs:
       - name: Run full Lua suite
         shell: pwsh
         run: |
-          $lua = Get-Command lua54 -ErrorAction SilentlyContinue
-          if (-not $lua) {
-            $lua = Get-Command lua -ErrorAction SilentlyContinue
+          function Find-LuaRuntime {
+            $commandNames = @("lua54", "lua53", "lua52", "lua51", "lua")
+            foreach ($name in $commandNames) {
+              $command = Get-Command $name -ErrorAction SilentlyContinue
+              if ($command -and $command.Source) {
+                return $command.Source
+              }
+            }
+
+            $candidateRoots = @(
+              (Join-Path $env:ChocolateyInstall "bin"),
+              (Join-Path $env:ChocolateyInstall "lib"),
+              "C:\ProgramData\chocolatey\bin",
+              "C:\ProgramData\chocolatey\lib"
+            ) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique
+
+            foreach ($root in $candidateRoots) {
+              $candidate = Get-ChildItem -Path $root -Recurse -File -Filter "lua*.exe" -ErrorAction SilentlyContinue |
+                Where-Object { $_.BaseName -match '^lua(?:5[1-4])?$' } |
+                Sort-Object -Property FullName |
+                Select-Object -First 1
+              if ($candidate) {
+                return $candidate.FullName
+              }
+            }
+
+            return $null
           }
+
+          $lua = Find-LuaRuntime
           if (-not $lua) {
             throw "Lua runtime was not found after installation."
           }
-          $env:RPA_LUA = $lua.Source
+          & $lua -v
+          $env:RPA_LUA = $lua
           .\tests\run.ps1
 
       - name: Build CurseForge package
