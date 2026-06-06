@@ -33,6 +33,7 @@ return {
     assertContains(workflow, "choco install lua")
     assertContains(workflow, "Find-LuaRuntime")
     assertContains(workflow, "ChocolateyInstall")
+    assertContains(workflow, "ProgramFiles(x86)")
     assertContains(workflow, ".\\tests\\run.ps1")
     assertContains(workflow, ".\\tools\\release\\Build-CurseForgePackage.ps1")
     assertContains(workflow, ".\\tools\\release\\Publish-CurseForgePackage.ps1")

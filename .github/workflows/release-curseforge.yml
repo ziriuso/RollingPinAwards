@@ -39,13 +39,15 @@ jobs:
             $candidateRoots = @(
               (Join-Path $env:ChocolateyInstall "bin"),
               (Join-Path $env:ChocolateyInstall "lib"),
+              (Join-Path ${env:ProgramFiles(x86)} "Lua"),
+              (Join-Path $env:ProgramFiles "Lua"),
               "C:\ProgramData\chocolatey\bin",
               "C:\ProgramData\chocolatey\lib"
             ) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique
 
             foreach ($root in $candidateRoots) {
               $candidate = Get-ChildItem -Path $root -Recurse -File -Filter "lua*.exe" -ErrorAction SilentlyContinue |
-                Where-Object { $_.BaseName -match '^lua(?:5[1-4])?$' } |
+                Where-Object { $_.BaseName -match '^lua(?:5[1-4]|5\.[1-4])?$' } |
                 Sort-Object -Property FullName |
                 Select-Object -First 1
               if ($candidate) {
