@@ -9,6 +9,7 @@ RPA.Defaults = {
       toastDurationSeconds = 7,
       minimapAngle = 225,
       seenAwardToastIds = {},
+      syncPeersByGuild = {},
       toastAnchor = {
         point = "CENTER",
         relativePoint = "CENTER",

@@ -42,6 +42,7 @@ Privileged payload mapping:
 - If the client first sees only a provisional name-based guild key and later resolves the stable guild club id, `Bootstrap.lua` migrates the guild dataset key and sends a fresh `sync_hello` for the stable key so online peers can answer with the missed snapshot.
 - Receiving `sync_hello` answers with a full flat record stream for rank permissions, aliases, nominations, votes, awards, and hidden delete tombstones, followed by `sync_snapshot_complete`.
 - `/rpa sync now` and `/rpa sync all` force the same hello plus full snapshot stream for live two-client testing.
+- `/rpa peers` and `/rpa sync peers` open a small local table of same-guild sync senders and the last date this client saw them. Run `/rpa sync now` first when you want to actively ping online addon users.
 - Inbound accepted payloads rerender the active tab when the main window has already been rendered.
 - Inbound accepted award payloads notify only the award recipient. If reward toasts are enabled locally, the recipient sees a centered toast using the Burnt or Golden rolling pin icon, a `You've Received a ... Rolling Pin` title, and the award reason. The local toast duration setting controls how long the toast remains visible.
 - Reward toast award ids are marked as seen in local profile settings, so duplicate snapshot/catch-up payloads after reload or login do not replay the same toast.
@@ -72,12 +73,14 @@ Use `/rpa syncdebug` or `/rpa sync debug` to print copy-friendly chat diagnostic
 - last hello result
 - last snapshot counts
 
+Use `/rpa peers` for the readable peer list when you only need to know which guild members have recently answered or sent Rolling Pin Awards sync traffic.
+
 ## Persistence Notes
 
 - When `AceDB-3.0` is available, Rolling Pin Awards uses the active Ace profile as the storage backing for the domain database.
 - Without AceDB, the addon falls back to the plain `RollingPinAwardsDB.profile` table path already covered by the Lua-only tests.
 - Delete tombstones stay in the guild dataset id maps for sync conflict checks and snapshot catch-up, but normal UI/database reads filter them out so deleted awards and nominations remain absent from History, Dashboard, Leaderboard, and Nominations views.
-- Player notification preferences, toast duration, toast anchor placement, and seen reward-toast ids are stored under `profile.localSettings`. They are intentionally local/profile scoped and are not synced through guild datasets.
+- Player notification preferences, toast duration, toast anchor placement, seen reward-toast ids, and sync peer last-seen rows are stored under `profile.localSettings`. They are intentionally local/profile scoped and are not synced through guild datasets.
 - Toast queues are session-local only. They are not persisted and are not included in sync snapshots.
 
 ## Current Service Surface

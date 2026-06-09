@@ -765,6 +765,29 @@ return {
     harness.assert_equal("sync_hello", manualEnvelope.payloadType)
   end,
 
+  ["sync records same-guild inbound senders as local peers"] = function()
+    local addon = setupNativeGuild({
+      serverTime = 1717336800,
+    })
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    local hello = addon.sync:SerializeEnvelope({
+      payloadType = "sync_hello",
+      payload = {
+        guildKey = guildKey,
+        sender = "Officerone-Stormrage",
+        sentAt = 1717336799,
+      },
+    })
+
+    addon:OnCommReceived(addon.Constants.COMM_PREFIX, hello, "GUILD", "Officerone-Stormrage")
+
+    local peers = addon.db:GetSyncPeers(guildKey)
+
+    harness.assert_equal(1, #peers)
+    harness.assert_equal("Officerone-Stormrage", peers[1].player)
+    harness.assert_equal(1717336800, peers[1].lastSeenAt)
+  end,
+
   ["sync sends a fresh hello when provisional guild key becomes stable"] = function()
     local addon = setupNativeGuild({
       guildName = "Tyrrish Rebellion",

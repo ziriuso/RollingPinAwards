@@ -82,6 +82,7 @@ function Sync:DispatchEnvelope(envelope, distribution, sender)
 
   self:RecordInbound({
     payloadType = envelope.payloadType,
+    guildKey = payload.guildKey,
     sender = sender,
     distribution = distribution,
     ok = ok == true,

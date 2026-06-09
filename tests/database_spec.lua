@@ -92,6 +92,41 @@ return {
     harness.assert_equal("missing awardId", missingErr)
   end,
 
+  ["database stores sync peers locally by guild and lists newest first"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      savedVariables = {
+        profile = {
+          guildDatasets = {},
+          localSettings = {
+            syncPeersByGuild = "legacy",
+          },
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    local first = addon.db:RecordSyncPeer("raid bakery", "Bakerone-Stormrage", 1717336800)
+    local second = addon.db:RecordSyncPeer("raid bakery", "Bakertwo-Stormrage", 1717423200)
+    addon.db:RecordSyncPeer("other guild", "Otherone-Stormrage", 1717509600)
+    local missing, missingErr = addon.db:RecordSyncPeer("raid bakery", "", 1717596000)
+    local rows = addon.db:GetSyncPeers("raid bakery")
+    local otherRows = addon.db:GetSyncPeers("other guild")
+
+    harness.assert_true(first ~= nil)
+    harness.assert_true(second ~= nil)
+    harness.assert_false(missing)
+    harness.assert_equal("missing player", missingErr)
+    harness.assert_equal(2, #rows)
+    harness.assert_equal("Bakertwo-Stormrage", rows[1].player)
+    harness.assert_equal(1717423200, rows[1].lastSeenAt)
+    harness.assert_equal("Bakerone-Stormrage", rows[2].player)
+    harness.assert_equal(1, #otherRows)
+    harness.assert_equal("Otherone-Stormrage", otherRows[1].player)
+  end,
+
   ["database creates a guild dataset on demand"] = function()
     wow.reset({ guildName = "Raid Bakery" })
     local addon = wow.loadAddon()

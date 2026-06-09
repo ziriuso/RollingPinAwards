@@ -76,6 +76,10 @@ local function ensureLocalSettingsShape(settings)
     settings.seenAwardToastIds = {}
   end
 
+  if type(settings.syncPeersByGuild) ~= "table" then
+    settings.syncPeersByGuild = {}
+  end
+
   if type(settings.toastAnchor) ~= "table" then
     settings.toastAnchor = {}
   end
@@ -221,6 +225,54 @@ function Database:SaveToastAnchor(point, relativePoint, x, y)
   }
 
   return settings.toastAnchor
+end
+
+function Database:RecordSyncPeer(guildKey, player, lastSeenAt)
+  if isMissingString(guildKey) then
+    return false, "missing guildKey"
+  end
+
+  if isMissingString(player) then
+    return false, "missing player"
+  end
+
+  local settings = self:GetLocalSettings()
+  settings.syncPeersByGuild[guildKey] = settings.syncPeersByGuild[guildKey] or {}
+
+  local existing = settings.syncPeersByGuild[guildKey][player] or {}
+  local nextSeenAt = tonumber(lastSeenAt) or 0
+  existing.player = player
+  existing.lastSeenAt = math.max(tonumber(existing.lastSeenAt) or 0, nextSeenAt)
+  settings.syncPeersByGuild[guildKey][player] = existing
+
+  return existing
+end
+
+function Database:GetSyncPeers(guildKey)
+  if isMissingString(guildKey) then
+    return {}
+  end
+
+  local settings = self:GetLocalSettings()
+  local peers = ((settings.syncPeersByGuild or {})[guildKey]) or {}
+  local rows = {}
+
+  for _, row in pairs(peers) do
+    rows[#rows + 1] = {
+      player = row.player,
+      lastSeenAt = tonumber(row.lastSeenAt) or 0,
+    }
+  end
+
+  table.sort(rows, function(left, right)
+    if left.lastSeenAt ~= right.lastSeenAt then
+      return left.lastSeenAt > right.lastSeenAt
+    end
+
+    return (left.player or "") < (right.player or "")
+  end)
+
+  return rows
 end
 
 function Database:MigrateGuildDatasetKey(fromGuildKey, toGuildKey)

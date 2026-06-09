@@ -61,6 +61,12 @@ function Commands:Handle(message)
     end
 
     return nil, "ui unavailable"
+  elseif command == "peers" or (command == "sync" and rest == "peers") then
+    if self.addon.mainFrame and type(self.addon.mainFrame.ShowSyncPeers) == "function" then
+      return self.addon.mainFrame:ShowSyncPeers()
+    end
+
+    return nil, "ui unavailable"
   elseif command == "syncdebug" or (command == "sync" and rest == "debug") then
     if self.addon.sync and type(self.addon.sync.GetDebugLines) == "function" then
       printChatLines(self.addon, self.addon.sync:GetDebugLines())

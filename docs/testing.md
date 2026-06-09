@@ -24,7 +24,7 @@ powershell -ExecutionPolicy Bypass -File .\tests\run.ps1 "guild member can"
 2. `tools\lua\lua.exe`
 3. `lua` on `PATH`
 
-The suite exercises addon bootstrap, guild context, SavedVariables behavior, permissions, nominations, voting, awards, commands, bridge view models, sync validation, mutation broadcasts, native comm fallback, and sync diagnostics.
+The suite exercises addon bootstrap, guild context, SavedVariables behavior, permissions, nominations, voting, awards, commands, bridge view models, sync validation, mutation broadcasts, native comm fallback, sync diagnostics, and the local sync peers table opened by `/rpa peers`.
 
 It also includes Ace3-aware stubs so lifecycle, AceDB profile setup, chat-command registration, serialized comm transport, and comm registration can be verified without a live WoW client.
 

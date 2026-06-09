@@ -377,6 +377,30 @@ function Bridge:GetAliasMappingsViewModel()
   }
 end
 
+function Bridge:GetSyncPeersViewModel()
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild then
+    return {
+      rows = {},
+    }
+  end
+
+  local rows = {}
+
+  for _, peer in ipairs(self.addon.db:GetSyncPeers(guild.guildKey) or {}) do
+    rows[#rows + 1] = {
+      player = peer.player,
+      shortPlayer = Utils.GetShortCharacterName(peer.player),
+      lastSeenAt = peer.lastSeenAt or 0,
+      lastSeenText = self.addon.Time:FormatDate(peer.lastSeenAt),
+    }
+  end
+
+  return {
+    rows = rows,
+  }
+end
+
 function Bridge:GetGuildRosterNameSuggestions(query, limit)
   local matches = {}
   local normalizedQuery = Utils.NormalizeAliasKey(trim(query))

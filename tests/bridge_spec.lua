@@ -172,6 +172,30 @@ return {
     harness.assert_equal(2, viewModel.topRecipientCount)
   end,
 
+  ["bridge exposes sync peer rows newest first with short names and last seen dates"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+
+    addon.db:RecordSyncPeer(guildKey, "Bakerone-Stormrage", 1717336800)
+    addon.db:RecordSyncPeer(guildKey, "Bakertwo-Stormrage", 1717423200)
+
+    local viewModel = addon.uiBridge:GetSyncPeersViewModel()
+
+    harness.assert_equal(2, #viewModel.rows)
+    harness.assert_equal("Bakertwo-Stormrage", viewModel.rows[1].player)
+    harness.assert_equal("Bakertwo", viewModel.rows[1].shortPlayer)
+    harness.assert_true(viewModel.rows[1].lastSeenText:match("%d%d%d%d%-%d%d%-%d%d") ~= nil)
+    harness.assert_equal("Bakerone-Stormrage", viewModel.rows[2].player)
+  end,
+
   ["leaderboard detail rows show date text and awarded-by display names"] = function()
     wow.reset({
       guildName = "Raid Bakery",
@@ -1278,6 +1302,38 @@ return {
     addon.mainFrame.frame.closeButton:Click()
 
     harness.assert_false(addon.mainFrame.frame.visible)
+  end,
+
+  ["sync peers window renders a simple table with a close x"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    addon.db:RecordSyncPeer(guildKey, "Officerone-Stormrage", 1717336800)
+
+    addon.mainFrame:ShowSyncPeers()
+
+    local dialog = addon.mainFrame.syncPeersDialog
+    harness.assert_true(dialog.visible)
+    harness.assert_equal("Sync Peers", dialog.titleLabel.text)
+    harness.assert_equal("Player", dialog.playerHeader.text)
+    harness.assert_equal("Last Seen", dialog.lastSeenHeader.text)
+    harness.assert_equal("UIPanelCloseButton", dialog.closeButton.template)
+    harness.assert_equal("TOPRIGHT", dialog.closeButton.point[1])
+    harness.assert_equal("TOPRIGHT", dialog.closeButton.point[3])
+    harness.assert_true(dialog.listSection ~= nil)
+    harness.assert_equal("Officerone", dialog.listSection.rows[1].playerLabel.text)
+    harness.assert_true(dialog.listSection.rows[1].lastSeenLabel.text:match("%d%d%d%d%-%d%d%-%d%d") ~= nil)
+
+    dialog.closeButton:Click()
+
+    harness.assert_false(dialog.visible)
   end,
 
   ["nominations tab submit button creates a pending nomination"] = function()

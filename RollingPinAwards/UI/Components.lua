@@ -1419,16 +1419,34 @@ function Components.CreateModalWindow(parent, config)
     font = config.titleFont or "GameFontNormalLarge",
     textRole = config.titleTextRole or "cardHeader",
   })
-  dialog.closeButton = Components.CreateButton(chromeParent, {
-    text = config.closeText or "Close",
-    width = 84,
-    x = config.closeX or (chromeWidth - 100),
-    y = config.closeY or -12,
-    variant = "secondary",
-    onClick = function()
-      Components.SetVisible(dialog, false)
-    end,
-  })
+  if config.closeStyle == "x" then
+    dialog.closeButton = CreateFrame("Button", nil, chromeParent, "UIPanelCloseButton")
+    if dialog.closeButton.SetPoint then
+      dialog.closeButton:SetPoint(
+        "TOPRIGHT",
+        chromeParent,
+        "TOPRIGHT",
+        config.closeX or -8,
+        config.closeY or -8
+      )
+    end
+    if dialog.closeButton.SetScript then
+      dialog.closeButton:SetScript("OnClick", function()
+        Components.SetVisible(dialog, false)
+      end)
+    end
+  else
+    dialog.closeButton = Components.CreateButton(chromeParent, {
+      text = config.closeText or "Close",
+      width = 84,
+      x = config.closeX or (chromeWidth - 100),
+      y = config.closeY or -12,
+      variant = "secondary",
+      onClick = function()
+        Components.SetVisible(dialog, false)
+      end,
+    })
+  end
   if config.closeAnchor == "BOTTOMRIGHT" and dialog.closeButton.SetPoint then
     if dialog.closeButton.ClearAllPoints then
       dialog.closeButton:ClearAllPoints()

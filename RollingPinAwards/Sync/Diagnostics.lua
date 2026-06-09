@@ -24,6 +24,26 @@ end
 
 function Sync:RecordInbound(result)
   self.lastInbound = result or {}
+
+  local guildKey = self.lastInbound.guildKey
+  local sender = self.lastInbound.sender
+  local guild = self.addon and self.addon.GetActiveGuildContext and self.addon:GetActiveGuildContext() or nil
+  local currentPlayer = self.addon and self.addon.GetCurrentPlayerFullName and self.addon:GetCurrentPlayerFullName() or nil
+
+  if self.addon
+    and self.addon.db
+    and guild
+    and guildKey == guild.guildKey
+    and type(sender) == "string"
+    and sender ~= ""
+    and sender ~= currentPlayer
+  then
+    self.addon.db:RecordSyncPeer(
+      guildKey,
+      sender,
+      self.addon.Time and type(self.addon.Time.Now) == "function" and self.addon.Time:Now() or 0
+    )
+  end
 end
 
 function Sync:GetDebugLines()
@@ -138,4 +158,3 @@ function Sync:GetDebugLines()
 end
 
 return RPA.Sync
-

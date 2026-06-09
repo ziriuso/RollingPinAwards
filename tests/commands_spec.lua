@@ -114,6 +114,30 @@ return {
     harness.assert_true(table.concat(addon.__rpaLastChatOutput, "\n"):match("ChatThrottleLib:") ~= nil)
   end,
 
+  ["slash command opens the sync peers window"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    addon.db:RecordSyncPeer(guildKey, "Officerone-Stormrage", 1717336800)
+
+    harness.assert_true(addon:HandleChatCommand("peers") == true)
+    harness.assert_true(addon.mainFrame.syncPeersDialog.visible)
+    harness.assert_equal("Sync Peers", addon.mainFrame.syncPeersDialog.titleLabel.text)
+
+    addon.mainFrame.syncPeersDialog.closeButton:Click()
+
+    harness.assert_false(addon.mainFrame.syncPeersDialog.visible)
+    harness.assert_true(addon:HandleChatCommand("sync peers") == true)
+    harness.assert_true(addon.mainFrame.syncPeersDialog.visible)
+  end,
+
   ["minimap button uses custom icon and toggles the main frame"] = function()
     wow.reset({ guildName = "Raid Bakery" })
 

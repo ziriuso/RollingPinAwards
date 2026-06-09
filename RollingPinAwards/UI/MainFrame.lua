@@ -287,6 +287,122 @@ function MainFrame:ShowSettingsPage()
   return true
 end
 
+function MainFrame:EnsureSyncPeersDialog()
+  if self.syncPeersDialog then
+    return self.syncPeersDialog
+  end
+
+  local colors = Styles.Colors or {}
+  self.syncPeersDialog = Components.CreateModalWindow(self.frame, {
+    id = "RollingPinAwardsSyncPeersDialog",
+    title = "Sync Peers",
+    width = 520,
+    height = 380,
+    closeStyle = "x",
+    backdropColor = colors.modalFill,
+  })
+
+  self.syncPeersDialog.playerHeader = Components.CreateLabel(self.syncPeersDialog, {
+    text = "Player",
+    x = 32,
+    y = -58,
+    width = 240,
+    justifyH = "LEFT",
+    textRole = "cardHeader",
+  })
+  self.syncPeersDialog.lastSeenHeader = Components.CreateLabel(self.syncPeersDialog, {
+    text = "Last Seen",
+    x = 300,
+    y = -58,
+    width = 160,
+    justifyH = "LEFT",
+    textRole = "cardHeader",
+  })
+  self.syncPeersDialog.listSection = Components.CreateScrollableSection(self.syncPeersDialog, {
+    id = "RollingPinAwardsSyncPeersSection",
+    title = "",
+    width = 472,
+    height = 268,
+    x = 24,
+    y = -86,
+    visibleRowCount = 7,
+    rowHeight = 32,
+    rowStartY = -14,
+  })
+
+  return self.syncPeersDialog
+end
+
+function MainFrame:RefreshSyncPeersDialog()
+  local dialog = self:EnsureSyncPeersDialog()
+  local viewModel = self.uiBridge and self.uiBridge:GetSyncPeersViewModel() or {
+    rows = {},
+  }
+  local rows = viewModel.rows or {}
+
+  if #rows == 0 then
+    rows = {
+      {
+        emptyState = true,
+      },
+    }
+  end
+
+  Components.SetScrollableItems(dialog.listSection, rows, function(section, row)
+    if row.emptyState then
+      Components.AddListRow(section, {
+        text = "No sync peers seen yet. Run /rpa sync now to ping online addon users.",
+        rowHeight = 32,
+        actions = {},
+      })
+      return
+    end
+
+    local listRow = Components.AddListRow(section, {
+      text = "",
+      rowHeight = 32,
+      backdropTone = "rowHighlight",
+      actions = {},
+    })
+    listRow.playerLabel = Components.CreateLabel(listRow, {
+      text = row.shortPlayer or row.player or "",
+      x = 14,
+      y = 0,
+      width = 220,
+      justifyH = "LEFT",
+      justifyV = "MIDDLE",
+      textRole = "tableRow",
+    })
+    listRow.lastSeenLabel = Components.CreateLabel(listRow, {
+      text = row.lastSeenText or "",
+      x = 278,
+      y = 0,
+      width = 150,
+      justifyH = "LEFT",
+      justifyV = "MIDDLE",
+      textRole = "tableRow",
+    })
+    if listRow.playerLabel.SetPoint then
+      listRow.playerLabel:ClearAllPoints()
+      listRow.playerLabel:SetPoint("LEFT", listRow, "LEFT", 14, 0)
+    end
+    if listRow.lastSeenLabel.SetPoint then
+      listRow.lastSeenLabel:ClearAllPoints()
+      listRow.lastSeenLabel:SetPoint("LEFT", listRow, "LEFT", 278, 0)
+    end
+  end)
+
+  return dialog
+end
+
+function MainFrame:ShowSyncPeers()
+  self:EnsureRendered()
+  local dialog = self:RefreshSyncPeersDialog()
+  Components.SetVisible(dialog, true)
+
+  return true
+end
+
 function MainFrame:Toggle()
   self:EnsureRendered()
   Components.SetVisible(self.frame, not self.frame.visible)
