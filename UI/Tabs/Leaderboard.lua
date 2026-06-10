@@ -40,7 +40,7 @@ UITabs.leaderboard = {
       if index > 5 then
         break
       end
-      lines[#lines + 1] = ("%s - %d pins"):format(row.recipient, row.pinCount)
+      lines[#lines + 1] = ("%s - %d pins"):format(row.shortRecipient or stripRealm(row.recipient), row.pinCount)
     end
 
     if #lines == 1 then
@@ -53,11 +53,12 @@ UITabs.leaderboard = {
     }
   end,
   BuildPanel = function(parent, mainFrame)
+    local layout = Styles.Layout or {}
     local media = Styles.Media or {}
     local panel = CreateFrame("Frame", nil, parent)
     panel.ownerFrame = mainFrame
-    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 14, -42)
-    panel:SetSize((parent.width or 820) - 28, (parent.height or 520) - 56)
+    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", layout.panelX or 59, layout.panelY or -42)
+    panel:SetSize(layout.panelWidth or 762, (parent.height or 520) - 56)
 
     panel.listSection = Components.CreateScrollableSection(panel, {
       id = "RollingPinAwardsLeaderboardList",
@@ -65,11 +66,11 @@ UITabs.leaderboard = {
       iconPath = media.leaderboardIcon,
       iconWidth = 22,
       iconHeight = 22,
-      width = 780,
+      width = 762,
       height = 360,
       x = 0,
       y = 0,
-      visibleRowCount = 6,
+      visibleRowCount = 5,
       rowHeight = 56,
     })
     panel.selectedMode = panel.selectedMode or "combined"
@@ -114,73 +115,75 @@ UITabs.leaderboard = {
       id = "RollingPinAwardsLeaderboardDetailDialog",
       title = "Award History",
       width = 760,
-      height = 680,
-      closeText = "Close",
+      height = 840,
+      closeText = "",
       titleFont = "GameFontNormalHuge",
-      titleY = -30,
+      titleY = -72,
       centerTitle = true,
       closeAnchor = "BOTTOMRIGHT",
-      closeBottomY = 48,
+      closeBottomY = 35,
       draggable = true,
       frameLevelOffset = 160,
       backdropColor = { 0.10, 0.07, 0.05, 0 },
       borderColor = { 0.10, 0.07, 0.05, 0 },
-      backgroundTexture = media.modalBackground,
+      backgroundTexture = media.leaderboardShowcaseBackground or media.modalBackground,
       contentBounds = {
-        left = 150,
-        top = 70,
-        width = 460,
-        height = 560,
+        left = 0,
+        top = 0,
+        width = 760,
+        height = 840,
       },
+      titleTextRole = "leaderboardShowcaseName",
     })
     local showcaseHost = panel.detailDialog.contentHost or panel.detailDialog
-    panel.detailDialog.goldenIcon = Components.CreateArtworkFrame(showcaseHost, {
-      texture = media.leaderboardIcon,
-      width = 102,
-      height = 102,
-      anchor = "TOP",
-      relativeTo = "TOP",
-      x = -82,
-      y = -74,
-    })
-    panel.detailDialog.burntIcon = Components.CreateArtworkFrame(showcaseHost, {
-      texture = media.awardIcon,
-      width = 102,
-      height = 102,
-      anchor = "TOP",
-      relativeTo = "TOP",
-      x = 82,
-      y = -74,
-    })
     panel.detailDialog.goldenCountLabel = Components.CreateLabel(showcaseHost, {
       text = "0",
-      x = 100,
-      y = -190,
+      x = 107,
+      y = -245,
       width = 96,
       justifyH = "CENTER",
       font = "GameFontNormalHuge",
+      textRole = "leaderboardCount",
     })
     panel.detailDialog.burntCountLabel = Components.CreateLabel(showcaseHost, {
       text = "0",
-      x = 264,
-      y = -190,
+      x = 557,
+      y = -245,
       width = 96,
       justifyH = "CENTER",
       font = "GameFontNormalHuge",
+      textRole = "leaderboardCount",
     })
     panel.detailDialog.listSection = Components.CreateScrollableSection(showcaseHost, {
       id = "RollingPinAwardsLeaderboardDetailList",
       title = "",
-      width = 424,
-      height = 190,
-      x = 18,
-      y = -240,
-      visibleRowCount = 3,
+      width = 620,
+      height = 420,
+      x = 78,
+      y = -296,
+      visibleRowCount = 6,
       rowHeight = 56,
       rowStartY = -12,
       scrollBarTop = 12,
       scrollBarBottom = 18,
     })
+    if panel.detailDialog.closeButton then
+      if panel.detailDialog.closeButton.SetSize then
+        panel.detailDialog.closeButton:SetSize(118, 48)
+      end
+      panel.detailDialog.closeButton.width = 118
+      panel.detailDialog.closeButton.height = 48
+      if panel.detailDialog.closeButton.SetBackdrop then
+        panel.detailDialog.closeButton:SetBackdrop(nil)
+      end
+      panel.detailDialog.closeButton.backdrop = nil
+      panel.detailDialog.closeButton.backdropColor = nil
+      panel.detailDialog.closeButton.backdropBorderColor = nil
+      if panel.detailDialog.closeButton.label then
+        Components.SetText(panel.detailDialog.closeButton.label, "")
+      end
+      panel.detailDialog.closeButton.isInvisibleHitbox = true
+    end
 
     return panel
   end,
@@ -195,9 +198,9 @@ UITabs.leaderboard = {
       }
     end
 
-    Components.SetButtonVariant(panel.burntModeButton, mode == "burnt" and "primary" or "secondary")
-    Components.SetButtonVariant(panel.goldenModeButton, mode == "golden" and "primary" or "secondary")
-    Components.SetButtonVariant(panel.combinedModeButton, mode == "combined" and "primary" or "secondary")
+    Components.SetButtonVariant(panel.burntModeButton, mode == "burnt" and "selected" or "secondary")
+    Components.SetButtonVariant(panel.goldenModeButton, mode == "golden" and "selected" or "secondary")
+    Components.SetButtonVariant(panel.combinedModeButton, mode == "combined" and "selected" or "secondary")
 
     Components.SetScrollableItems(panel.listSection, rows, function(section, row)
       if row.emptyState then
@@ -212,14 +215,14 @@ UITabs.leaderboard = {
       Components.AddListRow(section, {
         text = mode == "combined"
             and ("%s\nGolden: %d  Burnt: %d  Total: %d\nMost Recent: %s"):format(
-              row.recipient,
+              row.shortRecipient or stripRealm(row.recipient),
               row.goldenCount or 0,
               row.burntCount or 0,
               row.totalCount or row.pinCount or 0,
               row.mostRecentAwardText or "Unknown date"
             )
           or ("%s\nPins: %d\nMost Recent: %s"):format(
-            row.recipient,
+            row.shortRecipient or stripRealm(row.recipient),
             row.pinCount,
             row.mostRecentAwardText or "Unknown date"
           ),
