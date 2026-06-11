@@ -37,7 +37,7 @@ local function clampAddonScale(scale)
   local normalized = tonumber(scale) or 0.8
   normalized = math.floor((normalized / 0.05) + 0.5) * 0.05
 
-  return math.floor((math.min(1.25, math.max(0.8, normalized)) * 100) + 0.5) / 100
+  return math.floor((math.min(1.25, math.max(0.5, normalized)) * 100) + 0.5) / 100
 end
 
 local function normalizeReportingFilter(filter)

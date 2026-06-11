@@ -226,7 +226,7 @@ function SettingsPage:Build(parent, mainFrame)
     height = 18,
     x = 202,
     y = -122,
-    minValue = 0.8,
+    minValue = 0.5,
     maxValue = 1.25,
     step = 0.05,
   })

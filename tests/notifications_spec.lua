@@ -258,6 +258,7 @@ return {
     harness.assert_true(panel.addonScaleSlider ~= nil)
     harness.assert_true(panel.addonScaleDecreaseButton ~= nil)
     harness.assert_true(panel.addonScaleIncreaseButton ~= nil)
+    harness.assert_equal(0.5, panel.addonScaleSlider.minValue)
     harness.assert_equal(0.8, addon.db:GetLocalSettings().addonScale)
     harness.assert_equal("80%", panel.addonScaleValueLabel.text)
 
@@ -271,6 +272,12 @@ return {
 
     harness.assert_equal(0.8, addon.db:GetLocalSettings().addonScale)
     harness.assert_equal("80%", panel.addonScaleValueLabel.text)
+
+    for _ = 1, 10 do
+      panel.addonScaleDecreaseButton:Click()
+    end
+    harness.assert_equal(0.5, addon.db:GetLocalSettings().addonScale)
+    harness.assert_equal("50%", panel.addonScaleValueLabel.text)
 
     panel.addonScaleSlider:SetValue(1.13)
 

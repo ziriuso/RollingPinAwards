@@ -85,8 +85,8 @@ return {
     local settings = addon.db:GetLocalSettings()
     harness.assert_equal(0.8, settings.addonScale)
 
-    harness.assert_equal(0.8, addon.db:SetAddonScale(0.4))
-    harness.assert_equal(0.8, addon.db:GetLocalSettings().addonScale)
+    harness.assert_equal(0.5, addon.db:SetAddonScale(0.4))
+    harness.assert_equal(0.5, addon.db:GetLocalSettings().addonScale)
 
     harness.assert_equal(1.25, addon.db:SetAddonScale(2))
     harness.assert_equal(1.25, addon.db:GetLocalSettings().addonScale)
