@@ -258,6 +258,8 @@ return {
     harness.assert_true(panel.addonScaleSlider ~= nil)
     harness.assert_true(panel.addonScaleDecreaseButton ~= nil)
     harness.assert_true(panel.addonScaleIncreaseButton ~= nil)
+    harness.assert_true(panel.minimapButtonCheck ~= nil)
+    harness.assert_nil(panel.addonCompartmentCheck)
     harness.assert_equal(0.5, panel.addonScaleSlider.minValue)
     harness.assert_equal(0.8, addon.db:GetLocalSettings().addonScale)
     harness.assert_equal("80%", panel.addonScaleValueLabel.text)
@@ -286,6 +288,30 @@ return {
     harness.assert_equal("115%", panel.addonScaleValueLabel.text)
   end,
 
+  ["settings page toggles local launcher preferences"] = function()
+    local addon = setupPlayer()
+
+    addon.mainFrame:EnsureRendered()
+    addon.mainFrame.settingsGearButton:Click()
+
+    local panel = addon.mainFrame.settingsPanel
+    harness.assert_equal("Minimap", panel.launcherSection.titleText.text)
+    harness.assert_equal(230, panel.launcherSection.width)
+    harness.assert_true((panel.reportingSection.point[4] or 0) >= (panel.launcherSection.point[4] or 0) + panel.launcherSection.width + 20)
+    harness.assert_equal(12, panel.minimapButtonCheck.label.fontHeight)
+    harness.assert_true(panel.minimapButtonCheck:GetChecked())
+    harness.assert_true(addon.minimapButton.button.visible)
+
+    panel.minimapButtonCheck:Click()
+    harness.assert_false(addon.db:IsMinimapButtonShown())
+    harness.assert_false(addon.minimapButton.button.visible)
+
+    panel.minimapButtonCheck:Click()
+    harness.assert_true(addon.db:IsMinimapButtonShown())
+    harness.assert_true(addon.minimapButton.button.visible)
+
+  end,
+
   ["settings page saves local reporting filter controls"] = function()
     local addon = setupPlayer()
 
@@ -293,34 +319,48 @@ return {
     addon.mainFrame.settingsGearButton:Click()
 
     local panel = addon.mainFrame.settingsPanel
-    harness.assert_true(panel.reportingAllTimeButton ~= nil)
-    harness.assert_true(panel.reportingCustomButton ~= nil)
+    harness.assert_nil(panel.reportingAllTimeButton)
+    harness.assert_nil(panel.reportingCustomButton)
+    harness.assert_nil(panel.reportingLabelInput)
     harness.assert_true(panel.reportingStartInput ~= nil)
+    harness.assert_true(panel.reportingStartCalendarButton ~= nil)
     harness.assert_true(panel.reportingEndInput ~= nil)
+    harness.assert_true(panel.reportingEndCalendarButton ~= nil)
     harness.assert_true(panel.reportingSaveButton ~= nil)
-    harness.assert_equal("All Time", panel.reportingValueLabel.text)
+    harness.assert_true(panel.reportingClearButton ~= nil)
 
-    panel.reportingCustomButton:Click()
-    panel.reportingLabelInput:SetText("June Raid")
+    panel.reportingStartInput:SetText("2024-06-10")
+    panel.reportingStartCalendarButton:Click()
+    harness.assert_true(panel.reportingCalendarDialog.visible)
+    harness.assert_equal("2024-06", panel.reportingCalendarDialog.monthLabel.text)
+    harness.assert_equal("10", panel.reportingCalendarDialog.dayButtonsByDay[10].label.text)
+    harness.assert_true((panel.reportingCalendarDialog.dayButtonsByDay[10].label.width or 0) >= 20)
+    harness.assert_equal("30", panel.reportingCalendarDialog.dayButtonsByDay[30].label.text)
+    harness.assert_true((panel.reportingCalendarDialog.dayButtonsByDay[30].label.width or 0) >= 20)
+    panel.reportingCalendarDialog.dayButtonsByDay[15]:Click()
+    harness.assert_equal("2024-06-15", panel.reportingStartInput:GetText())
+
     panel.reportingStartInput:SetText("2024-06-01")
     panel.reportingEndInput:SetText("2024-06-30")
     panel.reportingSaveButton:Click()
 
     local filter = addon.db:GetReportingFilter()
     harness.assert_equal("custom", filter.mode)
-    harness.assert_equal("June Raid", filter.label)
+    harness.assert_equal("Custom Range", filter.label)
     harness.assert_true(type(filter.startsAt) == "number")
     harness.assert_true(type(filter.endsAt) == "number")
     harness.assert_true(filter.startsAt <= filter.endsAt)
-    harness.assert_equal("June Raid", panel.reportingValueLabel.text)
+    harness.assert_equal("Reporting filter saved.", panel.reportingStatusLabel.text)
 
-    panel.reportingAllTimeButton:Click()
+    panel.reportingClearButton:Click()
 
     filter = addon.db:GetReportingFilter()
     harness.assert_equal("all_time", filter.mode)
     harness.assert_equal("All Time", filter.label)
     harness.assert_nil(filter.startsAt)
     harness.assert_nil(filter.endsAt)
+    harness.assert_equal("", panel.reportingStartInput:GetText())
+    harness.assert_equal("", panel.reportingEndInput:GetText())
   end,
 
   ["settings page adjusts reward toast duration"] = function()

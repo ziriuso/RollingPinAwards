@@ -38,14 +38,14 @@ Public History remains all-time and award records are never rewritten.
 
 Settings includes a local Reporting Filter section with:
 
-- `All Time`
-- `Custom`
-- label
 - start date
+- start calendar picker
 - end date
+- end calendar picker
 - save
+- clear
 
-Changing the filter rerenders the active tab locally.
+Empty start and end dates save as all time. A single date creates an open-ended custom range. Calendar picker buttons write `YYYY-MM-DD` into the corresponding field and keep one- and two-digit day numbers readable. Changing or clearing the filter rerenders the active tab locally.
 
 ## Verification
 

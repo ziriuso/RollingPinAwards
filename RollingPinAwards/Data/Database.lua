@@ -40,6 +40,16 @@ local function clampAddonScale(scale)
   return math.floor((math.min(1.25, math.max(0.5, normalized)) * 100) + 0.5) / 100
 end
 
+local function normalizeAngle(angle)
+  local normalized = tonumber(angle) or 225
+  normalized = normalized % 360
+  if normalized < 0 then
+    normalized = normalized + 360
+  end
+
+  return normalized
+end
+
 local function normalizeReportingFilter(filter)
   if type(filter) ~= "table" then
     filter = {}
@@ -115,7 +125,12 @@ local function ensureLocalSettingsShape(settings)
     (clampAddonScale(settings.addonScale) * 100) + 0.5
   ) / 100
 
-  settings.minimapAngle = tonumber(settings.minimapAngle) or 225
+  settings.minimapAngle = normalizeAngle(settings.minimapAngle)
+  if settings.minimapButtonShown == nil then
+    settings.minimapButtonShown = true
+  else
+    settings.minimapButtonShown = settings.minimapButtonShown == true
+  end
 
   if type(settings.seenAwardToastIds) ~= "table" then
     settings.seenAwardToastIds = {}
@@ -250,6 +265,32 @@ function Database:SetAddonScale(scale)
   settings.addonScale = clampAddonScale(scale)
 
   return settings.addonScale
+end
+
+function Database:IsMinimapButtonShown()
+  local settings = self:GetLocalSettings()
+
+  return settings.minimapButtonShown ~= false
+end
+
+function Database:SetMinimapButtonShown(shown)
+  local settings = self:GetLocalSettings()
+  settings.minimapButtonShown = shown == true
+
+  return settings.minimapButtonShown
+end
+
+function Database:GetMinimapAngle()
+  local settings = self:GetLocalSettings()
+
+  return normalizeAngle(settings.minimapAngle)
+end
+
+function Database:SetMinimapAngle(angle)
+  local settings = self:GetLocalSettings()
+  settings.minimapAngle = normalizeAngle(angle)
+
+  return settings.minimapAngle
 end
 
 function Database:GetReportingFilter()

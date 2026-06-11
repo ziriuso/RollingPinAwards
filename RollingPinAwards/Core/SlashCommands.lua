@@ -54,13 +54,6 @@ function Commands:Handle(message)
     end
 
     return nil, "ui unavailable"
-  elseif command == "background" or command == "bg" then
-    if self.addon.mainFrame then
-      self.addon.mainFrame:ToggleBackgroundCalibrator()
-      return true
-    end
-
-    return nil, "ui unavailable"
   elseif command == "peers" or (command == "sync" and rest == "peers") then
     if self.addon.mainFrame and type(self.addon.mainFrame.ShowSyncPeers) == "function" then
       return self.addon.mainFrame:ShowSyncPeers()

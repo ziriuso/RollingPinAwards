@@ -69,6 +69,19 @@ local function parseDateInput(value, endOfDay)
   return nil, "Date parsing is unavailable."
 end
 
+local function parseDateParts(value)
+  if type(value) ~= "string" then
+    return nil
+  end
+
+  local year, month, day = value:match("^(%d%d%d%d)%-(%d%d)%-(%d%d)$")
+  if not year then
+    return nil
+  end
+
+  return tonumber(year), tonumber(month), tonumber(day)
+end
+
 local function formatFilterDate(addon, timestamp)
   if type(timestamp) ~= "number" or timestamp <= 0 then
     return ""
@@ -81,24 +94,173 @@ local function formatFilterDate(addon, timestamp)
   return tostring(timestamp)
 end
 
+local function isLeapYear(year)
+  return year % 400 == 0 or (year % 4 == 0 and year % 100 ~= 0)
+end
+
+local function daysInMonth(year, month)
+  local monthDays = {
+    31,
+    isLeapYear(year) and 29 or 28,
+    31,
+    30,
+    31,
+    30,
+    31,
+    31,
+    30,
+    31,
+    30,
+    31,
+  }
+
+  return monthDays[month] or 31
+end
+
+local function shiftCalendarMonth(dialog, offset)
+  local month = (dialog.displayMonth or 1) + offset
+  local year = dialog.displayYear or 2024
+
+  while month < 1 do
+    month = month + 12
+    year = year - 1
+  end
+
+  while month > 12 do
+    month = month - 12
+    year = year + 1
+  end
+
+  dialog.displayYear = year
+  dialog.displayMonth = month
+end
+
+local function updateCalendarDialog(panel)
+  local dialog = panel.reportingCalendarDialog
+  if not dialog then
+    return
+  end
+
+  local year = dialog.displayYear or 2024
+  local month = dialog.displayMonth or 1
+  Components.SetText(dialog.monthLabel, ("%04d-%02d"):format(year, month))
+
+  local maxDay = daysInMonth(year, month)
+  dialog.dayButtonsByDay = {}
+  for day, button in ipairs(dialog.dayButtons or {}) do
+    Components.SetText(button.label, tostring(day))
+    Components.SetVisible(button, day <= maxDay)
+    if day <= maxDay then
+      dialog.dayButtonsByDay[day] = button
+    end
+  end
+end
+
+local function ensureCalendarDialog(panel)
+  if panel.reportingCalendarDialog then
+    return panel.reportingCalendarDialog
+  end
+
+  local dialog = Components.CreateModalWindow(panel, {
+    id = "RollingPinAwardsReportingCalendarDialog",
+    title = "Pick Date",
+    width = 286,
+    height = 300,
+    closeStyle = "x",
+    draggable = true,
+  })
+  dialog.displayYear = 2024
+  dialog.displayMonth = 1
+
+  dialog.previousButton = Components.CreateButton(dialog, {
+    text = "<",
+    width = 32,
+    height = 26,
+    x = 26,
+    y = -50,
+    variant = "secondary",
+  })
+  dialog.monthLabel = Components.CreateLabel(dialog, {
+    text = "2024-01",
+    x = 72,
+    y = -54,
+    width = 120,
+    justifyH = "CENTER",
+    font = "GameFontHighlight",
+  })
+  dialog.nextButton = Components.CreateButton(dialog, {
+    text = ">",
+    width = 32,
+    height = 26,
+    x = 206,
+    y = -50,
+    variant = "secondary",
+  })
+
+  dialog.dayButtons = {}
+  dialog.dayButtonsByDay = {}
+  for day = 1, 31 do
+    local index = day - 1
+    local col = index % 7
+    local row = math.floor(index / 7)
+    local button = Components.CreateButton(dialog, {
+      text = tostring(day),
+      width = 32,
+      height = 28,
+      labelX = 0,
+      labelWidth = 32,
+      x = 24 + (col * 36),
+      y = -92 - (row * 34),
+      variant = "secondary",
+      onClick = function()
+        if dialog.targetInput then
+          Components.SetText(
+            dialog.targetInput,
+            ("%04d-%02d-%02d"):format(dialog.displayYear or 2024, dialog.displayMonth or 1, day)
+          )
+        end
+        Components.SetVisible(dialog, false)
+      end,
+    })
+    dialog.dayButtons[day] = button
+    dialog.dayButtonsByDay[day] = button
+  end
+
+  Components.SetButtonHandler(dialog.previousButton, function()
+    shiftCalendarMonth(dialog, -1)
+    updateCalendarDialog(panel)
+  end)
+  Components.SetButtonHandler(dialog.nextButton, function()
+    shiftCalendarMonth(dialog, 1)
+    updateCalendarDialog(panel)
+  end)
+
+  panel.reportingCalendarDialog = dialog
+  Components.SetVisible(dialog, false)
+
+  return dialog
+end
+
+local function openCalendarForInput(panel, input)
+  local dialog = ensureCalendarDialog(panel)
+  local year, month = parseDateParts(input and input:GetText() or "")
+
+  dialog.targetInput = input
+  dialog.displayYear = year or dialog.displayYear or 2024
+  dialog.displayMonth = month or dialog.displayMonth or 1
+  updateCalendarDialog(panel)
+  Components.SetVisible(dialog, true)
+
+  return dialog
+end
+
 local function refreshReportingControls(panel, mainFrame, filter)
   if not panel then
     return
   end
 
   local addon = mainFrame and mainFrame.addon
-  local activeFilter = filter or {
-    mode = "all_time",
-    label = "All Time",
-  }
-  panel.reportingSelectedMode = activeFilter.mode == "custom" and "custom" or "all_time"
-
-  if panel.reportingValueLabel then
-    Components.SetText(panel.reportingValueLabel, activeFilter.label or "All Time")
-  end
-  if panel.reportingLabelInput then
-    Components.SetText(panel.reportingLabelInput, activeFilter.mode == "custom" and (activeFilter.label or "") or "")
-  end
+  local activeFilter = filter or {}
   if panel.reportingStartInput then
     Components.SetText(panel.reportingStartInput, formatFilterDate(addon, activeFilter.startsAt))
   end
@@ -107,10 +269,6 @@ local function refreshReportingControls(panel, mainFrame, filter)
   end
   if panel.reportingStatusLabel then
     Components.SetText(panel.reportingStatusLabel, "")
-  end
-  if Components.SetButtonVariant then
-    Components.SetButtonVariant(panel.reportingAllTimeButton, panel.reportingSelectedMode == "all_time" and "selected" or "secondary")
-    Components.SetButtonVariant(panel.reportingCustomButton, panel.reportingSelectedMode == "custom" and "selected" or "secondary")
   end
 end
 
@@ -279,78 +437,69 @@ function SettingsPage:Build(parent, mainFrame)
   panel.reportingSection = Components.CreateSection(panel, {
     id = "RollingPinAwardsSettingsReportingSection",
     title = "Reporting Filter",
-    width = math.min(panel.width - 120, 640),
+    width = 390,
+    height = 188,
+    x = ((Styles.Layout or {}).panelX or 59) + 250,
+    y = -330,
+  })
+
+  panel.launcherSection = Components.CreateSection(panel, {
+    id = "RollingPinAwardsSettingsLauncherSection",
+    title = "Minimap",
+    width = 230,
     height = 188,
     x = (Styles.Layout or {}).panelX or 59,
     y = -330,
   })
 
-  panel.reportingValueLabel = Components.CreateLabel(panel.reportingSection, {
-    text = "All Time",
+  panel.minimapButtonCheck = Components.CreateCheckButton(panel.launcherSection, {
+    text = "Show minimap button",
     x = 18,
-    y = -46,
-    width = 210,
-    justifyH = "LEFT",
-    font = "GameFontHighlight",
+    y = -50,
+    labelTextRole = "descriptionSmall",
   })
 
-  panel.reportingAllTimeButton = Components.CreateButton(panel.reportingSection, {
-    text = "All Time",
-    width = 112,
-    height = 28,
-    x = 246,
-    y = -40,
-    variant = "selected",
-  })
-
-  panel.reportingCustomButton = Components.CreateButton(panel.reportingSection, {
-    text = "Custom",
-    width = 112,
-    height = 28,
-    x = 368,
-    y = -40,
-    variant = "secondary",
-  })
-
-  panel.reportingLabelInput = Components.CreateEditBox(panel.reportingSection, {
-    width = 180,
-    x = 18,
-    y = -86,
-    maxLetters = 32,
-  })
   panel.reportingStartInput = Components.CreateEditBox(panel.reportingSection, {
     width = 128,
-    x = 212,
-    y = -86,
+    x = 18,
+    y = -72,
     maxLetters = 10,
+  })
+  panel.reportingStartCalendarButton = Components.CreateButton(panel.reportingSection, {
+    text = "...",
+    width = 34,
+    height = 28,
+    x = 154,
+    y = -72,
+    variant = "secondary",
   })
   panel.reportingEndInput = Components.CreateEditBox(panel.reportingSection, {
     width = 128,
-    x = 354,
-    y = -86,
+    x = 198,
+    y = -72,
     maxLetters = 10,
   })
-
-  panel.reportingLabelHint = Components.CreateLabel(panel.reportingSection, {
-    text = "Label",
-    x = 18,
-    y = -70,
-    width = 120,
-    justifyH = "LEFT",
-    font = "GameFontHighlightSmall",
+  panel.reportingEndCalendarButton = Components.CreateButton(panel.reportingSection, {
+    text = "...",
+    width = 34,
+    height = 28,
+    x = 334,
+    y = -72,
+    variant = "secondary",
   })
+
   panel.reportingStartHint = Components.CreateLabel(panel.reportingSection, {
     text = "Start",
-    x = 212,
-    y = -70,
+    x = 18,
+    y = -56,
     width = 120,
     justifyH = "LEFT",
     font = "GameFontHighlightSmall",
   })
   panel.reportingEndHint = Components.CreateLabel(panel.reportingSection, {
     text = "End",
-    x = 354,
-    y = -70,
+    x = 198,
+    y = -56,
     width = 120,
     justifyH = "LEFT",
     font = "GameFontHighlightSmall",
@@ -358,17 +507,25 @@ function SettingsPage:Build(parent, mainFrame)
 
   panel.reportingSaveButton = Components.CreateButton(panel.reportingSection, {
     text = "Save",
-    width = 90,
+    width = 72,
     height = 28,
-    x = 496,
-    y = -86,
+    x = 18,
+    y = -116,
     variant = "primary",
+  })
+  panel.reportingClearButton = Components.CreateButton(panel.reportingSection, {
+    text = "Clear",
+    width = 72,
+    height = 28,
+    x = 98,
+    y = -116,
+    variant = "secondary",
   })
 
   panel.reportingStatusLabel = Components.CreateLabel(panel.reportingSection, {
     text = "",
-    x = 18,
-    y = -130,
+    x = 184,
+    y = -122,
     width = (panel.reportingSection.width or 640) - 36,
     justifyH = "LEFT",
     font = "GameFontHighlightSmall",
@@ -413,6 +570,23 @@ function SettingsPage:Refresh(panel, mainFrame)
       end
       if addon and addon.toast and checkButton:GetChecked() == false and addon.toast.frame then
         Components.SetVisible(addon.toast.frame, false)
+      end
+    end)
+  end
+
+  if panel.minimapButtonCheck then
+    panel.minimapButtonCheck:SetChecked(not addon or not addon.db or addon.db:IsMinimapButtonShown())
+    Components.SetButtonHandler(panel.minimapButtonCheck, function(checkButton)
+      if checkButton.disabled then
+        return
+      end
+
+      checkButton:SetChecked(not checkButton:GetChecked())
+      if addon and addon.db then
+        addon.db:SetMinimapButtonShown(checkButton:GetChecked())
+      end
+      if addon and addon.minimapButton and type(addon.minimapButton.RefreshVisibility) == "function" then
+        addon.minimapButton:RefreshVisibility()
       end
     end)
   end
@@ -466,27 +640,15 @@ function SettingsPage:Refresh(panel, mainFrame)
     end)
   end
 
-  if panel.reportingAllTimeButton then
-    Components.SetButtonHandler(panel.reportingAllTimeButton, function()
-      if addon and addon.db then
-        local filter = addon.db:SetReportingFilter({
-          mode = "all_time",
-        })
-        refreshReportingControls(panel, mainFrame, filter)
-        if mainFrame and type(mainFrame.RenderActiveTab) == "function" then
-          mainFrame:RenderActiveTab()
-        end
-      end
+  if panel.reportingStartCalendarButton then
+    Components.SetButtonHandler(panel.reportingStartCalendarButton, function()
+      openCalendarForInput(panel, panel.reportingStartInput)
     end)
   end
 
-  if panel.reportingCustomButton then
-    Components.SetButtonHandler(panel.reportingCustomButton, function()
-      panel.reportingSelectedMode = "custom"
-      if Components.SetButtonVariant then
-        Components.SetButtonVariant(panel.reportingAllTimeButton, "secondary")
-        Components.SetButtonVariant(panel.reportingCustomButton, "selected")
-      end
+  if panel.reportingEndCalendarButton then
+    Components.SetButtonHandler(panel.reportingEndCalendarButton, function()
+      openCalendarForInput(panel, panel.reportingEndInput)
     end)
   end
 
@@ -503,16 +665,38 @@ function SettingsPage:Refresh(panel, mainFrame)
         return
       end
 
-      local filter = addon.db:SetReportingFilter({
-        mode = "custom",
-        label = panel.reportingLabelInput and panel.reportingLabelInput:GetText() or "",
-        startsAt = startsAt,
-        endsAt = endsAt,
-      })
+      local filter
+      if not startsAt and not endsAt then
+        filter = addon.db:SetReportingFilter({
+          mode = "all_time",
+        })
+      else
+        filter = addon.db:SetReportingFilter({
+          mode = "custom",
+          label = "Custom Range",
+          startsAt = startsAt,
+          endsAt = endsAt,
+        })
+      end
       refreshReportingControls(panel, mainFrame, filter)
-      Components.SetText(panel.reportingStatusLabel, "Reporting filter saved.")
       if mainFrame and type(mainFrame.RenderActiveTab) == "function" then
         mainFrame:RenderActiveTab()
+      end
+      Components.SetText(panel.reportingStatusLabel, "Reporting filter saved.")
+    end)
+  end
+
+  if panel.reportingClearButton then
+    Components.SetButtonHandler(panel.reportingClearButton, function()
+      if addon and addon.db then
+        local filter = addon.db:SetReportingFilter({
+          mode = "all_time",
+        })
+        refreshReportingControls(panel, mainFrame, filter)
+        if mainFrame and type(mainFrame.RenderActiveTab) == "function" then
+          mainFrame:RenderActiveTab()
+        end
+        Components.SetText(panel.reportingStatusLabel, "Reporting filter cleared.")
       end
     end)
   end

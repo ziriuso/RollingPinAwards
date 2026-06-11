@@ -978,8 +978,11 @@ function Components.CreateButton(parent, config)
     })
   end
 
-  local labelX = button.iconFrame and 46 or 8
-  local labelWidth = (config.width or 120) - labelX - 10
+  local labelX = config.labelX
+  if labelX == nil then
+    labelX = button.iconFrame and 46 or 8
+  end
+  local labelWidth = config.labelWidth or ((config.width or 120) - labelX - 10)
   button.label = createFontString(button, "GameFontNormal", labelX, -6, labelWidth, button.iconFrame and "LEFT" or "CENTER", "MIDDLE", config.text or "", {
     textRole = config.textRole or "buttonText",
   })
@@ -1292,6 +1295,7 @@ function Components.CreateCheckButton(parent, config)
       x = (config.x or 0) + 30,
       y = config.y or 0,
       font = "GameFontHighlight",
+      textRole = config.labelTextRole,
     })
     button.label = text
   end

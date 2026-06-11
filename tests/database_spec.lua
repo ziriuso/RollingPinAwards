@@ -149,6 +149,35 @@ return {
     harness.assert_nil(reset.endsAt)
   end,
 
+  ["database stores local minimap launcher preferences"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      savedVariables = {
+        profile = {
+          guildDatasets = {},
+          localSettings = {
+            minimapButtonShown = nil,
+            minimapAngle = -45,
+          },
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    harness.assert_true(addon.db:IsMinimapButtonShown())
+    harness.assert_equal(315, addon.db:GetMinimapAngle())
+
+    harness.assert_false(addon.db:SetMinimapButtonShown(false))
+    harness.assert_false(addon.db:IsMinimapButtonShown())
+    harness.assert_true(addon.db:SetMinimapButtonShown(true))
+    harness.assert_true(addon.db:IsMinimapButtonShown())
+
+    harness.assert_equal(5, addon.db:SetMinimapAngle(365))
+    harness.assert_equal(5, addon.db:GetMinimapAngle())
+  end,
+
   ["database persists seen reward toast ids in local settings"] = function()
     local savedVariables = {
       profile = {

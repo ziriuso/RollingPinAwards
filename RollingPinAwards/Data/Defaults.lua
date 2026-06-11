@@ -9,6 +9,7 @@ RPA.Defaults = {
       toastDurationSeconds = 7,
       addonScale = 0.8,
       minimapAngle = 225,
+      minimapButtonShown = true,
       seenAwardToastIds = {},
       seenAwardChatIds = {},
       syncPeersByGuild = {},
