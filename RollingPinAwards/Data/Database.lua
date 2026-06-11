@@ -40,6 +40,40 @@ local function clampAddonScale(scale)
   return math.floor((math.min(1.25, math.max(0.8, normalized)) * 100) + 0.5) / 100
 end
 
+local function normalizeReportingFilter(filter)
+  if type(filter) ~= "table" then
+    filter = {}
+  end
+
+  if filter.mode ~= "custom" then
+    return {
+      mode = "all_time",
+      label = "All Time",
+      startsAt = nil,
+      endsAt = nil,
+    }
+  end
+
+  local startsAt = tonumber(filter.startsAt)
+  local endsAt = tonumber(filter.endsAt)
+  if startsAt and endsAt and startsAt > endsAt then
+    startsAt, endsAt = endsAt, startsAt
+  end
+
+  local label = type(filter.label) == "string" and filter.label or ""
+  label = label:gsub("^%s+", ""):gsub("%s+$", "")
+  if label == "" then
+    label = "Custom Range"
+  end
+
+  return {
+    mode = "custom",
+    label = label,
+    startsAt = startsAt,
+    endsAt = endsAt,
+  }
+end
+
 local function ensureGuildDatasetShape(dataset, guildKey)
   dataset.guildKey = dataset.guildKey or guildKey
   dataset.awards = type(dataset.awards) == "table" and dataset.awards or {}
@@ -94,6 +128,8 @@ local function ensureLocalSettingsShape(settings)
   if type(settings.syncPeersByGuild) ~= "table" then
     settings.syncPeersByGuild = {}
   end
+
+  settings.reportingFilter = normalizeReportingFilter(settings.reportingFilter)
 
   if type(settings.toastAnchor) ~= "table" then
     settings.toastAnchor = {}
@@ -214,6 +250,19 @@ function Database:SetAddonScale(scale)
   settings.addonScale = clampAddonScale(scale)
 
   return settings.addonScale
+end
+
+function Database:GetReportingFilter()
+  local settings = self:GetLocalSettings()
+
+  return settings.reportingFilter
+end
+
+function Database:SetReportingFilter(filter)
+  local settings = self:GetLocalSettings()
+  settings.reportingFilter = normalizeReportingFilter(filter)
+
+  return settings.reportingFilter
 end
 
 function Database:HasSeenAwardToast(awardId)

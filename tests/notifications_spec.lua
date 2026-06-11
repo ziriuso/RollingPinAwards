@@ -279,6 +279,43 @@ return {
     harness.assert_equal("115%", panel.addonScaleValueLabel.text)
   end,
 
+  ["settings page saves local reporting filter controls"] = function()
+    local addon = setupPlayer()
+
+    addon.mainFrame:EnsureRendered()
+    addon.mainFrame.settingsGearButton:Click()
+
+    local panel = addon.mainFrame.settingsPanel
+    harness.assert_true(panel.reportingAllTimeButton ~= nil)
+    harness.assert_true(panel.reportingCustomButton ~= nil)
+    harness.assert_true(panel.reportingStartInput ~= nil)
+    harness.assert_true(panel.reportingEndInput ~= nil)
+    harness.assert_true(panel.reportingSaveButton ~= nil)
+    harness.assert_equal("All Time", panel.reportingValueLabel.text)
+
+    panel.reportingCustomButton:Click()
+    panel.reportingLabelInput:SetText("June Raid")
+    panel.reportingStartInput:SetText("2024-06-01")
+    panel.reportingEndInput:SetText("2024-06-30")
+    panel.reportingSaveButton:Click()
+
+    local filter = addon.db:GetReportingFilter()
+    harness.assert_equal("custom", filter.mode)
+    harness.assert_equal("June Raid", filter.label)
+    harness.assert_true(type(filter.startsAt) == "number")
+    harness.assert_true(type(filter.endsAt) == "number")
+    harness.assert_true(filter.startsAt <= filter.endsAt)
+    harness.assert_equal("June Raid", panel.reportingValueLabel.text)
+
+    panel.reportingAllTimeButton:Click()
+
+    filter = addon.db:GetReportingFilter()
+    harness.assert_equal("all_time", filter.mode)
+    harness.assert_equal("All Time", filter.label)
+    harness.assert_nil(filter.startsAt)
+    harness.assert_nil(filter.endsAt)
+  end,
+
   ["settings page adjusts reward toast duration"] = function()
     local addon = setupPlayer()
 

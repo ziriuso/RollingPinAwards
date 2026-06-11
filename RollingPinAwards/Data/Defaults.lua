@@ -12,6 +12,12 @@ RPA.Defaults = {
       seenAwardToastIds = {},
       seenAwardChatIds = {},
       syncPeersByGuild = {},
+      reportingFilter = {
+        mode = "all_time",
+        label = "All Time",
+        startsAt = nil,
+        endsAt = nil,
+      },
       toastAnchor = {
         point = "CENTER",
         relativePoint = "CENTER",

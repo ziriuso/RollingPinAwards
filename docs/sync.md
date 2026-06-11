@@ -82,7 +82,8 @@ Use `/rpa peers` for the readable peer list when you only need to know which gui
 - When `AceDB-3.0` is available, Rolling Pin Awards uses the active Ace profile as the storage backing for the domain database.
 - Without AceDB, the addon falls back to the plain `RollingPinAwardsDB.profile` table path already covered by the Lua-only tests.
 - Delete tombstones stay in the guild dataset id maps for sync conflict checks and snapshot catch-up, but normal UI/database reads filter them out so deleted awards and nominations remain absent from History, Dashboard, Leaderboard, and Nominations views.
-- Player notification preferences, addon scale, toast duration, toast anchor placement, seen reward-toast ids, seen award-chat ids, and sync peer last-seen rows are stored under `profile.localSettings`. They are intentionally local/profile scoped and are not synced through guild datasets.
+- Player notification preferences, addon scale, reporting filter, toast duration, toast anchor placement, seen reward-toast ids, seen award-chat ids, and sync peer last-seen rows are stored under `profile.localSettings`. They are intentionally local/profile scoped and are not synced through guild datasets.
+- The reporting filter is a local view filter only. Dashboard award summaries and Leaderboard counts apply it through `UI/Bridge.lua`, but Public History and the synced award records remain all-time and unchanged.
 - Toast queues are session-local only. They are not persisted and are not included in sync snapshots.
 
 ## Current Service Surface

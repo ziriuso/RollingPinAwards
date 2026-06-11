@@ -861,6 +861,12 @@ return {
       lastModifiedBy = "Guildmaster-Stormrage",
       lastModifiedAt = 1717336802,
     })
+    addon.db:SetReportingFilter({
+      mode = "custom",
+      label = "Local Only",
+      startsAt = 1717336800,
+      endsAt = 1717423200,
+    })
 
     _G.__RPA_TEST_STATE.nativeCommMessages = {}
     local hello = addon.sync:SerializeEnvelope({
@@ -875,6 +881,7 @@ return {
     addon:OnCommReceived(addon.Constants.COMM_PREFIX, hello, "GUILD", "Officerone-Stormrage")
 
     local seen = {}
+    local leakedReportingFilter = false
     for _, message in ipairs(_G.__RPA_TEST_STATE.nativeCommMessages or {}) do
       local envelope, err = addon.sync:DecodeNativeMessage(
         message.message,
@@ -884,6 +891,9 @@ return {
       if err ~= "partial" then
         harness.assert_true(envelope ~= nil)
         seen[envelope.payloadType] = true
+        leakedReportingFilter = leakedReportingFilter
+          or (envelope.payload or {}).reportingFilter ~= nil
+          or (envelope.payload or {}).label == "Local Only"
       end
     end
 
@@ -893,5 +903,6 @@ return {
     harness.assert_true(seen.vote)
     harness.assert_true(seen.award)
     harness.assert_true(seen.sync_snapshot_complete)
+    harness.assert_false(leakedReportingFilter)
   end,
 }
