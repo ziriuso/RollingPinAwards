@@ -76,6 +76,10 @@ return {
     harness.assert_true(addon.mainFrame.backgroundCalibrator ~= nil)
     harness.assert_true(addon.mainFrame.backgroundCalibrator.visible)
     harness.assert_equal("Interface\\AddOns\\RollingPinAwards\\Media\\addon-background.png", addon.mainFrame.backgroundCalibrator.backgroundArt.texturePath)
+    harness.assert_equal(1000, addon.mainFrame.backgroundCalibrator.width)
+    harness.assert_equal(925, addon.mainFrame.backgroundCalibrator.height)
+    harness.assert_equal(1000, addon.mainFrame.backgroundCalibrator.backgroundArt.width)
+    harness.assert_equal(925, addon.mainFrame.backgroundCalibrator.backgroundArt.height)
     harness.assert_true(addon.mainFrame.backgroundCalibrator.mouseEnabled)
     harness.assert_true(addon.mainFrame.backgroundCalibrator.movable)
     harness.assert_true(addon.mainFrame.backgroundCalibrator.resizable)
@@ -106,6 +110,32 @@ return {
     harness.assert_true(addon.__rpaLastChatOutput[1]:match("Rolling Pin Awards sync diagnostics") ~= nil)
     harness.assert_true(addon.__rpaLastChatOutput[2]:match("Guild:") ~= nil)
     harness.assert_true(addon.__rpaLastChatOutput[3]:match("Comm prefix:") ~= nil)
+    harness.assert_true(table.concat(addon.__rpaLastChatOutput, "\n"):match("LibStub:") ~= nil)
+    harness.assert_true(table.concat(addon.__rpaLastChatOutput, "\n"):match("ChatThrottleLib:") ~= nil)
+  end,
+
+  ["slash command opens the sync peers window"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    addon.db:RecordSyncPeer(guildKey, "Officerone-Stormrage", 1717336800)
+
+    harness.assert_true(addon:HandleChatCommand("peers") == true)
+    harness.assert_true(addon.mainFrame.syncPeersDialog.visible)
+    harness.assert_equal("Sync Peers", addon.mainFrame.syncPeersDialog.titleLabel.text)
+
+    addon.mainFrame.syncPeersDialog.closeButton:Click()
+
+    harness.assert_false(addon.mainFrame.syncPeersDialog.visible)
+    harness.assert_true(addon:HandleChatCommand("sync peers") == true)
+    harness.assert_true(addon.mainFrame.syncPeersDialog.visible)
   end,
 
   ["minimap button uses custom icon and toggles the main frame"] = function()
@@ -126,5 +156,59 @@ return {
     addon.minimapButton.button:Click()
 
     harness.assert_false(addon.mainFrame.frame.visible)
+  end,
+
+  ["minimap button anchors to the minimap ring and updates while dragged"] = function()
+    wow.reset({ guildName = "Raid Bakery" })
+    _G.Minimap = {
+      frameLevel = 7,
+      frameStrata = "MEDIUM",
+      children = {},
+      GetCenter = function()
+        return 400, 300
+      end,
+      GetEffectiveScale = function()
+        return 1
+      end,
+    }
+    local cursorX = 400
+    local cursorY = 382
+    _G.GetCursorPosition = function()
+      return cursorX, cursorY
+    end
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    local minimapButton = addon.minimapButton.button
+    harness.assert_equal(_G.Minimap, minimapButton.parent)
+    harness.assert_true(minimapButton.movable)
+    harness.assert_true(minimapButton.mouseEnabled)
+    harness.assert_equal("LeftButton", minimapButton.dragButtons[1])
+    harness.assert_equal("CENTER", minimapButton.point[1])
+    harness.assert_equal(_G.Minimap, minimapButton.point[2])
+    harness.assert_equal("CENTER", minimapButton.point[3])
+    harness.assert_true(math.abs((minimapButton.ringRadius or 0) - 82) < 0.001)
+
+    minimapButton.scripts.OnDragStart(minimapButton)
+    harness.assert_true(type(minimapButton.scripts.OnUpdate) == "function")
+    minimapButton.scripts.OnUpdate(minimapButton)
+
+    harness.assert_true(math.abs((minimapButton.minimapAngle or 0) - 90) < 0.001)
+    harness.assert_true(math.abs((addon.db:GetLocalSettings().minimapAngle or 0) - 90) < 0.001)
+    harness.assert_true(math.abs((minimapButton.point[4] or 0) - 0) < 0.001)
+    harness.assert_true(math.abs((minimapButton.point[5] or 0) - 82) < 0.001)
+
+    cursorX = 482
+    cursorY = 300
+    minimapButton.scripts.OnUpdate(minimapButton)
+
+    harness.assert_true(math.abs((minimapButton.minimapAngle or 0) - 0) < 0.001)
+    harness.assert_true(math.abs((addon.db:GetLocalSettings().minimapAngle or 0) - 0) < 0.001)
+    harness.assert_true(math.abs((minimapButton.point[4] or 0) - 82) < 0.001)
+    harness.assert_true(math.abs((minimapButton.point[5] or 0) - 0) < 0.001)
+
+    minimapButton.scripts.OnDragStop(minimapButton)
+    harness.assert_nil(minimapButton.scripts.OnUpdate)
   end,
 }

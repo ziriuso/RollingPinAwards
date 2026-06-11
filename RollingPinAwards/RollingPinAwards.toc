@@ -1,0 +1,53 @@
+## Interface: 120007, 120005
+## Title: Rolling Pin Awards
+## Notes: Guild awards and nominations for The Burnt Rolling Pin
+## Category: Guild
+## Author: Ziri
+## Version: 1.0.0
+## SavedVariables: RollingPinAwardsDB
+## OptionalDeps: Ace3
+
+Libs/LibStub/LibStub.lua
+Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua
+Libs/AceAddon-3.0/AceAddon-3.0.lua
+Libs/AceDB-3.0/AceDB-3.0.lua
+Libs/AceEvent-3.0/AceEvent-3.0.lua
+Libs/AceConsole-3.0/AceConsole-3.0.lua
+Libs/AceSerializer-3.0/AceSerializer-3.0.lua
+Libs/AceComm-3.0/ChatThrottleLib.lua
+Libs/AceComm-3.0/AceComm-3.0.lua
+
+Core/Namespace.lua
+Core/Constants.lua
+Data/Defaults.lua
+Domain/GuildContext.lua
+Domain/Utils.lua
+Domain/Time.lua
+Data/Database.lua
+Domain/RosterPermissions.lua
+Domain/Permissions.lua
+Domain/Awards.lua
+Domain/Nominations.lua
+Core/SlashCommands.lua
+Core/Notifications.lua
+Sync/Codec.lua
+Sync/Transport.lua
+Sync/Snapshot.lua
+Sync/Merge.lua
+Sync/Diagnostics.lua
+Sync/Coordinator.lua
+Bootstrap.lua
+UI\Bridge.lua
+UI\Styles.lua
+UI\Components.lua
+UI\SettingsPage.lua
+UI\Toast.lua
+UI\Tabs\Dashboard.lua
+UI\Tabs\Award.lua
+UI\Tabs\Nominations.lua
+UI\Tabs\History.lua
+UI\Tabs\Leaderboard.lua
+UI\Tabs\Admin.lua
+UI\MainFrame.lua
+UI/MinimapButton.lua
+Core/Events.lua

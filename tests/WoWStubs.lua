@@ -2,6 +2,16 @@ local state = {}
 local wow = {}
 local originalOs = _G.os
 local serializedSequence = 0
+local DEFAULT_TOC_PATH = "RollingPinAwards/RollingPinAwards.toc"
+
+local function getDirectory(path)
+  local directory = path:match("^(.*)[/\\][^/\\]+$")
+  if directory == "" then
+    return nil
+  end
+
+  return directory
+end
 
 local function copyTable(input)
   local output = {}
@@ -258,6 +268,11 @@ local function createFrameObject(frameType, name, parent, template)
 
   function frame:SetText(value)
     self.text = value
+    if self.frameType == "EditBox" and type(self.scripts.OnTextChanged) == "function" and not self.__settingText then
+      self.__settingText = true
+      self.scripts.OnTextChanged(self)
+      self.__settingText = false
+    end
   end
 
   function frame:GetText()
@@ -558,22 +573,59 @@ local function buildAceLibStub()
     libraries["AceAddon-3.0"] = nil
   end
 
-  return function(libraryName, silent)
-    local library = libraries[libraryName]
-    if library or silent then
-      return library
-    end
+  local libStub = {}
+  setmetatable(libStub, {
+    __call = function(_, libraryName, silent)
+      local library = libraries[libraryName]
+      if library or silent then
+        return library
+      end
 
-    error("missing library: " .. tostring(libraryName))
+      error("missing library: " .. tostring(libraryName))
+    end,
+  })
+
+  return libStub
+end
+
+local function storeNativeComm(prefix, message, distribution, target)
+  state.nativeCommMessages = state.nativeCommMessages or {}
+
+  local maxBytes = tonumber(state.nativeCommMaxBytes or 0) or 0
+  if maxBytes > 0 and type(message) == "string" and #message > maxBytes then
+    state.nativeCommRejectedMessages = state.nativeCommRejectedMessages or {}
+    state.nativeCommRejectedMessages[#state.nativeCommRejectedMessages + 1] = {
+      prefix = prefix,
+      message = message,
+      distribution = distribution,
+      target = target,
+      length = #message,
+    }
+
+    return false
   end
+
+  state.lastNativeCommMessage = {
+    prefix = prefix,
+    message = message,
+    distribution = distribution,
+    target = target,
+  }
+  state.nativeCommMessages[#state.nativeCommMessages + 1] = state.lastNativeCommMessage
+
+  return true
 end
 
 local function loadAddonFromToc(path)
-  for line in io.lines(path or "RollingPinAwards.toc") do
+  local tocPath = path or DEFAULT_TOC_PATH
+  local addonDirectory = getDirectory(tocPath)
+
+  for line in io.lines(tocPath) do
     local entry = line:match("^%s*(.-)%s*$")
     if entry ~= "" and not entry:match("^##") then
       if not entry:match("^Libs[\\/]") then
-        dofile(entry)
+        local entryPath = addonDirectory and (addonDirectory .. "/" .. entry) or entry
+        dofile(entryPath)
       end
     end
   end
@@ -598,6 +650,7 @@ function wow.reset(seed)
     ace3 = seed.ace3,
     noAceAddon = seed.noAceAddon,
     nativeComm = seed.nativeComm,
+    nativeCommMaxBytes = seed.nativeCommMaxBytes,
     loggedIn = seed.loggedIn == true,
     serializedPayloads = {},
     chatMessages = {},
@@ -646,16 +699,7 @@ function wow.reset(seed)
       state.nativeCommPrefix = prefix
     end,
     SendAddonMessage = function(prefix, message, distribution, target)
-      state.nativeCommMessages = state.nativeCommMessages or {}
-      state.lastNativeCommMessage = {
-        prefix = prefix,
-        message = message,
-        distribution = distribution,
-        target = target,
-      }
-      state.nativeCommMessages[#state.nativeCommMessages + 1] = state.lastNativeCommMessage
-
-      return true
+      return storeNativeComm(prefix, message, distribution, target)
     end,
   } or nil
 
@@ -699,6 +743,7 @@ function wow.reset(seed)
   _G.IsLoggedIn = function()
     return state.loggedIn == true
   end
+  _G.ChatThrottleLib = state.ace3 and {} or nil
   _G.LibStub = state.ace3 and buildAceLibStub() or nil
   _G.RollingPinAwards = nil
   _G.RollingPinAwardsDB = state.savedVariables

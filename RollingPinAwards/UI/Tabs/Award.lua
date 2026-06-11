@@ -1,0 +1,245 @@
+local RPA = _G.RollingPinAwards or {}
+_G.RollingPinAwards = RPA
+
+local UITabs = RPA.UITabs or {}
+local Components = RPA.UIComponents or {}
+local Styles = RPA.UIStyles or {}
+local Utils = RPA.Utils or {}
+RPA.UITabs = UITabs
+
+UITabs.award = {
+  id = "award",
+  label = "Award",
+  BuildViewModel = function(bridge)
+    return {
+      canAward = bridge:CanCurrentPlayerCreateDirectAwards(),
+    }
+  end,
+  DescribeViewModel = function(viewModel)
+    local lines = {
+      "Direct awards create The Burnt Rolling Pin without a nomination.",
+    }
+
+    if viewModel.canAward then
+      lines[#lines + 1] = "You can manage awards in this guild."
+    else
+      lines[#lines + 1] = "You do not currently have permission to manage awards."
+    end
+
+    return {
+      title = "Award",
+      lines = lines,
+    }
+  end,
+  BuildPanel = function(parent, mainFrame)
+    local layout = Styles.Layout or {}
+    local media = Styles.Media or {}
+    local panel = CreateFrame("Frame", nil, parent)
+    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", layout.panelX or 59, layout.panelY or -42)
+    panel:SetSize(layout.panelWidth or 762, (parent.height or 520) - 56)
+
+    panel.formSection = Components.CreateSection(panel, {
+      id = "RollingPinAwardsAwardFormSection",
+      title = "Award The Burnt Rolling Pin",
+      iconPath = media.awardIcon,
+      iconWidth = 24,
+      iconHeight = 24,
+      width = 500,
+      height = 336,
+      x = 0,
+      y = 0,
+    })
+    panel.helperLabel = Components.CreateLabel(panel.formSection, {
+      text = "Use this when the story is already settled and the guild just needs the ruling recorded.",
+      x = 14,
+      y = -38,
+      width = 470,
+      font = "GameFontHighlightSmall",
+      justifyH = "LEFT",
+      textRole = "descriptionSmall",
+    })
+    panel.selectedAwardType = panel.selectedAwardType or "burnt"
+    panel.typeBurntButton = Components.CreateButton(panel.formSection, {
+      text = "Burnt",
+      width = 96,
+      height = 28,
+      x = 14,
+      y = -66,
+      variant = "primary",
+      onClick = function()
+        panel.selectedAwardType = "burnt"
+        mainFrame:RenderActiveTab()
+      end,
+    })
+    panel.typeGoldenButton = Components.CreateButton(panel.formSection, {
+      text = "Golden",
+      width = 96,
+      height = 28,
+      x = 118,
+      y = -66,
+      variant = "secondary",
+      onClick = function()
+        panel.selectedAwardType = "golden"
+        mainFrame:RenderActiveTab()
+      end,
+    })
+    panel.recipientLabel = Components.CreateLabel(panel.formSection, {
+      text = "Recipient",
+      x = 14,
+      y = -102,
+      font = "GameFontNormal",
+      textRole = "fieldLabel",
+    })
+    panel.recipientInput = Components.CreateEditBox(panel.formSection, {
+      width = 300,
+      x = 14,
+      y = -124,
+      maxLetters = 64,
+    })
+    panel.recipientSuggestionButton = Components.CreateButton(panel.formSection, {
+      text = "",
+      width = 300,
+      height = 20,
+      x = 14,
+      y = -150,
+      variant = "secondary",
+    })
+    Components.SetVisible(panel.recipientSuggestionButton, false)
+    panel.reasonLabel = Components.CreateLabel(panel.formSection, {
+      text = "Reason",
+      x = 14,
+      y = -220,
+      font = "GameFontNormal",
+      textRole = "fieldLabel",
+    })
+    panel.reasonInput = Components.CreateEditBox(panel.formSection, {
+      width = 462,
+      x = 14,
+      y = -242,
+      maxLetters = 100,
+    })
+    panel.submitButton = Components.CreateButton(panel.formSection, {
+      text = "Award The Burnt Rolling Pin",
+      width = 280,
+      height = 36,
+      x = 14,
+      y = -280,
+      variant = "primary",
+      iconPath = media.awardIcon,
+      iconWidth = 20,
+      iconHeight = 20,
+      onClick = function()
+        local recipientName = panel.recipientInput.selectedRosterName
+        if not recipientName then
+          Components.SetText(panel.statusLabel, "Select a guild character from the suggestions before awarding.")
+          return
+        end
+
+        local award, err = mainFrame.uiBridge:CreateDirectAward(
+          recipientName,
+          panel.reasonInput:GetText(),
+          panel.selectedAwardType
+        )
+
+        if award then
+          Components.SetText(panel.statusLabel, ("Awarded %s."):format(Utils.GetShortCharacterName(award.recipient)))
+          Components.SetText(panel.recipientInput, "")
+          panel.recipientInput.selectedRosterName = nil
+          Components.SetText(panel.reasonInput, "")
+        else
+          Components.SetText(panel.statusLabel, ("Unable to award: %s"):format(err or "unknown error"))
+        end
+
+        mainFrame:RenderActiveTab()
+      end,
+    })
+    panel.statusLabel = Components.CreateLabel(panel.formSection, {
+      text = "",
+      x = 14,
+      y = -318,
+      width = 470,
+      justifyH = "LEFT",
+      font = "GameFontHighlightSmall",
+    })
+
+    panel.briefSection = Components.CreateSection(panel, {
+      id = "RollingPinAwardsAwardBriefSection",
+      title = "What Gets Recorded",
+      width = 246,
+      height = 336,
+      x = 516,
+      y = 0,
+    })
+    panel.briefLabel = Components.CreateLabel(panel.briefSection, {
+      text = table.concat({
+        "Direct awards are immediate and public.",
+        "",
+        "Saved with:",
+        "- recipient",
+        "- reason",
+        "- award date",
+        "- awarded by",
+        "",
+        "Best used when moderation is already obvious.",
+      }, "\n"),
+      x = 14,
+      y = -38,
+      width = 214,
+      justifyH = "LEFT",
+      justifyV = "TOP",
+      font = "GameFontHighlightSmall",
+    })
+
+    return panel
+  end,
+  RefreshPanel = function(panel, viewModel, bridge)
+    if Components.AttachRosterAutocomplete and not panel.recipientAutocompleteRefresh then
+      panel.recipientAutocompleteRefresh = Components.AttachRosterAutocomplete(
+        panel.recipientInput,
+        panel.recipientSuggestionButton,
+        bridge,
+        {
+          maxSuggestions = 3,
+        }
+      )
+    end
+
+    local awardType = panel.selectedAwardType or "burnt"
+    local isGolden = awardType == "golden"
+    Components.SetButtonVariant(panel.typeBurntButton, isGolden and "secondary" or "selected")
+    Components.SetButtonVariant(panel.typeGoldenButton, isGolden and "selected" or "secondary")
+    Components.SetText(
+      panel.formSection.titleText,
+      isGolden and "Award The Golden Rolling Pin" or "Award The Burnt Rolling Pin"
+    )
+    Components.SetText(
+      panel.submitButton,
+      isGolden and "Award The Golden Rolling Pin" or "Award The Burnt Rolling Pin"
+    )
+    if panel.submitButton.iconFrame and panel.submitButton.iconFrame.texture and panel.submitButton.iconFrame.texture.SetTexture then
+      panel.submitButton.iconFrame.texture:SetTexture(isGolden and (Styles.Media or {}).leaderboardIcon or (Styles.Media or {}).awardIcon)
+      panel.submitButton.iconFrame.texturePath = isGolden and (Styles.Media or {}).leaderboardIcon or (Styles.Media or {}).awardIcon
+    end
+    if panel.formSection.iconFrame and panel.formSection.iconFrame.texture and panel.formSection.iconFrame.texture.SetTexture then
+      panel.formSection.iconFrame.texture:SetTexture(isGolden and (Styles.Media or {}).leaderboardIcon or (Styles.Media or {}).awardIcon)
+      panel.formSection.iconFrame.texturePath = isGolden and (Styles.Media or {}).leaderboardIcon or (Styles.Media or {}).awardIcon
+    end
+    if viewModel.canAward then
+      if panel.submitButton.Enable then
+        panel.submitButton:Enable()
+      end
+      Components.SetText(
+        panel.statusLabel,
+        panel.statusLabel.text ~= "" and panel.statusLabel.text
+          or "Authorized ranks can issue a direct verdict here."
+      )
+    else
+      if panel.submitButton.Disable then
+        panel.submitButton:Disable()
+      end
+      Components.SetText(panel.statusLabel, "You do not have permission to create direct awards.")
+    end
+  end,
+}
+
+return UITabs.award

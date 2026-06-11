@@ -242,6 +242,81 @@ return {
     harness.assert_true(accepted)
   end,
 
+  ["sync ignores stale nominations that would downgrade an existing resolved row"] = function()
+    local addon = setupAceGuild()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+
+    addon.db:UpsertNomination(guildKey, {
+      nominationId = "nom:shared",
+      guildKey = guildKey,
+      nominee = "Moonrustle-Stormrage",
+      reason = "Already resolved",
+      status = "approved",
+      awardId = "award:shared",
+      nominatedBy = "Bakerone-Stormrage",
+      resolvedBy = "Guildmaster-Stormrage",
+      lastModifiedAt = 200,
+      lastModifiedBy = "Guildmaster-Stormrage",
+    })
+
+    local accepted, err = addon.sync:AcceptNomination({
+      nominationId = "nom:shared",
+      guildKey = guildKey,
+      nominee = "Moonrustle-Stormrage",
+      reason = "Old pending copy",
+      status = "pending",
+      nominatedBy = "Officerone-Stormrage",
+      lastModifiedAt = 100,
+      lastModifiedBy = "Officerone-Stormrage",
+    })
+    local stored = addon.db:GetNomination(guildKey, "nom:shared")
+
+    harness.assert_false(accepted)
+    harness.assert_equal("stale nomination", err)
+    harness.assert_equal("approved", stored.status)
+    harness.assert_equal("award:shared", stored.awardId)
+  end,
+
+  ["sync ignores stale awards that would replace existing history"] = function()
+    local addon = setupAceGuild()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+
+    addon.permissions:SetRankPermissions(1, "Officer", {
+      canCreateDirectAwards = true,
+    })
+    addon.db:UpsertAward(guildKey, {
+      awardId = "award:shared",
+      guildKey = guildKey,
+      awardName = "The Burnt Rolling Pin",
+      recipient = "Mara-Stormrage",
+      player = "Mara-Stormrage",
+      reason = "Current local history",
+      awardedBy = "Guildmaster-Stormrage",
+      source = "direct",
+      lastModifiedAt = 200,
+      lastModifiedBy = "Guildmaster-Stormrage",
+    })
+
+    local accepted, err = addon.sync:AcceptAward({
+      awardId = "award:shared",
+      guildKey = guildKey,
+      awardName = "The Burnt Rolling Pin",
+      recipient = "Moonrustle-Stormrage",
+      player = "Moonrustle-Stormrage",
+      reason = "Old remote history",
+      awardedBy = "Officerone-Stormrage",
+      source = "direct",
+      lastModifiedAt = 100,
+      lastModifiedBy = "Officerone-Stormrage",
+    })
+    local stored = addon.db:GetAward(guildKey, "award:shared")
+
+    harness.assert_false(accepted)
+    harness.assert_equal("stale award", err)
+    harness.assert_equal("Mara-Stormrage", stored.recipient)
+    harness.assert_equal("Current local history", stored.reason)
+  end,
+
   ["sync accepts a rank permission update from an authorized rank manager"] = function()
     wow.reset({
       guildName = "Raid Bakery",
@@ -488,24 +563,162 @@ return {
     harness.assert_equal(0, #addon.awards:GetPublicHistory())
   end,
 
+  ["sync keeps offline award snapshots from resurrecting deleted awards"] = function()
+    local addon = setupAceGuild()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    local award = addon.awards:CreateDirectAward("Burny-Stormrage", "Set the oven to lava")
+
+    local deleted = addon.sync:AcceptAward({
+      guildKey = guildKey,
+      awardId = award.awardId,
+      source = "direct",
+      deleted = true,
+      lastModifiedAt = (award.lastModifiedAt or 0) + 10,
+      lastModifiedBy = "Guildmaster-Stormrage",
+    })
+    local accepted, err = addon.sync:AcceptAward({
+      guildKey = guildKey,
+      awardId = award.awardId,
+      awardName = award.awardName,
+      awardType = award.awardType,
+      recipient = award.recipient,
+      player = award.player,
+      reason = award.reason,
+      awardedBy = award.awardedBy,
+      source = award.source,
+      createdAt = award.createdAt,
+      lastModifiedAt = award.lastModifiedAt,
+      lastModifiedBy = award.lastModifiedBy,
+    })
+
+    harness.assert_true(deleted)
+    harness.assert_false(accepted)
+    harness.assert_equal("stale award", err)
+    harness.assert_equal(0, #addon.awards:GetPublicHistory())
+  end,
+
+  ["sync full snapshot includes award delete tombstones for offline catch-up"] = function()
+    local addon = setupNativeGuild()
+    local award = addon.awards:CreateDirectAward("Burny-Stormrage", "Set the oven to lava")
+    addon.awards:DeleteAward(award.awardId)
+
+    _G.__RPA_TEST_STATE.nativeCommMessages = {}
+    addon.sync:SendFullSnapshot("GUILD")
+
+    local seenDelete = false
+    for _, message in ipairs(_G.__RPA_TEST_STATE.nativeCommMessages or {}) do
+      local envelope, err = addon.sync:DecodeNativeMessage(
+        message.message,
+        message.distribution,
+        "Guildmaster-Stormrage"
+      )
+      if err ~= "partial" and envelope and envelope.payloadType == "award" then
+        seenDelete = envelope.payload.awardId == award.awardId
+          and envelope.payload.deleted == true
+          and envelope.payload.lastModifiedBy == "Guildmaster-Stormrage"
+      end
+    end
+
+    harness.assert_true(seenDelete)
+  end,
+
   ["native comm fallback registers and broadcasts when ace is unavailable"] = function()
     local addon = setupNativeGuild()
 
     harness.assert_true(addon.__rpaUsesAce3 == false)
     harness.assert_equal(addon.Constants.COMM_PREFIX, addon.__rpaNativeCommPrefix)
     harness.assert_equal(addon.Constants.COMM_PREFIX, _G.__RPA_TEST_STATE.nativeCommPrefix)
+    harness.assert_true(#(_G.__RPA_TEST_STATE.nativeCommMessages or {}) >= 1)
 
     local award = addon.awards:CreateDirectAward("Burny-Stormrage", "Set the oven to lava")
-    local sent = _G.__RPA_TEST_STATE.lastNativeCommMessage
-    local envelope = addon.sync:DeserializeEnvelope(sent.message)
+    local envelope
+    for _, sent in ipairs(_G.__RPA_TEST_STATE.nativeCommMessages or {}) do
+      local decoded, err = addon.sync:DecodeNativeMessage(
+        sent.message,
+        sent.distribution,
+        "Guildmaster-Stormrage"
+      )
+      if err ~= "partial" and decoded and decoded.payloadType == "award" then
+        envelope = decoded
+      end
+    end
 
     harness.assert_true(award ~= nil)
-    harness.assert_equal(addon.Constants.COMM_PREFIX, sent.prefix)
-    harness.assert_equal("GUILD", sent.distribution)
-    harness.assert_equal("string", type(sent.message))
+    harness.assert_true(envelope ~= nil)
     harness.assert_equal("award", envelope.payloadType)
     harness.assert_equal(award.awardId, envelope.payload.awardId)
     harness.assert_equal("direct", envelope.payload.source)
+  end,
+
+  ["native fallback chunks long nomination envelopes under the addon-message limit"] = function()
+    local addon = setupNativeGuild({
+      nativeCommMaxBytes = 255,
+    })
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    _G.__RPA_TEST_STATE.nativeCommMessages = {}
+    _G.__RPA_TEST_STATE.nativeCommRejectedMessages = {}
+
+    local ok = addon.sync:Broadcast("nomination", {
+      nominationId = "nom:Guildmaster-Stormrage:1717336800:99",
+      guildKey = guildKey,
+      nominee = "Moonrustle-Stormrage",
+      reason = string.rep("Helpful bakery logistics. ", 18),
+      awardType = "burnt",
+      status = "pending",
+      nominatedBy = "Guildmaster-Stormrage",
+      createdAt = 1717336800,
+      lastModifiedAt = 1717336800,
+      lastModifiedBy = "Guildmaster-Stormrage",
+    }, "GUILD")
+
+    harness.assert_true(ok)
+    harness.assert_equal(0, #(_G.__RPA_TEST_STATE.nativeCommRejectedMessages or {}))
+    harness.assert_true(#(_G.__RPA_TEST_STATE.nativeCommMessages or {}) > 1)
+
+    for _, sent in ipairs(_G.__RPA_TEST_STATE.nativeCommMessages or {}) do
+      harness.assert_true(#sent.message <= 255)
+    end
+  end,
+
+  ["native fallback reassembles chunked inbound nominations before dispatch"] = function()
+    local addon = setupNativeGuild({
+      nativeCommMaxBytes = 255,
+    })
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    _G.__RPA_TEST_STATE.nativeCommMessages = {}
+
+    addon.sync:Broadcast("nomination", {
+      nominationId = "nom:Officerone-Stormrage:1717336800:100",
+      guildKey = guildKey,
+      nominee = "Moonrustle-Stormrage",
+      reason = string.rep("Chunked inbound bakery logistics. ", 16),
+      awardType = "golden",
+      status = "pending",
+      nominatedBy = "Officerone-Stormrage",
+      createdAt = 1717336800,
+      lastModifiedAt = 1717336800,
+      lastModifiedBy = "Officerone-Stormrage",
+    }, "GUILD")
+
+    local dispatchedNominationId
+    addon.sync.AcceptNomination = function(_, payload)
+      dispatchedNominationId = payload.nominationId
+
+      return true
+    end
+
+    for _, sent in ipairs(_G.__RPA_TEST_STATE.nativeCommMessages or {}) do
+      addon:OnCommReceived(
+        addon.Constants.COMM_PREFIX,
+        sent.message,
+        sent.distribution,
+        "Officerone-Stormrage"
+      )
+    end
+
+    harness.assert_equal("nom:Officerone-Stormrage:1717336800:100", dispatchedNominationId)
+    harness.assert_equal("nomination", addon.sync.lastInbound.payloadType)
+    harness.assert_true(addon.sync.lastInbound.ok)
   end,
 
   ["native comm fallback inbound messages deserialize and dispatch"] = function()
@@ -532,5 +745,153 @@ return {
     harness.assert_true(called)
     harness.assert_equal("nomination", addon.sync.lastInbound.payloadType)
     harness.assert_true(addon.sync.lastInbound.ok)
+  end,
+
+  ["sync announces itself on startup and manual sync now over native fallback"] = function()
+    local addon = setupNativeGuild()
+    local startupMessages = _G.__RPA_TEST_STATE.nativeCommMessages or {}
+    local startupEnvelope = addon.sync:DeserializeEnvelope(startupMessages[1].message)
+
+    harness.assert_equal("sync_hello", startupEnvelope.payloadType)
+    harness.assert_equal(addon:GetActiveGuildContext().guildKey, startupEnvelope.payload.guildKey)
+
+    local beforeManual = #startupMessages
+    local ok = addon:HandleChatCommand("sync now")
+    local manualMessages = _G.__RPA_TEST_STATE.nativeCommMessages or {}
+
+    harness.assert_true(ok)
+    harness.assert_true(#manualMessages > beforeManual)
+    local manualEnvelope = addon.sync:DeserializeEnvelope(manualMessages[beforeManual + 1].message)
+    harness.assert_equal("sync_hello", manualEnvelope.payloadType)
+  end,
+
+  ["sync records same-guild inbound senders as local peers"] = function()
+    local addon = setupNativeGuild({
+      serverTime = 1717336800,
+    })
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    local hello = addon.sync:SerializeEnvelope({
+      payloadType = "sync_hello",
+      payload = {
+        guildKey = guildKey,
+        sender = "Officerone-Stormrage",
+        sentAt = 1717336799,
+      },
+    })
+
+    addon:OnCommReceived(addon.Constants.COMM_PREFIX, hello, "GUILD", "Officerone-Stormrage")
+
+    local peers = addon.db:GetSyncPeers(guildKey)
+
+    harness.assert_equal(1, #peers)
+    harness.assert_equal("Officerone-Stormrage", peers[1].player)
+    harness.assert_equal(1717336800, peers[1].lastSeenAt)
+  end,
+
+  ["sync sends a fresh hello when provisional guild key becomes stable"] = function()
+    local addon = setupNativeGuild({
+      guildName = "Tyrrish Rebellion",
+    })
+    local startupMessages = _G.__RPA_TEST_STATE.nativeCommMessages or {}
+    local startupEnvelope = addon.sync:DeserializeEnvelope(startupMessages[1].message)
+
+    harness.assert_equal("sync_hello", startupEnvelope.payloadType)
+    harness.assert_equal("tyrrish rebellion", startupEnvelope.payload.guildKey)
+
+    local beforeRefresh = #startupMessages
+    wow.setGuild("Tyrrish Rebellion", 426137461)
+    addon:RefreshActiveGuildContext()
+
+    harness.assert_true(#startupMessages > beforeRefresh)
+    local stableEnvelope = addon.sync:DeserializeEnvelope(startupMessages[beforeRefresh + 1].message)
+    harness.assert_equal("sync_hello", stableEnvelope.payloadType)
+    harness.assert_equal("426137461", stableEnvelope.payload.guildKey)
+  end,
+
+  ["sync responds to hello with all syncable record types"] = function()
+    local addon = setupNativeGuild()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+
+    addon.db:UpsertRankPermission(guildKey, 1, {
+      rankIndex = 1,
+      rankName = "Officer",
+      canManageNominations = true,
+      canCreateDirectAwards = true,
+      canDeleteAwards = true,
+      canManageAddonPermissions = true,
+      lastModifiedAt = 1717336800,
+      lastModifiedBy = "Guildmaster-Stormrage",
+    })
+    addon.db:UpsertAliasMapping(guildKey, {
+      aliasKey = "moon",
+      aliasDisplay = "Moon",
+      canonicalName = "Moonrustle-Stormrage",
+      createdBy = "Guildmaster-Stormrage",
+      createdAt = 1717336800,
+      lastModifiedBy = "Guildmaster-Stormrage",
+      lastModifiedAt = 1717336800,
+    })
+    addon.db:UpsertNomination(guildKey, {
+      nominationId = "nom:5",
+      guildKey = guildKey,
+      nominee = "Moonrustle-Stormrage",
+      reason = "Helpful testing",
+      status = "pending",
+      nominatedBy = "Bakerone-Stormrage",
+      lastModifiedBy = "Bakerone-Stormrage",
+      lastModifiedAt = 1717336800,
+    })
+    addon.db:StoreVote(guildKey, "nom:5", {
+      nominationId = "nom:5",
+      guildKey = guildKey,
+      voter = "Bakerone-Stormrage",
+      voteType = "upvote",
+      createdAt = 1717336801,
+    })
+    addon.db:UpsertAward(guildKey, {
+      awardId = "award:8",
+      guildKey = guildKey,
+      awardName = "The Burnt Rolling Pin",
+      awardType = "burnt",
+      recipient = "Moonrustle-Stormrage",
+      player = "Moonrustle-Stormrage",
+      reason = "Won the dough race",
+      awardedBy = "Guildmaster-Stormrage",
+      source = "direct",
+      lastModifiedBy = "Guildmaster-Stormrage",
+      lastModifiedAt = 1717336802,
+    })
+
+    _G.__RPA_TEST_STATE.nativeCommMessages = {}
+    local hello = addon.sync:SerializeEnvelope({
+      payloadType = "sync_hello",
+      payload = {
+        guildKey = guildKey,
+        sender = "Officerone-Stormrage",
+        sentAt = 1717336803,
+      },
+    })
+
+    addon:OnCommReceived(addon.Constants.COMM_PREFIX, hello, "GUILD", "Officerone-Stormrage")
+
+    local seen = {}
+    for _, message in ipairs(_G.__RPA_TEST_STATE.nativeCommMessages or {}) do
+      local envelope, err = addon.sync:DecodeNativeMessage(
+        message.message,
+        message.distribution,
+        "Guildmaster-Stormrage"
+      )
+      if err ~= "partial" then
+        harness.assert_true(envelope ~= nil)
+        seen[envelope.payloadType] = true
+      end
+    end
+
+    harness.assert_true(seen.rank_permissions)
+    harness.assert_true(seen.alias_mapping)
+    harness.assert_true(seen.nomination)
+    harness.assert_true(seen.vote)
+    harness.assert_true(seen.award)
+    harness.assert_true(seen.sync_snapshot_complete)
   end,
 }

@@ -1,169 +1,241 @@
 # Rolling Pin Awards Handoff
 
-## Repo
+## Repo Truth
+
 - Path: `C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards`
 - Branch: `codex/rolling-pin-awards-mvp`
-- Pushed checkpoint: `2ac947cf87f2e5881b408f9956497bbbcced2c9d` (`feat: polish rolling pin awards ui shell`)
-- Current working tree has uncommitted follow-up text-readability polish:
-  - `README.md`
-  - `UI/Components.lua`
-  - `UI/Tabs/Admin.lua`
-  - `docs/superpowers/handoffs/latest-handoff.md`
-  - `tests/bridge_spec.lua`
-
-## Current State
-- UI polish pass is largely implemented and deployed locally to both Retail and PTR.
-- Custom media icons are wired in under `Media/`.
-- Burnt and Golden rolling pin award types are implemented across direct awards, nominations, history, dashboard, and leaderboard.
-- Leaderboard supports `Burnt`, `Golden`, and `Combined` modes.
-- Alias merge management was moved to an admin modal.
-- `CreateContentPanel` no longer creates a decorative `innerShade` child frame or background texture.
-- `contentHost` is now parented to the main frame as a sibling above the empty content panel, anchored to the panel bounds, so tab content is not nested under decorative layers.
-- The root parchment art is visible again with calibrated size/offset values from the live screenshot; `/rpa background` remains available as a temporary movable/resizable calibration helper.
-- The main addon frame now uses `TOOLTIP` strata, a high base frame level, and top-level behavior so the full shell renders above Blizzard action bars and other common UI elements.
-- The main frame has an expanded hit rect matching the parchment overhang, so empty parchment/background areas can be used to drag the addon.
-- The main frame is registered with `UISpecialFrames` and has an Escape key handler so Esc closes the addon when the main window is focused.
-- Follow-up UI tweaks are implemented across Dashboard, Award, Nominations, History, Leaderboard, and Admin:
-  - Dashboard card/list copy and alignment, serverless recent awards, normal pin icon for total pins.
-  - Award form chrome expanded and the extra Award Desk box removed.
-  - Nominations form overflow fixed, Burnt/Golden wording and icons updated, public hype footer removed, pending rows separated with lighter backdrops.
-  - History and Leaderboard helper boxes removed, tables expanded, and list rows separated with lighter backdrops.
-  - Admin alias form is contained within its chrome and moderation queue opens in a modal.
-- Follow-up polish fix:
-  - Custom checkboxes now own their visual checked state and click toggling, so Admin permission toggles work without the default ghost checkbox template.
-  - Scrollable list rows now use `BackdropTemplate` frames so row backdrops render in the live client.
-  - Pending nominations table height was expanded so three visible rows and their action buttons stay inside the table chrome.
-- Settings tab and its local toggles were removed entirely:
-  - no tooltips toggle
-  - no announce-awards toggle
-  - no debug-mode toggle
-  - Admin now occupies the old sixth nav slot and the main addon window is slightly narrower for a more even right-side buffer.
-- Latest row polish pass is implemented:
-  - highlighted scroll-list rows use dark ink text on the lighter row backdrop.
-  - row labels, icons, and action buttons are vertically centered.
-  - reusable list rows leave a right gutter so row backdrops do not run under scrollbars.
-  - Dashboard list rows now use the same lighter backdrop style as other tabs and the rolling-pin count is double-indented.
-  - Pending nomination, leaderboard, moderation queue, and alias merge rows share the scrollbar-safe row layout.
-  - Moderation queue has `Pending`, `Approved`, `Rejected`, and `All` filters, defaults to pending only, and no longer shows the flame icon or `Pending Nominations` header.
-  - Moderation statuses render without brackets.
-  - Admin permission help now uses the actual column labels (`Nominations`, `Direct`, `Delete`, `Admin`) and the old Rank 0 note is removed from the tab.
-  - Tab navigation rail is tighter and the six nav buttons are centered inside it after the Settings tab removal.
-  - Header text/flame icon has been replaced by the banner artwork built into the main shell background.
-  - Burnt and Golden rolling pin media now use `Media/burnt-rolling-pin.png` and `Media/golden-rolling-pin.png`.
-  - `MinimapButton.lua` creates a custom minimap button using `Media/minimap-button.png`; clicking it toggles the main addon window open/closed.
-  - Standalone header logo, header box, and accent chrome are removed because the banner is built into the main shell background.
-  - Main addon shell renders `Media/addon-background.png` visibly at `1048x872` with a `TOPLEFT` offset of `-52, 92`, based on the live calibration screenshot.
-  - `/rpa background` and `/rpa bg` still toggle a temporary movable/resizable background calibration frame for future live placement checks.
-  - The separate header logo/banner texture, old shell shadow, nav-rail backdrop, and visible content-panel backdrop/inner shade are removed; the close X remains as a standalone top-right control.
-  - Reusable section and stat-card backdrops use a lighter banner-toned fill.
-  - Dashboard stat-card value text is centered vertically between the label and detail text.
-  - Leaderboard `View` now opens a larger opaque showcase modal:
-    - centered short character name without realm.
-    - large Golden and Burnt rolling pin icons with bold count labels beneath.
-    - scrollable award record table below the counters.
-    - close button moved to the bottom right for screenshot-friendly framing.
-  - Leaderboard showcase modal now uses `Media/modal-background.png` as a parchment background and keeps all modal content inside a bounded safe content area over the parchment body.
-  - Leaderboard showcase modal is draggable independently from the main addon frame, parents above the main frame content so it does not disappear inside clipped tab layers, uses slightly larger trophy icons, and gives the award record list a headerless full-box scroll area.
-- Latest card/form polish pass is implemented:
-  - Dashboard stat cards no longer render decorative icons.
-  - Addon text now uses WoW's native thin `OUTLINE` font flag, matching Chattynator's thin outline approach; gold text is back to default `GameFontNormal` color rather than the temporary brown override.
-  - Nominations form title no longer has a small left icon.
-  - Nominations form shows a larger selected Burnt/Golden pin preview above the submit button and the submit button is raised slightly.
-  - Admin moderation queue button count now reflects only pending nominations, not approved/rejected history.
-- Latest text readability pass is implemented:
-  - reusable light row backdrops now render their dark row text without WoW outline flags, so Dashboard, Nominations, History, Leaderboard, Admin alias rows, and the moderation modal avoid heavy black-on-light outlines.
-  - Admin helper/status text and rank names are bumped by two font points while retaining the thin outline for readability over the parchment background.
-- The updated build has been copied to both documented local Retail and PTR AddOns folders.
-- Test suite is green.
-- Live visual inspection after the readability pass looked better.
-- Real in-game sync testing was attempted before this slice, and no sync occurred between clients.
-- Current local code now broadcasts local mutations for awards, nominations, nomination votes, alias mappings, and rank permission saves, and includes `/rpa syncdebug` / `/rpa sync debug` chat diagnostics for live transport checks.
-- Live diagnostics showed both clients had `Ace3=false SendComm=false Serialize=false`, so sync now falls back to native `C_ChatInfo` addon messages when AceComm/AceSerializer are unavailable.
-- After comparing GBankManager, Rolling Pin now directly embeds AceComm/AceSerializer through LibStub instead of requiring AceAddon to construct the addon object first.
-- The updated sync/debug/dashboard build has been copied to both documented local Retail and PTR AddOns folders.
-
-## Priority Blocker
-- Top priority remains live sync validation. Real in-game testing previously showed no client-to-client sync despite the local Lua harness being green.
-- The local action-broadcast audit is now implemented, but live two-client validation is still required before treating sync as fixed in game.
-- Current tests prove validation helpers, envelope construction, AceComm registration, and dispatcher routing, but they may not prove the full live transport path or that every local mutation broadcasts:
-  - `Sync.lua` owns `BuildEnvelope`, `Broadcast`, `DispatchEnvelope`, and `Accept*` merge/validation helpers.
-  - `Core.lua` registers `Constants.COMM_PREFIX` in `OnEnable` and deserializes/routes inbound comms in `OnCommReceived`.
-  - `tests/sync_spec.lua` includes broadcast and dispatcher tests using the stubbed AceComm/AceSerializer path.
-  - Local direct awards, nominations, votes, approvals/rejections, rank-permission saves, alias changes, and award deletes now broadcast sync payloads in the Lua test harness.
-- Likely failure areas to inspect first:
-  - Inbound live AceComm may still differ from the local harness even though the stub now serializes outbound messages as strings and exercises `OnCommReceived` deserialization.
-  - Native `C_ChatInfo` fallback now has local test coverage, but still needs live two-client verification.
-  - `/rpa syncdebug` now reports individual AceComm/AceSerializer embed state.
-  - Self-sent messages may need to be ignored intentionally, while other same-guild senders must be accepted and rerender the UI.
-  - Authorized sender validation depends on active guild context and rank permissions; a receiving client may reject a legitimate sender if the rank matrix/guild roster state has not converged.
-  - `/rpa syncdebug` and `/rpa sync debug` now print copy-friendly sync diagnostics to chat.
-- Former visual layering status:
-  - User confirmed the original live layering issue is better after the content-host fix.
-  - Continue only small visual validation after sync is moving data in live clients.
-- The current local shell removes the visible content-panel backdrop and inner shade entirely; interactive tab content lives in `contentHost`, parented to the main frame and clipped above the empty content panel.
-- The leaderboard showcase modal is now parented above the main frame rather than inside the leaderboard tab panel, with a higher frame level so dragging it does not slide under clipped addon content.
-- The main background art is visible again; the close X is offset to the parchment's top-right corner.
-- The whole addon shell is raised to `TOOLTIP` strata and the showcase modal inherits the raised strata instead of dropping to `DIALOG`.
-- Esc close is wired through both `UISpecialFrames` and an `OnKeyDown` handler.
-- Local tests currently prove:
-  - `contentHost` exists
-  - `contentHost` is parented to the main frame, not the decorative content panel
-  - `contentHost` clips children
-  - `contentHost` frame level is above the content panel
-  - content-panel backdrop, `innerShade`, and `innerShadeTexture` are not created
-  - showcase modal parent/frame level sit above the content host
-  - main background art is visible with calibrated dimensions and the close X is offset to the parchment corner
-  - main shell, background art, tab rail, content panel, and content host use the raised strata
-  - the frame hit rect expands over the parchment overhang for dragging
-  - Esc closes the focused main window while non-Esc keys propagate
-  - light row text opts out of outline while Admin helper/status text is two points larger
-- Continue validating all visual polish in the live WoW client because the harness cannot fully reproduce Blizzard frame/backdrop draw ordering.
-
-## Most Relevant Files
-- `Sync.lua`
-- `Core.lua`
-- `UI/Bridge.lua`
-- `Awards.lua`
-- `Nominations.lua`
-- `Permissions.lua`
-- `Database.lua`
-- `tests/sync_spec.lua`
-- `tests/WoWStubs.lua`
-- `docs/sync.md`
-- `UI/Components.lua`
-- `UI/MainFrame.lua`
-- `UI/Styles.lua`
-- `MinimapButton.lua`
-- `tests/bridge_spec.lua`
-
-## Likely Next Investigation
-1. Reproduce the live sync failure with two same-guild clients and record the exact action tested: nomination create, vote, approve/reject, direct award, delete, rank permission save, or alias merge.
-2. Use `/rpa syncdebug` on both clients before and after a tested action and capture the chat output.
-3. Verify receiving-client merge behavior rerenders the visible tab after accepted inbound sync.
-4. Deploy to Retail/PTR and re-test sync in the live client before returning to broader polish.
+- Remote: `https://github.com/ziriuso/RollingPinAwards.git`
+- Current pushed checkpoint before the addon-folder restructure: `aba3a80` (`fix: find chocolatey lua install path`)
+- Recent commits:
+  - `aba3a80 fix: find chocolatey lua install path`
+  - `9e3361f fix: resolve lua runtime in release workflow`
+  - `4cc18e7 chore: prepare curseforge release`
+- `git status -sb` is clean against `origin/codex/rolling-pin-awards-mvp` except local-only untracked folders:
+  - `.figma-make-inspect/`
+  - `.research/`
+  - `tools/lua/`
+- Release `v1.0.0` was published successfully from tag `v1.0.0` pointing at `aba3a80`.
+- The installable addon payload now lives under `RollingPinAwards/`:
+  - `RollingPinAwards/RollingPinAwards.toc`
+  - `RollingPinAwards/Bootstrap.lua`
+  - `RollingPinAwards/Core/`
+  - `RollingPinAwards/Data/`
+  - `RollingPinAwards/Domain/`
+  - `RollingPinAwards/Libs/`
+  - `RollingPinAwards/Media/`
+  - `RollingPinAwards/Sync/`
+  - `RollingPinAwards/UI/`
+- Root-level `.github/`, `docs/`, `tests/`, `tools/`, `README.md`, and `LICENSE` are repository infrastructure and should stay outside the packaged addon folder.
+- Do not stage the local-only folders unless explicitly instructed.
+- `AGENTS.md` was requested as a read-first file, but there is no root `AGENTS.md` file in the repo as of this handoff refresh. Treat the active project instructions from the resume prompt as authoritative:
+  - keep documentation up to date
+  - build reusable, scalable controls
+  - use TDD and SDD
+  - ask for clarity instead of assuming when scope is unclear
+  - never expose secrets insecurely
 
 ## Verification
+
 - Full suite command:
+  - `$env:RPA_LUA=(Resolve-Path '.\tools\lua\lua54.exe').Path`
   - `powershell -ExecutionPolicy Bypass -File .\tests\run.ps1`
-- Last known result:
-  - full suite passed after setting `RPA_LUA=C:\Users\Ziri\Documents\Codex\2026-05-11\GBankManager\.worktrees\gbankmanager-v1\tools\lua\lua.exe`
-  - native comm fallback slice passed with the same `RPA_LUA`
+- Last verified result on 2026-06-05:
+  - full Lua suite passed after second leaderboard showcase count positioning tune with `RPA_LUA=.\tools\lua\lua54.exe`
+  - full Lua suite passed after leaderboard showcase text positioning tune with `RPA_LUA=.\tools\lua\lua54.exe`
+  - full Lua suite passed after leaderboard showcase card rebuild with `RPA_LUA=.\tools\lua\lua54.exe`
+  - full Lua suite passed after draggable minimap ring positioning and `Guild` addon-list category metadata with `RPA_LUA=.\tools\lua\lua54.exe`
+  - full Lua suite passed after modal header/search text color polish and 50% toast opacity with `RPA_LUA=.\tools\lua\lua54.exe`
+  - full Lua suite passed after solid-backdrop opacity fix for toasts, modals, and roster suggestions with `RPA_LUA=.\tools\lua\lua54.exe`
+  - full Lua suite passed after toast background and trophy art replacement with `RPA_LUA=.\tools\lua\lua54.exe`
+  - full Lua suite passed after the nav visual alignment polish with `RPA_LUA=.\tools\lua\lua54.exe`
+  - full Lua suite passed after the modal-fill and autocomplete z-order polish with `RPA_LUA=.\tools\lua\lua54.exe`
+  - full Lua suite passed after the broader screenshot-fix slice with `RPA_LUA=.\tools\lua\lua54.exe`
+  - before the screenshot-fix slice, full Lua suite passed after checkpoint `fd7533e`
 
-## Local Deploy Targets
-- Retail:
+## Local Deploy
+
+- Latest verified/deployed build was copied to:
   - `C:\Gaming\World of Warcraft\_retail_\Interface\AddOns\RollingPinAwards`
-- PTR:
   - `C:\Gaming\World of Warcraft\_xptr_\Interface\AddOns\RollingPinAwards`
+- Latest full deploy after the solid-backdrop opacity fix copied 72 tracked runtime files to both Retail and PTR and verified 144 SHA-256 comparisons with zero mismatches.
+- Latest full deploy after modal header/search text color polish and 50% toast opacity copied 72 tracked runtime files to both Retail and PTR and verified 144 SHA-256 comparisons with zero mismatches.
+- Latest full deploy after draggable minimap ring positioning and `Guild` addon-list category metadata copied 72 tracked runtime files to both Retail and PTR and verified 144 SHA-256 comparisons with zero mismatches.
+- Latest full deploy after leaderboard showcase card rebuild copied 74 runtime/media files, including two new local assets, to both Retail and PTR and verified 148 SHA-256 comparisons with zero mismatches.
+- Latest full deploy after leaderboard showcase text positioning tune copied 74 runtime/media files to both Retail and PTR and verified 148 SHA-256 comparisons with zero mismatches.
+- Latest full deploy after second leaderboard showcase count positioning tune copied 74 runtime/media files to both Retail and PTR and verified 148 SHA-256 comparisons with zero mismatches.
+- Latest full deploy on 2026-06-05 copied 72 tracked runtime files to both Retail and PTR and verified 144 SHA-256 comparisons with zero mismatches.
+- Last full deploy verified 72 runtime files in both Retail and PTR, with key deployed hashes matching repo files.
+- Screenshot-fix deploy copied the six changed runtime Lua files to both Retail and PTR and verified SHA-256 hashes matched repo files:
+  - `UI/Components.lua`
+  - `UI/Styles.lua`
+  - `UI/MainFrame.lua`
+  - `UI/SettingsPage.lua`
+  - `UI/Tabs/Admin.lua`
+  - `UI/Tabs/Dashboard.lua`
+  - `UI/Tabs/Leaderboard.lua`
+- Modal/autocomplete polish deploy copied the two changed shared runtime Lua files to both Retail and PTR and verified SHA-256 hashes matched repo files:
+  - `UI/Components.lua`
+    - SHA-256: `42F4C35BC1D01B71863B887F9075545DBA75655B477C41A276C356CF09EA051A`
+  - `UI/Styles.lua`
+    - SHA-256: `30B38A7461B3F1DB9DD8335E78FB9CCBE06D55669E093EB1FC149FB1E5D8C7D4`
+- Nav visual alignment polish redeployed `UI/Styles.lua` to both Retail and PTR and verified SHA-256 hashes matched repo files:
+  - `UI/Styles.lua`
+    - SHA-256: `4CE28651E6A35D87962725AC2BB9CB8B7D964A65E34F6390F3A606417B22AE2A`
+- Toast/trophy polish replaced the two trophy media files in place and redeployed the changed runtime/media files to both Retail and PTR:
+  - `UI/Styles.lua`
+    - SHA-256: `0235CA97EE9399CB6C217A537D21D0AB05B7B9BC7DEBA18521F36B1DC50BE618`
+  - `UI/Toast.lua`
+    - SHA-256: `59E1F28C222E851306A1643AFACD807C2064521020938A033B4177D40D4A27F5`
+  - `RollingPinAwards/Media/burnt-rolling-pin.png`
+    - SHA-256: `034E1CB1350AE7F476B5F116A0F7277A2D8EAC6A903D94042E99F7245F5245A5`
+  - `RollingPinAwards/Media/golden-rolling-pin.png`
+    - SHA-256: `A0455126EEADFC85EEB780ABF5279715825500F15F7F9D82F11888912C84E989`
+- Solid-backdrop opacity fix redeployed the full runtime payload to both Retail and PTR; the changed shared UI files hash as:
+  - `UI/Components.lua`
+    - SHA-256: `AD226B3424F22A8C3FB6E65D0F1B2E0FABF6130CC887E74E341A316551874031`
+  - `UI/Toast.lua`
+    - SHA-256: `4DD5E977D7EF3E60FA8192E47A040FA246BA22E17B54626D19D8D5AE9D3B3435`
+- Modal header/search text color polish and 50% toast opacity redeployed the full runtime payload to both Retail and PTR; the changed runtime files hash as:
+  - `UI/Components.lua`
+    - SHA-256: `65962C745D6EAEF2CE619C557984073BD4B1D7396A622F8B6728D89C6F7A7422`
+  - `UI/Styles.lua`
+    - SHA-256: `1DC225D85CB6B38008C54B5D06649B732862FF30AC3AA2062F44631122E83EF4`
+  - `UI/Tabs/Admin.lua`
+    - SHA-256: `F7703A6C14BD00E2093E17C9F309F11E36CDFC89CA759AFFCA3613FA13B3CCE8`
+- Draggable minimap ring positioning and `Guild` addon-list category metadata redeployed the full runtime payload to both Retail and PTR; the changed runtime files hash as:
+  - `RollingPinAwards/RollingPinAwards.toc`
+    - SHA-256: `B4F45F993F7F475C85638D097CA2570F62C81D377F26C20F0DF99C1D5755EFAE`
+  - `UI/MinimapButton.lua`
+    - SHA-256: `7EB7CAC3B67EAAE84067ED8596916385E3F991C1C736BAC4977C7A00F02D513D`
+  - `Data/Defaults.lua`
+    - SHA-256: `A33B33650106C60749AB948C968D3CD958737BAF795D44A37F1694F5C395F47B`
+  - `Data/Database.lua`
+    - SHA-256: `9B5D90A16621F569748B293CA0D8E2698D8B1536A3FDA2947997DD4293350741`
+- Leaderboard showcase card rebuild redeployed the full runtime/media payload to both Retail and PTR; the changed runtime/media files hash as:
+  - `UI/Tabs/Leaderboard.lua`
+    - SHA-256: `CCD0771FB6EBDABF5ED55DA7A08C31D0D64F03E6C682DEE7F3DB98D36B1FE43F`
+  - `UI/Styles.lua`
+    - SHA-256: `1FF1A6798F3FBEC565718371EA9AF9F237D26342B97FF737761075BF12F3F7E7`
+  - `RollingPinAwards/Media/cleancard.png`
+    - SHA-256: `67CBBC393D18ED3B367B450E61F0AF114B66C35C70488084E2821CCB0E61DC23`
+  - `RollingPinAwards/Media/Fonts/Amarante-Regular.ttf`
+    - SHA-256: `33883758BD97923064FF9AF521397FB616942346F8F949B8ECC061BFBB9C7373`
+- Leaderboard showcase text positioning tune redeployed the full runtime/media payload to both Retail and PTR; the changed runtime files hash as:
+  - `UI/Tabs/Leaderboard.lua`
+    - SHA-256: `3442F3AB442CCD31889DAD23ACC82FCF56F049B14EAA86AAA5BC2F80C7A98C14`
+  - `UI/Styles.lua`
+    - SHA-256: `2E164FD876A5F5525F30EBC843025B2532F0B7EFD3C10E43101DD4AB9A3E67C5`
+- Second leaderboard showcase count positioning tune redeployed the full runtime/media payload to both Retail and PTR; the changed runtime file hashes as:
+  - `UI/Tabs/Leaderboard.lua`
+    - SHA-256: `E27B9061DA7CD7B750DDA6526ABFA7BD5BFEF7827699FAB2A2DB8140F43951A8`
+- If new repo changes are made after this handoff, redeploy before live WoW validation.
 
-## Untracked Local-Only Items Left Alone
-- `.figma-make-inspect/`
-- `.research/`
+## Current Implemented Surface
+
+- Typography polish:
+  - Roboto Regular and Bold are bundled under `RollingPinAwards/Media/Fonts/`.
+  - `UI/Styles.lua` owns shared typography roles.
+  - `UI/Components.lua` applies outline-free reusable text roles across labels, buttons, rows, cards, modals, and tab chrome.
+- Roster selection:
+  - Award Recipient and Nomination Nominee inputs use guild roster autocomplete.
+  - Award and nomination submit paths require selecting a roster suggestion.
+  - Multi-result roster suggestions anchor under the previous suggestion button so extra names do not appear at the top-left of the screen.
+  - Admin character mapping uses `Alt Character` and `Main Character` wording.
+  - Admin mapping fields also autocomplete guild roster names.
+  - Normal Award, Nomination, History, Leaderboard, Dashboard, and moderation UI shorten displayed names outside character mapping.
+- Toast/settings work:
+  - Accepted inbound awards notify the current recipient only.
+  - Toast settings, duration, anchor placement, seen-award ids, combat queueing, and close button are implemented.
+  - Pending inbound nominations and login reminders write local chat reminders.
+- Minimap/addon-list work:
+  - `RollingPinAwards/RollingPinAwards.toc` declares `## Category: Guild` so Retail groups the addon under the Guild heading.
+  - The custom minimap button is parented to `Minimap`, anchored to the outer ring with a saved angle, and can be dragged around the ring with the left mouse button.
+  - `localSettings.minimapAngle` persists the minimap button angle across reloads.
+- Leaderboard showcase card work:
+  - Leaderboard recipient popups use `RollingPinAwards/Media/cleancard.png` as a full-card background.
+  - Character name uses `RollingPinAwards/Media/Fonts/Amarante-Regular.ttf` at 28 pt in the shared card-value gold and sits 20 px lower than the initial showcase pass.
+  - Burnt count and Golden count use `RollingPinAwards/Media/Fonts/Amarante-Regular.ttf` at 24 pt in the shared card-value gold.
+  - Burnt and Golden counts share the same lower vertical plane; Golden moved down 35 px and left 35 px from the prior pass, while Burnt moved onto that plane and right 44 px.
+  - Burnt count is placed on the left, Golden count on the right, and the award-history scroll table sits in the lower parchment region.
+  - The close control is an invisible hitbox over the background's built-in close-button graphic.
+- Sync:
+  - Sync is split across `Sync/Codec.lua`, `Sync/Transport.lua`, `Sync/Snapshot.lua`, `Sync/Merge.lua`, `Sync/Diagnostics.lua`, and `Sync/Coordinator.lua`.
+  - AceComm/AceSerializer are embedded directly when available.
+  - Native `C_ChatInfo` fallback chunks messages over the addon-message limit and reassembles inbound chunks.
+  - Startup and manual sync send `sync_hello`; peers respond with rank permissions, aliases, nominations, votes, awards, tombstones, and `sync_snapshot_complete`.
+  - Stable guild-key migration sends a fresh hello when the client moves from provisional guild name to numeric guild id.
+  - New award and nomination ids include actor, timestamp, and sequence to avoid cross-client collisions.
+  - Award and linked nomination deletes are retained as hidden tombstones for offline catch-up.
+  - Inbound accepted payloads rerender the active tab and route accepted award/nomination notifications.
+- Current local screenshot-fix slice:
+  - Award and Nomination reason fields are capped at 30 characters.
+  - Navigation buttons are wider so `Nominations` and `Leaderboard` do not clip.
+  - Burnt/Golden selected state is more visually distinct.
+  - Nominations submit aligns with the nominee/reason input row.
+  - Admin rank Save buttons sit left of the scrollbar.
+  - Admin moderation button reads `Moderation Queue`.
+  - Dashboard stat-card headers are pinned to the card top, details to the bottom, and the first detail reads `Total Guildwide`.
+  - Dashboard `Pending Nominations` card label is shortened to `Nominations`.
+  - Dashboard stat-card values use `#DF960A` without an outline.
+  - Selected Burnt/Golden and leaderboard filter buttons use a darker fill and `#DF960A` text.
+  - The settings gear is shifted right to clear tab chrome.
+  - Settings uses `Toggle Anchors` copy.
+  - Six-button and five-button nav layouts use a shared `-26` visual alignment offset from the Dashboard stat-card center gap so the live nav no longer drifts right.
+  - Admin character mapping now uses equal-width Alt/Main fields, puts Add/View buttons below the fields, and provides three roster suggestions for both fields.
+  - Confirmation dialogs, character mappings, and moderation queue modals use the shared `#C59F6B` fill on a solid `Interface\Buttons\WHITE8x8` backdrop.
+  - Roster autocomplete suggestions use an opaque modal fill on a solid `Interface\Buttons\WHITE8x8` backdrop and a raised frame level so dropdown selections stay above nearby action buttons.
+  - Character mapping and moderation queue modal headers retain the standard brown section-header color.
+  - Roster autocomplete suggestion text uses the same brown header color on the opaque modal fill.
+  - Reward toasts and the toast anchor use `#E0BC89` at 50% opacity as their backdrop fill on a solid `Interface\Buttons\WHITE8x8` backdrop.
+  - Burnt and golden trophy art has been replaced in place at the existing media paths so all existing surfaces keep their configured sizes.
+  - `tests/bridge_spec.lua` covers these screenshot fixes, including solid backdrop texture assertions for modals and roster suggestions plus brown modal/search text.
+  - `tests/notifications_spec.lua` covers the toast and toast-anchor backdrop color, 50% opacity, and solid texture.
+  - `tests/media_spec.lua` covers the replacement trophy payloads.
+  - `tests/commands_spec.lua` covers minimap ring anchoring, drag updates, saved angle persistence, custom icon, and toggle behavior.
+  - `tests/embedded_ace3_spec.lua` covers the `Guild` TOC category.
+  - `tests/bridge_spec.lua` covers the clean-card leaderboard popup layout and invisible close hitbox.
+  - `tests/media_spec.lua` covers the clean card and Amarante font payloads.
+
+## Priority
+
+Top priority is live two-client sync validation. Local tests are green, and the deployed build was verified in both Retail and PTR folders, but live client behavior is still the source of truth for transport, guild-key timing, and sender authorization convergence.
+
+Recommended live validation order:
+
+1. Confirm both clients are running the deployed `fd7533e` build, then `/reload` both clients.
+2. Run `/rpa syncdebug` on both clients immediately after reload/login.
+3. Confirm `Last outbound` shows `sync_hello` and active guild keys match.
+4. Run `/rpa sync now` on the data-rich client.
+5. Run `/rpa syncdebug` again on both clients and compare inbound/outbound payload results and snapshot counts.
+6. Create fresh post-update test data before judging history or nomination behavior; legacy collided rows from earlier builds may already be damaged.
+7. Test local mutations in this order: nomination create, vote, approve/reject, direct award, delete, rank permission save, alias mapping save/delete.
+8. If history still fails to appear, inspect sender authorization for `award` payloads before changing transport.
+
+Do not clear SavedVariables or delete live records without explicit approval.
+
+## Read First
+
+- `docs/sync.md`
+- `Data/Database.lua`
+- `Domain/Awards.lua`
+- `Domain/Nominations.lua`
+- `Sync/Transport.lua`
+- `Sync/Coordinator.lua`
+- `Sync/Merge.lua`
+- `Sync/Snapshot.lua`
+- `UI/Components.lua`
+- `UI/Styles.lua`
+- `UI/Tabs/Award.lua`
+- `UI/Tabs/Nominations.lua`
+- `tests/bridge_spec.lua`
+- `tests/sync_spec.lua`
+- `tests/notifications_spec.lua`
 
 ## Resume Order
-1. Read this handoff.
-2. Run `git status --short` and note the uncommitted readability polish plus `.figma-make-inspect/` and `.research/`.
-3. Run the full test suite.
-4. Run the full test suite.
-5. Deploy to Retail/PTR if live validation is next.
-6. Validate sync in the real WoW client with two clients, using `/rpa syncdebug` before and after each action.
-7. Only after real sync works, continue any remaining UI polish cleanup.
+
+1. Run `git status -sb` and `git log -3 --oneline`.
+2. Set `$env:RPA_LUA=(Resolve-Path '.\tools\lua\lua54.exe').Path`.
+3. Run `powershell -ExecutionPolicy Bypass -File .\tests\run.ps1`.
+4. If changing behavior, write or update tests first and keep controls reusable.
+5. Keep docs/specs/plans current with the behavior change.
+6. Redeploy only after verification if live WoW validation is needed.
