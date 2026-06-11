@@ -119,6 +119,53 @@ function Bridge:ResolveDisplayCharacterName(rawName)
   return rawName
 end
 
+function Bridge:GetReportingFilter()
+  if self.addon and self.addon.db and type(self.addon.db.GetReportingFilter) == "function" then
+    return self.addon.db:GetReportingFilter()
+  end
+
+  return {
+    mode = "all_time",
+    label = "All Time",
+  }
+end
+
+function Bridge:IsAwardInReportingFilter(award)
+  local filter = self:GetReportingFilter()
+  if not filter or filter.mode ~= "custom" then
+    return true
+  end
+
+  local createdAt = tonumber((award or {}).createdAt) or 0
+  if filter.startsAt and createdAt < filter.startsAt then
+    return false
+  end
+
+  if filter.endsAt and createdAt > filter.endsAt then
+    return false
+  end
+
+  return true
+end
+
+function Bridge:GetReportingAwards()
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild then
+    return {}
+  end
+
+  local dataset = self.addon.db:GetGuildDataset(guild.guildKey)
+  local rows = {}
+
+  for _, award in ipairs(dataset.awards or {}) do
+    if self:IsAwardInReportingFilter(award) then
+      rows[#rows + 1] = award
+    end
+  end
+
+  return rows
+end
+
 function Bridge:GetPendingNominationsViewModel()
   local guild = self.addon:GetActiveGuildContext()
   if not guild then
@@ -166,11 +213,12 @@ function Bridge:GetAdminNominationsViewModel()
   return rows
 end
 
-function Bridge:GetPublicHistoryViewModel()
+function Bridge:GetPublicHistoryViewModel(awardRows)
   local rows = {}
   local canDelete = self:CanCurrentPlayerDeleteAwards()
+  local awards = awardRows or self.addon.awards:GetPublicHistory()
 
-  for _, award in ipairs(self.addon.awards:GetPublicHistory()) do
+  for _, award in ipairs(awards) do
     rows[#rows + 1] = {
       awardId = award.awardId,
       awardName = award.awardName,
@@ -200,11 +248,10 @@ function Bridge:GetLeaderboardViewModel(mode)
   end
 
   local selectedMode = mode or "combined"
-  local dataset = self.addon.db:GetGuildDataset(guild.guildKey)
   local grouped = {}
   local rows = {}
 
-  for _, award in ipairs(dataset.awards or {}) do
+  for _, award in ipairs(self:GetReportingAwards()) do
     local recipient = self:ResolveDisplayCharacterName(award.recipient or award.player)
     local normalizedAwardType = Utils.NormalizeAwardType(award.awardType)
     local includeAward = selectedMode == "combined"
@@ -310,7 +357,7 @@ end
 
 function Bridge:GetDashboardViewModel()
   local nominations = self:GetPendingNominationsViewModel()
-  local history = self:GetPublicHistoryViewModel()
+  local history = self:GetPublicHistoryViewModel(self:GetReportingAwards())
   local leaderboard = self:GetLeaderboardViewModel("combined")
   local leaderboardRows = {}
 
@@ -344,6 +391,7 @@ function Bridge:GetDashboardViewModel()
     topRecipient = leaderboardRows[1] and leaderboardRows[1].shortRecipient or nil,
     topRecipientCount = leaderboardRows[1] and leaderboardRows[1].pinCount or 0,
     latestAwardRecipient = latestAward and latestAward.shortRecipient or nil,
+    reportingFilter = self:GetReportingFilter(),
   }
 end
 

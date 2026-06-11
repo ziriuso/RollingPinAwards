@@ -1,0 +1,96 @@
+name: Release to CurseForge
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Package and Publish
+    runs-on: windows-latest
+    env:
+      CF_PROJECT_ID: ${{ vars.CF_PROJECT_ID }}
+      CF_GAME_VERSION_IDS: ${{ vars.CF_GAME_VERSION_IDS }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install Lua runtime
+        shell: pwsh
+        run: choco install lua -y --no-progress
+
+      - name: Run full Lua suite
+        shell: pwsh
+        run: |
+          function Find-LuaRuntime {
+            $commandNames = @("lua54", "lua53", "lua52", "lua51", "lua")
+            foreach ($name in $commandNames) {
+              $command = Get-Command $name -ErrorAction SilentlyContinue
+              if ($command -and $command.Source) {
+                return $command.Source
+              }
+            }
+
+            $candidateRoots = @(
+              (Join-Path $env:ChocolateyInstall "bin"),
+              (Join-Path $env:ChocolateyInstall "lib"),
+              (Join-Path ${env:ProgramFiles(x86)} "Lua"),
+              (Join-Path $env:ProgramFiles "Lua"),
+              "C:\ProgramData\chocolatey\bin",
+              "C:\ProgramData\chocolatey\lib"
+            ) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique
+
+            foreach ($root in $candidateRoots) {
+              $candidate = Get-ChildItem -Path $root -Recurse -File -Filter "lua*.exe" -ErrorAction SilentlyContinue |
+                Where-Object { $_.BaseName -match '^lua(?:5[1-4]|5\.[1-4])?$' } |
+                Sort-Object -Property FullName |
+                Select-Object -First 1
+              if ($candidate) {
+                return $candidate.FullName
+              }
+            }
+
+            return $null
+          }
+
+          $lua = Find-LuaRuntime
+          if (-not $lua) {
+            throw "Lua runtime was not found after installation."
+          }
+          & $lua -v
+          $env:RPA_LUA = $lua
+          .\tests\run.ps1
+
+      - name: Build CurseForge package
+        id: build
+        shell: pwsh
+        run: .\tools\release\Build-CurseForgePackage.ps1 -TagName "${{ github.ref_name }}" -OutputDirectory ".\artifacts\release"
+
+      - name: Upload package to CurseForge
+        shell: pwsh
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: >
+          .\tools\release\Publish-CurseForgePackage.ps1
+          -ProjectId "$env:CF_PROJECT_ID"
+          -ApiToken "$env:CF_API_TOKEN"
+          -FilePath "${{ steps.build.outputs.package_path }}"
+          -ReleaseType "${{ steps.build.outputs.release_type }}"
+          -TagName "${{ github.ref_name }}"
+          -DisplayName "${{ steps.build.outputs.release_name }}"
+          -TocPath ".\RollingPinAwards\RollingPinAwards.toc"
+          -GameVersionIds "$env:CF_GAME_VERSION_IDS"
+
+      - name: Create GitHub Release and attach zip
+        uses: softprops/action-gh-release@v3
+        with:
+          name: ${{ steps.build.outputs.release_name }}
+          tag_name: ${{ github.ref_name }}
+          prerelease: ${{ steps.build.outputs.is_prerelease == 'true' }}
+          generate_release_notes: true
+          files: ${{ steps.build.outputs.package_path }}

@@ -3,9 +3,13 @@
 ## Notes: Guild awards and nominations for The Burnt Rolling Pin
 ## Category: Guild
 ## Author: Ziri
-## Version: 1.0.0
+## Version: 1.1.0
 ## SavedVariables: RollingPinAwardsDB
 ## OptionalDeps: Ace3
+## IconTexture: Interface\AddOns\RollingPinAwards\Media\minimap-button.png
+## AddonCompartmentFunc: RollingPinAwards_OnAddonCompartmentClick
+## AddonCompartmentFuncOnEnter: RollingPinAwards_OnAddonCompartmentEnter
+## AddonCompartmentFuncOnLeave: RollingPinAwards_OnAddonCompartmentLeave
 
 Libs/LibStub/LibStub.lua
 Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua
@@ -19,6 +23,7 @@ Libs/AceComm-3.0/AceComm-3.0.lua
 
 Core/Namespace.lua
 Core/Constants.lua
+Core/AddonCompartment.lua
 Data/Defaults.lua
 Domain/GuildContext.lua
 Domain/Utils.lua

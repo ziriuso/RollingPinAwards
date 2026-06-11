@@ -9,8 +9,8 @@
 
 ## Decisions
 
-- Addon scale is local/profile-scoped under `profile.localSettings.addonScale`, clamped from `0.8` to `1.25`, and rounded to two decimal places.
-- Settings uses a reusable slider component rather than a page-specific control so future numeric settings can reuse the same pattern.
+- Addon scale is local/profile-scoped under `profile.localSettings.addonScale`, defaults to `0.8`, clamps from `0.5` to `1.25`, and snaps to `0.05` increments.
+- Settings uses a reusable slider component rather than a page-specific control so future numeric settings can reuse the same pattern. The scale row also has `-` and `+` buttons so players can hit exact 5% steps without fighting the slider.
 - Award chat announcements are local client messages, not guild chat sends. The addon marks announced award ids in local settings so sync snapshots and reloads do not replay the same announcement.
 - Reward toasts remain recipient-only. The broader award announcement is separate from the toast path.
 - `/rpa peers` is parented to `UIParent` and draggable, so it can be used as a lightweight diagnostic window without opening the main UI.

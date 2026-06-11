@@ -96,6 +96,19 @@ local function createFrameObject(frameType, name, parent, template)
       self.point = nil
     end
 
+    function texture:Show()
+      self.visible = true
+    end
+
+    function texture:Hide()
+      self.visible = false
+    end
+
+    function texture:SetSize(width, height)
+      self.width = width
+      self.height = height
+    end
+
     function texture:SetAllPoints(target)
       self.allPointsTarget = target or self.parent
     end
@@ -111,6 +124,11 @@ local function createFrameObject(frameType, name, parent, template)
         blue = blue,
         alpha = alpha,
       }
+    end
+
+    function texture:GetVertexColor()
+      local color = self.vertexColor or {}
+      return color.red or 1, color.green or 1, color.blue or 1, color.alpha or 1
     end
 
     self.children[#self.children + 1] = texture
@@ -227,6 +245,10 @@ local function createFrameObject(frameType, name, parent, template)
       top = top,
       bottom = bottom,
     }
+  end
+
+  function frame:SetHighlightTexture(texture)
+    self.highlightTexture = texture
   end
 
   function frame:SetFrameLevel(value)

@@ -9,9 +9,16 @@ RPA.Defaults = {
       toastDurationSeconds = 7,
       addonScale = 0.8,
       minimapAngle = 225,
+      minimapButtonShown = true,
       seenAwardToastIds = {},
       seenAwardChatIds = {},
       syncPeersByGuild = {},
+      reportingFilter = {
+        mode = "all_time",
+        label = "All Time",
+        startsAt = nil,
+        endsAt = nil,
+      },
       toastAnchor = {
         point = "CENTER",
         relativePoint = "CENTER",

@@ -172,6 +172,62 @@ return {
     harness.assert_equal(2, viewModel.topRecipientCount)
   end,
 
+  ["reporting filter limits dashboard and leaderboard award counts without mutating history"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    _G.GetServerTime = function()
+      return 1717200000
+    end
+    local oldAward = addon.awards:CreateDirectAward("Oldpin-Stormrage", "Older award", "burnt")
+
+    _G.GetServerTime = function()
+      return 1717336800
+    end
+    local startAward = addon.awards:CreateDirectAward("Moonrustle-Stormrage", "Start boundary", "golden")
+
+    _G.GetServerTime = function()
+      return 1717423200
+    end
+    local endAward = addon.awards:CreateDirectAward("Moonrustle-Stormrage", "End boundary", "burnt")
+
+    _G.GetServerTime = function()
+      return 1717600000
+    end
+    local futureAward = addon.awards:CreateDirectAward("Futurepin-Stormrage", "Future award", "golden")
+
+    addon.db:SetReportingFilter({
+      mode = "custom",
+      label = "Test Window",
+      startsAt = 1717336800,
+      endsAt = 1717423200,
+    })
+
+    local dashboard = addon.uiBridge:GetDashboardViewModel()
+    local leaderboard = addon.uiBridge:GetLeaderboardViewModel("combined")
+    local history = addon.uiBridge:GetPublicHistoryViewModel()
+
+    harness.assert_equal(2, dashboard.awardCount)
+    harness.assert_equal("Moonrustle", dashboard.topRecipient)
+    harness.assert_equal(2, dashboard.topRecipientCount)
+    harness.assert_equal("Moonrustle", dashboard.latestAwardRecipient)
+    harness.assert_equal(1, #leaderboard)
+    harness.assert_equal("Moonrustle-Stormrage", leaderboard[1].recipient)
+    harness.assert_equal(2, leaderboard[1].pinCount)
+    harness.assert_equal(4, #history)
+    harness.assert_equal(1717200000, oldAward.createdAt)
+    harness.assert_equal(1717336800, startAward.createdAt)
+    harness.assert_equal(1717423200, endAward.createdAt)
+    harness.assert_equal(1717600000, futureAward.createdAt)
+  end,
+
   ["bridge exposes sync peer rows newest first with short names and last seen dates"] = function()
     wow.reset({
       guildName = "Raid Bakery",

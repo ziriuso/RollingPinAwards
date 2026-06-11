@@ -85,14 +85,97 @@ return {
     local settings = addon.db:GetLocalSettings()
     harness.assert_equal(0.8, settings.addonScale)
 
-    harness.assert_equal(0.8, addon.db:SetAddonScale(0.4))
-    harness.assert_equal(0.8, addon.db:GetLocalSettings().addonScale)
+    harness.assert_equal(0.5, addon.db:SetAddonScale(0.4))
+    harness.assert_equal(0.5, addon.db:GetLocalSettings().addonScale)
 
     harness.assert_equal(1.25, addon.db:SetAddonScale(2))
     harness.assert_equal(1.25, addon.db:GetLocalSettings().addonScale)
 
     harness.assert_equal(1.15, addon.db:SetAddonScale(1.147))
     harness.assert_equal(1.15, addon.db:GetLocalSettings().addonScale)
+  end,
+
+  ["database validates local reporting filter setting"] = function()
+    local savedVariables = {
+      profile = {
+        guildDatasets = {},
+        localSettings = {
+          reportingFilter = {
+            mode = "banana",
+            label = "",
+            startsAt = "soon",
+            endsAt = "later",
+          },
+        },
+      },
+    }
+
+    wow.reset({
+      guildName = "Raid Bakery",
+      savedVariables = savedVariables,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    local settings = addon.db:GetLocalSettings()
+    harness.assert_equal("all_time", settings.reportingFilter.mode)
+    harness.assert_equal("All Time", settings.reportingFilter.label)
+    harness.assert_nil(settings.reportingFilter.startsAt)
+    harness.assert_nil(settings.reportingFilter.endsAt)
+
+    local saved = addon.db:SetReportingFilter({
+      mode = "custom",
+      label = "Season One",
+      startsAt = 1717336800,
+      endsAt = 1717423200,
+    })
+
+    harness.assert_equal("custom", saved.mode)
+    harness.assert_equal("Season One", saved.label)
+    harness.assert_equal(1717336800, saved.startsAt)
+    harness.assert_equal(1717423200, saved.endsAt)
+
+    local reset = addon.db:SetReportingFilter({
+      mode = "all_time",
+      label = "Ignored",
+      startsAt = 1,
+      endsAt = 2,
+    })
+
+    harness.assert_equal("all_time", reset.mode)
+    harness.assert_equal("All Time", reset.label)
+    harness.assert_nil(reset.startsAt)
+    harness.assert_nil(reset.endsAt)
+  end,
+
+  ["database stores local minimap launcher preferences"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      savedVariables = {
+        profile = {
+          guildDatasets = {},
+          localSettings = {
+            minimapButtonShown = nil,
+            minimapAngle = -45,
+          },
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    harness.assert_true(addon.db:IsMinimapButtonShown())
+    harness.assert_equal(315, addon.db:GetMinimapAngle())
+
+    harness.assert_false(addon.db:SetMinimapButtonShown(false))
+    harness.assert_false(addon.db:IsMinimapButtonShown())
+    harness.assert_true(addon.db:SetMinimapButtonShown(true))
+    harness.assert_true(addon.db:IsMinimapButtonShown())
+
+    harness.assert_equal(5, addon.db:SetMinimapAngle(365))
+    harness.assert_equal(5, addon.db:GetMinimapAngle())
   end,
 
   ["database persists seen reward toast ids in local settings"] = function()
