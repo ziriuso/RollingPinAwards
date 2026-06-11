@@ -60,7 +60,31 @@ function MainFrame:New(deps)
 
   self.__index = self
 
-  return setmetatable(obj, self)
+  obj = setmetatable(obj, self)
+  obj:ApplySavedScale()
+
+  return obj
+end
+
+function MainFrame:ApplyScale(scale)
+  local nextScale = tonumber(scale) or 1
+  if not self.frame then
+    return nextScale
+  end
+
+  if self.frame.SetScale then
+    self.frame:SetScale(nextScale)
+  else
+    self.frame.scale = nextScale
+  end
+
+  return nextScale
+end
+
+function MainFrame:ApplySavedScale()
+  local settings = self.addon and self.addon.db and self.addon.db:GetLocalSettings() or {}
+
+  return self:ApplyScale(settings.addonScale or 0.8)
 end
 
 function MainFrame:DescribeActiveTab(viewModel)
@@ -195,6 +219,8 @@ function MainFrame:RenderActiveTab()
 end
 
 function MainFrame:EnsureRendered()
+  self:ApplySavedScale()
+
   if self.rendered then
     self:RenderActiveTab()
     return self.frame
@@ -293,12 +319,14 @@ function MainFrame:EnsureSyncPeersDialog()
   end
 
   local colors = Styles.Colors or {}
-  self.syncPeersDialog = Components.CreateModalWindow(self.frame, {
+  local parent = _G.UIParent or self.frame
+  self.syncPeersDialog = Components.CreateModalWindow(parent, {
     id = "RollingPinAwardsSyncPeersDialog",
     title = "Sync Peers",
     width = 520,
     height = 380,
     closeStyle = "x",
+    draggable = true,
     backdropColor = colors.modalFill,
   })
 

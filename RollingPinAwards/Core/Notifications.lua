@@ -56,6 +56,25 @@ local function nominationDisplayText(nomination)
   return nominee
 end
 
+local function awardTypeLabel(award)
+  local displayName = Utils.GetAwardDisplayName((award or {}).awardType)
+  displayName = displayName:gsub("^The%s+", "")
+
+  return displayName
+end
+
+local function awardDisplayText(award)
+  local recipient = Utils.GetShortCharacterName((award or {}).recipient or (award or {}).player or "")
+  local reason = (award or {}).reason or ""
+  local label = awardTypeLabel(award)
+
+  if reason ~= "" then
+    return ("%s awarded to %s: %s"):format(label, recipient, reason)
+  end
+
+  return ("%s awarded to %s"):format(label, recipient)
+end
+
 function Notifications:New(addon)
   local obj = {
     addon = addon,
@@ -84,6 +103,25 @@ function Notifications:PrintChatLine(line)
   end
 
   return true
+end
+
+function Notifications:AnnounceAward(award)
+  if type(award) ~= "table" or award.deleted == true then
+    return false
+  end
+
+  local awardId = award.awardId
+  if self.addon and self.addon.db and type(self.addon.db.HasSeenAwardChat) == "function" then
+    if self.addon.db:HasSeenAwardChat(awardId) then
+      return false
+    end
+  end
+
+  if self.addon and self.addon.db and type(self.addon.db.MarkAwardChatSeen) == "function" then
+    self.addon.db:MarkAwardChatSeen(awardId)
+  end
+
+  return self:PrintChatLine(("Rolling Pin Awards: %s."):format(awardDisplayText(award)))
 end
 
 function Notifications:CurrentPlayerHasVoted(nomination)
@@ -147,14 +185,16 @@ function Notifications:HandleAward(payload, sender)
     return false
   end
 
+  local announced = self:AnnounceAward(payload)
+
   if not namesMatch(self.addon, payload.recipient or payload.player) then
-    return false
+    return announced
   end
 
   local awardId = payload.awardId
   if self.addon.db and type(self.addon.db.HasSeenAwardToast) == "function" then
     if self.addon.db:HasSeenAwardToast(awardId) then
-      return false
+      return announced
     end
   end
 
@@ -163,10 +203,10 @@ function Notifications:HandleAward(payload, sender)
   end
 
   if self.addon.toast and type(self.addon.toast.ShowAwardToast) == "function" then
-    return self.addon.toast:ShowAwardToast(payload)
+    return self.addon.toast:ShowAwardToast(payload) or announced
   end
 
-  return false
+  return announced
 end
 
 function Notifications:HandleNomination(payload, sender)
@@ -180,7 +220,8 @@ function Notifications:HandleNomination(payload, sender)
   end
 
   self:PrintChatLine(
-    ("Rolling Pin Awards: New Rolling Pin nomination to vote on: %s. Open /rpa to vote."):format(
+    ("Rolling Pin Awards: New %s nomination to vote on: %s. Open /rpa to vote."):format(
+      awardTypeLabel(payload),
       nominationDisplayText(payload)
     )
   )

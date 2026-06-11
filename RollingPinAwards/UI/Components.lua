@@ -1165,6 +1165,67 @@ function Components.CreateEditBox(parent, config)
   return editBox
 end
 
+function Components.CreateSlider(parent, config)
+  local colors = Styles.Colors or {}
+  local slider = CreateFrame("Slider", config.id, parent, config.template or "OptionsSliderTemplate")
+
+  if slider.SetSize then
+    slider:SetSize(config.width or 180, config.height or 20)
+  end
+
+  if slider.SetPoint then
+    slider:SetPoint(config.anchor or "TOPLEFT", parent, config.relativeTo or "TOPLEFT", config.x or 0, config.y or 0)
+  end
+
+  if slider.SetMinMaxValues then
+    slider:SetMinMaxValues(config.minValue or 0, config.maxValue or 1)
+  end
+
+  if slider.SetValueStep then
+    slider:SetValueStep(config.step or 0.05)
+  end
+
+  if slider.SetObeyStepOnDrag then
+    slider:SetObeyStepOnDrag(true)
+  end
+
+  if slider.SetOrientation then
+    slider:SetOrientation(config.orientation or "HORIZONTAL")
+  end
+
+  if slider.SetScript and type(config.onValueChanged) == "function" then
+    slider:SetScript("OnValueChanged", function(self, value)
+      if self.__settingValue then
+        return
+      end
+
+      config.onValueChanged(self, value)
+    end)
+  end
+
+  applyBackdrop(slider, {
+    bgFile = SOLID_BACKDROP,
+    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    tile = false,
+    tileSize = 0,
+    edgeSize = 8,
+    insets = {
+      left = 2,
+      right = 2,
+      top = 2,
+      bottom = 2,
+    },
+  }, colors.parchment, colors.brassMuted)
+
+  if slider.SetValue and config.value ~= nil then
+    slider.__settingValue = true
+    slider:SetValue(config.value)
+    slider.__settingValue = false
+  end
+
+  return slider
+end
+
 function Components.CreateCheckButton(parent, config)
   local colors = Styles.Colors or {}
   local button = CreateFrame("Button", nil, parent, config.template or "BackdropTemplate")

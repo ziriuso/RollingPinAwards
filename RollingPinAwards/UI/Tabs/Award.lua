@@ -116,7 +116,7 @@ UITabs.award = {
       width = 462,
       x = 14,
       y = -242,
-      maxLetters = 30,
+      maxLetters = 100,
     })
     panel.submitButton = Components.CreateButton(panel.formSection, {
       text = "Award The Burnt Rolling Pin",

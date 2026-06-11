@@ -64,6 +64,37 @@ return {
     harness.assert_equal(9, addon.db:GetLocalSettings().toastDurationSeconds)
   end,
 
+  ["database validates and clamps local addon scale setting"] = function()
+    local savedVariables = {
+      profile = {
+        guildDatasets = {},
+        localSettings = {
+          addonScale = "huge",
+        },
+      },
+    }
+
+    wow.reset({
+      guildName = "Raid Bakery",
+      savedVariables = savedVariables,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    local settings = addon.db:GetLocalSettings()
+    harness.assert_equal(0.8, settings.addonScale)
+
+    harness.assert_equal(0.8, addon.db:SetAddonScale(0.4))
+    harness.assert_equal(0.8, addon.db:GetLocalSettings().addonScale)
+
+    harness.assert_equal(1.25, addon.db:SetAddonScale(2))
+    harness.assert_equal(1.25, addon.db:GetLocalSettings().addonScale)
+
+    harness.assert_equal(1.15, addon.db:SetAddonScale(1.147))
+    harness.assert_equal(1.15, addon.db:GetLocalSettings().addonScale)
+  end,
+
   ["database persists seen reward toast ids in local settings"] = function()
     local savedVariables = {
       profile = {
@@ -88,6 +119,34 @@ return {
     harness.assert_true(savedVariables.profile.localSettings.seenAwardToastIds["award:remote:once"])
 
     local missingOk, missingErr = addon.db:MarkAwardToastSeen("")
+    harness.assert_false(missingOk)
+    harness.assert_equal("missing awardId", missingErr)
+  end,
+
+  ["database persists seen award chat ids in local settings"] = function()
+    local savedVariables = {
+      profile = {
+        guildDatasets = {},
+        localSettings = {
+          seenAwardChatIds = "legacy",
+        },
+      },
+    }
+
+    wow.reset({
+      guildName = "Raid Bakery",
+      savedVariables = savedVariables,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+
+    harness.assert_false(addon.db:HasSeenAwardChat("award:remote:once"))
+    harness.assert_true(addon.db:MarkAwardChatSeen("award:remote:once"))
+    harness.assert_true(addon.db:HasSeenAwardChat("award:remote:once"))
+    harness.assert_true(savedVariables.profile.localSettings.seenAwardChatIds["award:remote:once"])
+
+    local missingOk, missingErr = addon.db:MarkAwardChatSeen("")
     harness.assert_false(missingOk)
     harness.assert_equal("missing awardId", missingErr)
   end,

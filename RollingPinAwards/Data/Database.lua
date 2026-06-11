@@ -33,6 +33,13 @@ local function idPart(value)
   return text
 end
 
+local function clampAddonScale(scale)
+  local normalized = tonumber(scale) or 0.8
+  normalized = math.floor((normalized / 0.05) + 0.5) * 0.05
+
+  return math.floor((math.min(1.25, math.max(0.8, normalized)) * 100) + 0.5) / 100
+end
+
 local function ensureGuildDatasetShape(dataset, guildKey)
   dataset.guildKey = dataset.guildKey or guildKey
   dataset.awards = type(dataset.awards) == "table" and dataset.awards or {}
@@ -70,10 +77,18 @@ local function ensureLocalSettingsShape(settings)
     math.max(3, tonumber(settings.toastDurationSeconds) or 7)
   )
 
+  settings.addonScale = math.floor(
+    (clampAddonScale(settings.addonScale) * 100) + 0.5
+  ) / 100
+
   settings.minimapAngle = tonumber(settings.minimapAngle) or 225
 
   if type(settings.seenAwardToastIds) ~= "table" then
     settings.seenAwardToastIds = {}
+  end
+
+  if type(settings.seenAwardChatIds) ~= "table" then
+    settings.seenAwardChatIds = {}
   end
 
   if type(settings.syncPeersByGuild) ~= "table" then
@@ -194,6 +209,13 @@ function Database:SetToastDurationSeconds(seconds)
   return settings.toastDurationSeconds
 end
 
+function Database:SetAddonScale(scale)
+  local settings = self:GetLocalSettings()
+  settings.addonScale = clampAddonScale(scale)
+
+  return settings.addonScale
+end
+
 function Database:HasSeenAwardToast(awardId)
   if isMissingString(awardId) then
     return false
@@ -211,6 +233,27 @@ function Database:MarkAwardToastSeen(awardId)
 
   local settings = self:GetLocalSettings()
   settings.seenAwardToastIds[awardId] = true
+
+  return true
+end
+
+function Database:HasSeenAwardChat(awardId)
+  if isMissingString(awardId) then
+    return false
+  end
+
+  local settings = self:GetLocalSettings()
+
+  return settings.seenAwardChatIds[awardId] == true
+end
+
+function Database:MarkAwardChatSeen(awardId)
+  if isMissingString(awardId) then
+    return false, "missing awardId"
+  end
+
+  local settings = self:GetLocalSettings()
+  settings.seenAwardChatIds[awardId] = true
 
   return true
 end

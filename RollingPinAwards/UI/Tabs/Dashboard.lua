@@ -218,7 +218,6 @@ UITabs.dashboard = {
         iconPath = row.awardIconPath,
         iconWidth = 18,
         iconHeight = 18,
-        labelWidth = 320,
         rowHeight = 56,
         backdropTone = "rowHighlight",
         actions = {},

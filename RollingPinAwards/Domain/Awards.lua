@@ -96,6 +96,10 @@ function Awards:CreateDirectAward(recipient, reason, awardType)
     self.addon.sync:Broadcast("award", award, "GUILD")
   end
 
+  if self.addon.notifications and type(self.addon.notifications.AnnounceAward) == "function" then
+    self.addon.notifications:AnnounceAward(award)
+  end
+
   return award
 end
 

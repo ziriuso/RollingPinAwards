@@ -126,6 +126,7 @@ return {
     harness.assert_equal("CENTER", addon.toast.frame.reasonLabel.justifyH)
     harness.assert_equal(BOLD_FONT, addon.toast.frame.titleLabel.fontFile)
     harness.assert_equal(REGULAR_FONT, addon.toast.frame.reasonLabel.fontFile)
+    harness.assert_true(addon.__rpaLastChatOutput[#addon.__rpaLastChatOutput]:match("Golden Rolling Pin awarded to Bakerone") ~= nil)
   end,
 
   ["accepted inbound award toast only shows once across duplicate sync and reload"] = function()
@@ -161,6 +162,57 @@ return {
     }))
     harness.assert_equal(0, reloadedShown)
     harness.assert_true(reloaded.db:HasSeenAwardToast("award:remote:once"))
+    harness.assert_true(reloaded.db:HasSeenAwardChat("award:remote:once"))
+  end,
+
+  ["accepted inbound award announces in chat for non-recipient guild members"] = function()
+    local addon = setupPlayer({
+      playerName = "Spectator",
+      guildMembers = {
+        {
+          name = "Spectator-Stormrage",
+          rankName = "Member",
+          rankIndex = 5,
+        },
+        {
+          name = "Bakerone-Stormrage",
+          rankName = "Member",
+          rankIndex = 5,
+        },
+        {
+          name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+      },
+    })
+
+    harness.assert_true(dispatchRemoteAward(addon, {
+      awardId = "award:remote:spectator",
+      awardType = "burnt",
+      recipient = "Bakerone-Stormrage",
+      player = "Bakerone-Stormrage",
+      reason = "Pulled the boss",
+    }))
+
+    local chatText = table.concat(addon.__rpaLastChatOutput or {}, "\n")
+    harness.assert_true(chatText:match("Burnt Rolling Pin awarded to Bakerone") ~= nil)
+    harness.assert_true(chatText:match("Pulled the boss") ~= nil)
+    harness.assert_true(addon.toast.frame == nil or addon.toast.frame.visible == false)
+  end,
+
+  ["local direct award announces in chat and marks the award chat seen"] = function()
+    local addon = setupPlayer({
+      guildRankName = "Officer",
+      guildRankIndex = 1,
+    })
+
+    local award = addon.awards:CreateDirectAward("Bakerone-Stormrage", "Saved the pull", "golden")
+
+    harness.assert_true(award ~= nil)
+    local chatText = table.concat(addon.__rpaLastChatOutput or {}, "\n")
+    harness.assert_true(chatText:match("Golden Rolling Pin awarded to Bakerone") ~= nil)
+    harness.assert_true(addon.db:HasSeenAwardChat(award.awardId))
   end,
 
   ["disabled reward toasts suppress accepted inbound award popup"] = function()
@@ -193,6 +245,38 @@ return {
 
     panel.toastsCheck:Click()
     harness.assert_true(addon.db:GetLocalSettings().toastsEnabled)
+  end,
+
+  ["settings page adjusts and applies addon scale"] = function()
+    local addon = setupPlayer()
+
+    addon.mainFrame:EnsureRendered()
+    addon.mainFrame.settingsGearButton:Click()
+
+    local panel = addon.mainFrame.settingsPanel
+    harness.assert_true(panel.visible)
+    harness.assert_true(panel.addonScaleSlider ~= nil)
+    harness.assert_true(panel.addonScaleDecreaseButton ~= nil)
+    harness.assert_true(panel.addonScaleIncreaseButton ~= nil)
+    harness.assert_equal(0.8, addon.db:GetLocalSettings().addonScale)
+    harness.assert_equal("80%", panel.addonScaleValueLabel.text)
+
+    panel.addonScaleIncreaseButton:Click()
+
+    harness.assert_equal(0.85, addon.db:GetLocalSettings().addonScale)
+    harness.assert_equal(0.85, addon.mainFrame.frame.scale)
+    harness.assert_equal("85%", panel.addonScaleValueLabel.text)
+
+    panel.addonScaleDecreaseButton:Click()
+
+    harness.assert_equal(0.8, addon.db:GetLocalSettings().addonScale)
+    harness.assert_equal("80%", panel.addonScaleValueLabel.text)
+
+    panel.addonScaleSlider:SetValue(1.13)
+
+    harness.assert_equal(1.15, addon.db:GetLocalSettings().addonScale)
+    harness.assert_equal(1.15, addon.mainFrame.frame.scale)
+    harness.assert_equal("115%", panel.addonScaleValueLabel.text)
   end,
 
   ["settings page adjusts reward toast duration"] = function()
@@ -299,7 +383,7 @@ return {
 
     harness.assert_true(accepted)
     harness.assert_true(#_G.__RPA_TEST_STATE.chatMessages > beforeInbound)
-    harness.assert_true(_G.__RPA_TEST_STATE.chatMessages[#_G.__RPA_TEST_STATE.chatMessages]:match("New Rolling Pin nomination") ~= nil)
+    harness.assert_true(_G.__RPA_TEST_STATE.chatMessages[#_G.__RPA_TEST_STATE.chatMessages]:match("New Golden Rolling Pin nomination") ~= nil)
   end,
 
   ["reward toasts queue during combat and flush after combat ends"] = function()

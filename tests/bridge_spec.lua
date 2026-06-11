@@ -323,9 +323,9 @@ return {
     harness.assert_equal(24, panel.detailDialog.burntCountLabel.fontHeight)
     assert_color(panel.detailDialog.goldenCountLabel, CARD_VALUE_GOLD)
     assert_color(panel.detailDialog.burntCountLabel, CARD_VALUE_GOLD)
-    harness.assert_true((panel.detailDialog.burntCountLabel.point[4] or 0) < (panel.detailDialog.goldenCountLabel.point[4] or 0))
-    harness.assert_equal(107, panel.detailDialog.burntCountLabel.point[4])
-    harness.assert_equal(557, panel.detailDialog.goldenCountLabel.point[4])
+    harness.assert_true((panel.detailDialog.goldenCountLabel.point[4] or 0) < (panel.detailDialog.burntCountLabel.point[4] or 0))
+    harness.assert_equal(107, panel.detailDialog.goldenCountLabel.point[4])
+    harness.assert_equal(557, panel.detailDialog.burntCountLabel.point[4])
     harness.assert_equal(-245, panel.detailDialog.burntCountLabel.point[5])
     harness.assert_equal(-245, panel.detailDialog.goldenCountLabel.point[5])
     harness.assert_equal(-296, panel.detailDialog.listSection.point[5])
@@ -1327,6 +1327,9 @@ return {
     harness.assert_equal("UIPanelCloseButton", dialog.closeButton.template)
     harness.assert_equal("TOPRIGHT", dialog.closeButton.point[1])
     harness.assert_equal("TOPRIGHT", dialog.closeButton.point[3])
+    harness.assert_true(dialog.parent == _G.UIParent)
+    harness.assert_true(dialog.movable)
+    harness.assert_equal("LeftButton", dialog.dragButtons[1])
     harness.assert_true(dialog.listSection ~= nil)
     harness.assert_equal("Officerone", dialog.listSection.rows[1].playerLabel.text)
     harness.assert_true(dialog.listSection.rows[1].lastSeenLabel.text:match("%d%d%d%d%-%d%d%-%d%d") ~= nil)
@@ -1542,7 +1545,7 @@ return {
     assert_color(awardPanel.typeGoldenButton.label, CARD_VALUE_GOLD)
     harness.assert_true(awardPanel.statusSection == nil)
     harness.assert_true((awardPanel.submitButton.point[5] or 0) - (awardPanel.submitButton.height or 0) >= -(awardPanel.formSection.height or 0))
-    harness.assert_equal(30, awardPanel.reasonInput.maxLetters)
+    harness.assert_equal(100, awardPanel.reasonInput.maxLetters)
 
     addon.mainFrame:SelectTab("nominations")
     local nominationsPanel = addon.mainFrame.tabPanels.nominations
@@ -1553,7 +1556,7 @@ return {
     harness.assert_equal("", nominationsPanel.statusLabel.text)
     harness.assert_equal(nominationsPanel.nomineeInput.point[5], nominationsPanel.reasonInput.point[5])
     harness.assert_equal(nominationsPanel.reasonInput.point[5], nominationsPanel.submitButton.point[5])
-    harness.assert_equal(30, nominationsPanel.reasonInput.maxLetters)
+    harness.assert_equal(100, nominationsPanel.reasonInput.maxLetters)
     harness.assert_true((nominationsPanel.submitButton.point[4] or 0) + (nominationsPanel.submitButton.width or 0) <= (nominationsPanel.formSection.width or 0) - 14)
     harness.assert_equal("selected", nominationsPanel.typeBurntButton.variant)
     harness.assert_equal("secondary", nominationsPanel.typeGoldenButton.variant)
@@ -1779,8 +1782,10 @@ return {
     harness.assert_true(addon.uiBridge:GetPublicHistoryViewModel()[1].recipient:match("Newpin") ~= nil)
 
     addon.mainFrame:SelectTab("dashboard")
-    local dashboardText = addon.mainFrame.tabPanels.dashboard.recentAwardsSection.rows[1].label.text
+    local dashboardRow = addon.mainFrame.tabPanels.dashboard.recentAwardsSection.rows[1]
+    local dashboardText = dashboardRow.label.text
     harness.assert_true(dashboardText:match("Newpin") ~= nil)
+    harness.assert_true((dashboardRow.label.width or 0) <= (dashboardRow.width or 0) - 54)
   end,
 
   ["leaderboard list exposes a scrollbar for many recipients"] = function()

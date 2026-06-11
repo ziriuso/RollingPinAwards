@@ -130,7 +130,7 @@ UITabs.nominations = {
       width = 320,
       x = 252,
       y = -124,
-      maxLetters = 30,
+      maxLetters = 100,
     })
     panel.selectedAwardPreview = Components.CreateArtworkFrame(panel.formSection, {
       texture = media.awardIcon,

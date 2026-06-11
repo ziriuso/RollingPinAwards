@@ -136,7 +136,7 @@ UITabs.leaderboard = {
       titleTextRole = "leaderboardShowcaseName",
     })
     local showcaseHost = panel.detailDialog.contentHost or panel.detailDialog
-    panel.detailDialog.burntCountLabel = Components.CreateLabel(showcaseHost, {
+    panel.detailDialog.goldenCountLabel = Components.CreateLabel(showcaseHost, {
       text = "0",
       x = 107,
       y = -245,
@@ -145,7 +145,7 @@ UITabs.leaderboard = {
       font = "GameFontNormalHuge",
       textRole = "leaderboardCount",
     })
-    panel.detailDialog.goldenCountLabel = Components.CreateLabel(showcaseHost, {
+    panel.detailDialog.burntCountLabel = Components.CreateLabel(showcaseHost, {
       text = "0",
       x = 557,
       y = -245,
