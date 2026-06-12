@@ -1613,6 +1613,8 @@ return {
     harness.assert_equal(nominationsPanel.nomineeInput.point[5], nominationsPanel.reasonInput.point[5])
     harness.assert_equal(nominationsPanel.reasonInput.point[5], nominationsPanel.submitButton.point[5])
     harness.assert_equal(100, nominationsPanel.reasonInput.maxLetters)
+    harness.assert_true((nominationsPanel.statusLabel.point[5] or 0) > -(nominationsPanel.formSection.height or 0))
+    harness.assert_true((nominationsPanel.statusLabel.point[5] or 0) > (nominationsPanel.listSection.point[5] or 0))
     harness.assert_true((nominationsPanel.submitButton.point[4] or 0) + (nominationsPanel.submitButton.width or 0) <= (nominationsPanel.formSection.width or 0) - 14)
     harness.assert_equal("selected", nominationsPanel.typeBurntButton.variant)
     harness.assert_equal("secondary", nominationsPanel.typeGoldenButton.variant)

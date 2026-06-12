@@ -185,10 +185,10 @@ UITabs.nominations = {
       visibleRowCount = 3,
       rowHeight = 72,
     })
-    panel.statusLabel = Components.CreateLabel(panel, {
+    panel.statusLabel = Components.CreateLabel(panel.formSection, {
       text = "",
-      x = 0,
-      y = -482,
+      x = 14,
+      y = -186,
       width = 742,
       justifyH = "LEFT",
     })
