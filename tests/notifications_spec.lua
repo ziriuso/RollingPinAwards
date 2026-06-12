@@ -255,12 +255,14 @@ return {
 
     local panel = addon.mainFrame.settingsPanel
     harness.assert_true(panel.visible)
-    harness.assert_true(panel.addonScaleSlider ~= nil)
+    harness.assert_nil(panel.addonScaleSlider)
     harness.assert_true(panel.addonScaleDecreaseButton ~= nil)
     harness.assert_true(panel.addonScaleIncreaseButton ~= nil)
     harness.assert_true(panel.minimapButtonCheck ~= nil)
     harness.assert_nil(panel.addonCompartmentCheck)
-    harness.assert_equal(0.5, panel.addonScaleSlider.minValue)
+    harness.assert_equal(panel.toastDurationIncreaseButton.point[4], panel.addonScaleIncreaseButton.point[4])
+    harness.assert_true(panel.addonScaleValueLabel.point[4] > panel.addonScaleDecreaseButton.point[4])
+    harness.assert_true(panel.addonScaleValueLabel.point[4] < panel.addonScaleIncreaseButton.point[4])
     harness.assert_equal(0.8, addon.db:GetLocalSettings().addonScale)
     harness.assert_equal("80%", panel.addonScaleValueLabel.text)
 
@@ -280,12 +282,6 @@ return {
     end
     harness.assert_equal(0.5, addon.db:GetLocalSettings().addonScale)
     harness.assert_equal("50%", panel.addonScaleValueLabel.text)
-
-    panel.addonScaleSlider:SetValue(1.13)
-
-    harness.assert_equal(1.15, addon.db:GetLocalSettings().addonScale)
-    harness.assert_equal(1.15, addon.mainFrame.frame.scale)
-    harness.assert_equal("115%", panel.addonScaleValueLabel.text)
   end,
 
   ["settings page toggles local launcher preferences"] = function()

@@ -378,33 +378,22 @@ function SettingsPage:Build(parent, mainFrame)
     variant = "secondary",
   })
 
-  panel.addonScaleSlider = Components.CreateSlider(panel.toastSection, {
-    id = "RollingPinAwardsAddonScaleSlider",
-    width = 136,
-    height = 18,
+  panel.addonScaleValueLabel = Components.CreateLabel(panel.toastSection, {
+    text = "",
     x = 202,
-    y = -122,
-    minValue = 0.5,
-    maxValue = 1.25,
-    step = 0.05,
+    y = -126,
+    width = 90,
+    justifyH = "CENTER",
+    font = "GameFontHighlight",
   })
 
   panel.addonScaleIncreaseButton = Components.CreateButton(panel.toastSection, {
     text = "+",
     width = 32,
     height = 28,
-    x = 348,
+    x = 300,
     y = -118,
     variant = "secondary",
-  })
-
-  panel.addonScaleValueLabel = Components.CreateLabel(panel.toastSection, {
-    text = "",
-    x = 392,
-    y = -126,
-    width = 60,
-    justifyH = "LEFT",
-    font = "GameFontHighlight",
   })
 
   panel.anchorButton = Components.CreateButton(panel.toastSection, {
@@ -610,19 +599,6 @@ function SettingsPage:Refresh(panel, mainFrame)
           toastDurationSeconds = saved,
         })
       end
-    end)
-  end
-
-  if panel.addonScaleSlider then
-    panel.addonScaleSlider.__settingValue = true
-    panel.addonScaleSlider:SetValue(settings.addonScale or 0.8)
-    panel.addonScaleSlider.__settingValue = false
-    panel.addonScaleSlider:SetScript("OnValueChanged", function(slider, value)
-      if slider.__settingValue then
-        return
-      end
-
-      applyAddonScale(panel, mainFrame, value)
     end)
   end
 
