@@ -73,6 +73,14 @@ function Sync:SendFullSnapshot(distribution, target)
     counts.aliasMappings = counts.aliasMappings + 1
   end
 
+  for _, awardId in ipairs(sortedKeys(dataset.awardsById)) do
+    local payload = copyFlatRecord(dataset.awardsById[awardId])
+    payload.guildKey = guild.guildKey
+    payload.awardId = payload.awardId or awardId
+    self:Broadcast("award", payload, distribution or "GUILD", target)
+    counts.awards = counts.awards + 1
+  end
+
   for _, nominationId in ipairs(sortedKeys(dataset.nominationsById)) do
     local payload = copyFlatRecord(dataset.nominationsById[nominationId])
     payload.guildKey = guild.guildKey
@@ -90,14 +98,6 @@ function Sync:SendFullSnapshot(distribution, target)
       self:Broadcast("vote", payload, distribution or "GUILD", target)
       counts.votes = counts.votes + 1
     end
-  end
-
-  for _, awardId in ipairs(sortedKeys(dataset.awardsById)) do
-    local payload = copyFlatRecord(dataset.awardsById[awardId])
-    payload.guildKey = guild.guildKey
-    payload.awardId = payload.awardId or awardId
-    self:Broadcast("award", payload, distribution or "GUILD", target)
-    counts.awards = counts.awards + 1
   end
 
   self:Broadcast("sync_snapshot_complete", {
@@ -120,4 +120,3 @@ function Sync:SendFullSnapshot(distribution, target)
 end
 
 return RPA.Sync
-

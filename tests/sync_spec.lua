@@ -277,6 +277,85 @@ return {
     harness.assert_equal("award:shared", stored.awardId)
   end,
 
+  ["sync rejects pending nomination replay when a linked award already exists"] = function()
+    local addon = setupAceGuild()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+
+    addon.db:UpsertAward(guildKey, {
+      awardId = "award:approved",
+      guildKey = guildKey,
+      awardName = "The Burnt Rolling Pin",
+      awardType = "burnt",
+      recipient = "Moonrustle-Stormrage",
+      player = "Moonrustle-Stormrage",
+      reason = "Already awarded",
+      awardedBy = "Guildmaster-Stormrage",
+      source = "nomination",
+      nominationId = "nom:approved",
+      lastModifiedAt = 200,
+      lastModifiedBy = "Guildmaster-Stormrage",
+    })
+
+    local accepted, err = addon.sync:AcceptNomination({
+      nominationId = "nom:approved",
+      guildKey = guildKey,
+      nominee = "Moonrustle-Stormrage",
+      reason = "Already awarded",
+      awardType = "burnt",
+      status = "pending",
+      nominatedBy = "Officerone-Stormrage",
+      lastModifiedAt = 300,
+      lastModifiedBy = "Officerone-Stormrage",
+    })
+    local stored = addon.db:GetNomination(guildKey, "nom:approved")
+
+    harness.assert_false(accepted)
+    harness.assert_equal("nomination already awarded", err)
+    harness.assert_nil(stored)
+  end,
+
+  ["sync closes a pending nomination when its linked award arrives"] = function()
+    local addon = setupAceGuild()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+
+    addon.permissions:SetRankPermissions(1, "Officer", {
+      canManageNominations = true,
+    })
+    addon.db:UpsertNomination(guildKey, {
+      nominationId = "nom:remote-approved",
+      guildKey = guildKey,
+      nominee = "Moonrustle-Stormrage",
+      reason = "Old pending copy",
+      awardType = "burnt",
+      status = "pending",
+      nominatedBy = "Bakerone-Stormrage",
+      lastModifiedAt = 100,
+      lastModifiedBy = "Bakerone-Stormrage",
+    })
+
+    local accepted, err = addon.sync:AcceptAward({
+      awardId = "award:remote-approved",
+      guildKey = guildKey,
+      awardName = "The Burnt Rolling Pin",
+      awardType = "burnt",
+      recipient = "Moonrustle-Stormrage",
+      player = "Moonrustle-Stormrage",
+      reason = "Old pending copy",
+      awardedBy = "Officerone-Stormrage",
+      source = "nomination",
+      nominationId = "nom:remote-approved",
+      lastModifiedAt = 200,
+      lastModifiedBy = "Officerone-Stormrage",
+    })
+    local stored = addon.db:GetNomination(guildKey, "nom:remote-approved")
+    local storedIncludingDeleted = addon.db:GetNomination(guildKey, "nom:remote-approved", true)
+
+    harness.assert_true(accepted, err)
+    harness.assert_nil(stored)
+    harness.assert_equal("deleted", storedIncludingDeleted.status)
+    harness.assert_equal("award:remote-approved", storedIncludingDeleted.awardId)
+  end,
+
   ["sync ignores stale awards that would replace existing history"] = function()
     local addon = setupAceGuild()
     local guildKey = addon:GetActiveGuildContext().guildKey
@@ -883,9 +962,10 @@ return {
     addon:OnCommReceived(addon.Constants.COMM_PREFIX, hello, "GUILD", "Officerone-Stormrage")
 
     local seen = {}
+    local firstPayloadIndex = {}
     local leakedReportingFilter = false
     local leakedLauncherSetting = false
-    for _, message in ipairs(_G.__RPA_TEST_STATE.nativeCommMessages or {}) do
+    for index, message in ipairs(_G.__RPA_TEST_STATE.nativeCommMessages or {}) do
       local envelope, err = addon.sync:DecodeNativeMessage(
         message.message,
         message.distribution,
@@ -894,6 +974,7 @@ return {
       if err ~= "partial" then
         harness.assert_true(envelope ~= nil)
         seen[envelope.payloadType] = true
+        firstPayloadIndex[envelope.payloadType] = firstPayloadIndex[envelope.payloadType] or index
         leakedReportingFilter = leakedReportingFilter
           or (envelope.payload or {}).reportingFilter ~= nil
           or (envelope.payload or {}).label == "Local Only"
@@ -909,6 +990,7 @@ return {
     harness.assert_true(seen.vote)
     harness.assert_true(seen.award)
     harness.assert_true(seen.sync_snapshot_complete)
+    harness.assert_true(firstPayloadIndex.award < firstPayloadIndex.nomination)
     harness.assert_false(leakedReportingFilter)
     harness.assert_false(leakedLauncherSetting)
   end,

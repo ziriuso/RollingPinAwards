@@ -3,7 +3,7 @@
 ## Notes: Guild awards and nominations for The Burnt Rolling Pin
 ## Category: Guild
 ## Author: Ziri
-## Version: 1.1.0
+## Version: 1.2.0
 ## SavedVariables: RollingPinAwardsDB
 ## OptionalDeps: Ace3
 ## IconTexture: Interface\AddOns\RollingPinAwards\Media\minimap-button.png

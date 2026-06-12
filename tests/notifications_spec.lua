@@ -470,6 +470,46 @@ return {
     harness.assert_true(_G.__RPA_TEST_STATE.chatMessages[#_G.__RPA_TEST_STATE.chatMessages]:match("New Golden Rolling Pin nomination") ~= nil)
   end,
 
+  ["stale pending nomination replay linked to an award stays out of chat"] = function()
+    local addon = setupPlayer()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+
+    addon.db:UpsertAward(guildKey, {
+      awardId = "award:approved",
+      guildKey = guildKey,
+      awardName = "The Burnt Rolling Pin",
+      awardType = "burnt",
+      recipient = "Burny-Stormrage",
+      player = "Burny-Stormrage",
+      reason = "Already handled",
+      awardedBy = "Officerone-Stormrage",
+      source = "nomination",
+      nominationId = "nom:approved",
+      lastModifiedAt = 1717336900,
+      lastModifiedBy = "Officerone-Stormrage",
+    })
+
+    local beforeInbound = #_G.__RPA_TEST_STATE.chatMessages
+    local accepted, err = addon.sync:DispatchEnvelope({
+      payloadType = "nomination",
+      payload = {
+        guildKey = guildKey,
+        nominationId = "nom:approved",
+        nominee = "Burny-Stormrage",
+        reason = "Already handled",
+        awardType = "burnt",
+        status = "pending",
+        nominatedBy = "Bakerone-Stormrage",
+        lastModifiedAt = 1717337000,
+        lastModifiedBy = "Bakerone-Stormrage",
+      },
+    }, "GUILD", "Bakerone-Stormrage")
+
+    harness.assert_false(accepted)
+    harness.assert_equal("nomination already awarded", err)
+    harness.assert_equal(beforeInbound, #_G.__RPA_TEST_STATE.chatMessages)
+  end,
+
   ["reward toasts queue during combat and flush after combat ends"] = function()
     local addon = setupPlayer()
 

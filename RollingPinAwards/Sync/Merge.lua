@@ -92,6 +92,59 @@ local function shouldApplyAward(existing, incoming)
   return true
 end
 
+local function findAwardByNominationId(dataset, nominationId)
+  if isMissingString(nominationId) then
+    return nil
+  end
+
+  for _, award in pairs((dataset or {}).awardsById or {}) do
+    if award.deleted ~= true and award.source == "nomination" and award.nominationId == nominationId then
+      return award
+    end
+  end
+
+  return nil
+end
+
+local function closeNominationForAward(addon, award, actor)
+  if type(addon) ~= "table" or type(award) ~= "table" then
+    return true
+  end
+
+  if award.deleted == true or award.source ~= "nomination" or isMissingString(award.nominationId) then
+    return true
+  end
+
+  local existingNomination = addon.db:GetNomination(award.guildKey, award.nominationId, true)
+  if type(existingNomination) ~= "table" then
+    return true
+  end
+
+  if existingNomination.deleted == true or existingNomination.status ~= "pending" then
+    return true
+  end
+
+  local deleted, err = addon.db:DeleteNomination(
+    award.guildKey,
+    award.nominationId,
+    {
+      guildKey = award.guildKey,
+      nominationId = award.nominationId,
+      status = "deleted",
+      awardId = award.awardId,
+      deleted = true,
+      lastModifiedAt = award.lastModifiedAt or recordTimestamp(award),
+      lastModifiedBy = actor,
+    }
+  )
+
+  if not deleted then
+    return false, err
+  end
+
+  return true
+end
+
 function Sync:AcceptAward(award)
   if type(award) ~= "table" or isMissingString(award.awardId) then
     return false, "missing award"
@@ -158,6 +211,10 @@ function Sync:AcceptAward(award)
   end
 
   self.addon.db:UpsertAward(award.guildKey, award)
+  local closedNomination, closeErr = closeNominationForAward(self.addon, award, actor)
+  if not closedNomination then
+    return false, closeErr
+  end
 
   return true
 end
@@ -190,6 +247,13 @@ function Sync:AcceptNomination(nomination)
   local shouldApply, staleErr = shouldApplyNomination(existingNomination, nomination)
   if not shouldApply then
     return false, staleErr
+  end
+
+  if nomination.status == "pending" and nomination.deleted ~= true then
+    local dataset = self.addon.db:GetGuildDataset(nomination.guildKey)
+    if findAwardByNominationId(dataset, nomination.nominationId) then
+      return false, "nomination already awarded"
+    end
   end
 
   if nomination.deleted == true then
