@@ -14,6 +14,20 @@ local function stripRealm(name)
   return name:match("^([^-]+)") or name
 end
 
+local function truncateText(value, maxLength)
+  local text = type(value) == "string" and value or ""
+  local limit = tonumber(maxLength) or 44
+  if #text <= limit then
+    return text
+  end
+
+  if limit <= 3 then
+    return string.sub(text, 1, limit)
+  end
+
+  return string.sub(text, 1, limit - 3) .. "..."
+end
+
 local function buildRecentAwardText(award)
   if not award then
     return "No awards yet."
@@ -21,9 +35,22 @@ local function buildRecentAwardText(award)
 
   return ("%s\n%s\nAwarded by %s"):format(
     stripRealm(award.recipient),
-    award.reason or "",
+    truncateText(award.reason, 44),
     stripRealm(award.awardedBy)
   )
+end
+
+local function showAwardDetail(panel, award)
+  if not panel or not panel.awardDetailDialog or not award then
+    return
+  end
+
+  Components.SetText(panel.awardDetailDialog.titleLabel, "Award Details")
+  Components.SetText(panel.awardDetailDialog.recipientLabel, stripRealm(award.recipient) or "Unknown")
+  Components.SetText(panel.awardDetailDialog.dateLabel, award.dateText or "Unknown date")
+  Components.SetText(panel.awardDetailDialog.reasonLabel, award.reason or "")
+  Components.SetText(panel.awardDetailDialog.awardedByLabel, ("Awarded by %s"):format(stripRealm(award.awardedBy)))
+  Components.SetVisible(panel.awardDetailDialog, true)
 end
 
 UITabs.dashboard = {
@@ -102,6 +129,50 @@ UITabs.dashboard = {
       y = -162,
       visibleRowCount = 3,
       rowHeight = 56,
+    })
+
+    panel.awardDetailDialog = Components.CreateModalWindow((mainFrame and mainFrame.frame) or panel, {
+      id = "RollingPinAwardsDashboardAwardDetailDialog",
+      title = "Award Details",
+      width = 500,
+      height = 250,
+      closeStyle = "x",
+      frameLevelOffset = 140,
+      draggable = true,
+    })
+    panel.awardDetailDialog.recipientLabel = Components.CreateLabel(panel.awardDetailDialog, {
+      text = "",
+      x = 24,
+      y = -56,
+      width = 452,
+      justifyH = "LEFT",
+      textRole = "cardHeader",
+    })
+    panel.awardDetailDialog.dateLabel = Components.CreateLabel(panel.awardDetailDialog, {
+      text = "",
+      x = 24,
+      y = -84,
+      width = 452,
+      justifyH = "LEFT",
+      textRole = "tableRow",
+    })
+    panel.awardDetailDialog.reasonLabel = Components.CreateLabel(panel.awardDetailDialog, {
+      text = "",
+      x = 24,
+      y = -112,
+      width = 452,
+      justifyH = "LEFT",
+      justifyV = "TOP",
+      wordWrap = true,
+      textRole = "tableRow",
+    })
+    panel.awardDetailDialog.awardedByLabel = Components.CreateLabel(panel.awardDetailDialog, {
+      text = "",
+      x = 24,
+      y = -196,
+      width = 452,
+      justifyH = "LEFT",
+      textRole = "tableRow",
     })
 
     panel.quickActionsSection = CreateFrame("Frame", nil, panel)
@@ -218,9 +289,14 @@ UITabs.dashboard = {
         iconPath = row.awardIconPath,
         iconWidth = 18,
         iconHeight = 18,
+        labelMaxLines = 3,
+        labelWordWrap = false,
         rowHeight = 56,
         backdropTone = "rowHighlight",
         actions = {},
+        onClick = function()
+          showAwardDetail(panel, row)
+        end,
       })
     end)
 

@@ -332,7 +332,8 @@ return {
 
     local addon = wow.loadAddon()
     addon:OnInitialize()
-    addon.awards:CreateDirectAward("Moonrustle-Moonguard", "Set the oven to lava", "burnt")
+    local longReason = "Failing to celebrate his peeps by updating the Guild Message of the Day. WE GOT AOTC DAMNIT!!!!"
+    addon.awards:CreateDirectAward("Moonrustle-Moonguard", longReason, "burnt")
     addon.awards:CreateDirectAward("Moonrustle-Moonguard", "Saved the raid", "golden")
 
     addon.mainFrame:EnsureRendered()
@@ -396,6 +397,9 @@ return {
     harness.assert_true((panel.detailDialog.listSection.height or 0) >= 410)
     harness.assert_true(panel.detailDialog.listSection.scrollBar ~= nil)
     harness.assert_equal(2, #panel.detailDialog.listSection.rows)
+    harness.assert_true((panel.detailDialog.listSection.rows[1].height or 0) > 56)
+    harness.assert_true((panel.detailDialog.listSection.rows[1].label.width or 0) <= (panel.detailDialog.listSection.rows[1].width or 0) - 58)
+    harness.assert_true(panel.detailDialog.listSection.rows[1].label.text:match("WE GOT AOTC DAMNIT!!!!") ~= nil)
   end,
 
   ["bridge exposes public nomination rows with public upvote totals"] = function()
@@ -846,6 +850,41 @@ return {
     harness.assert_equal(119, rightMargin)
     harness.assert_equal(dashboardWidth, panel.leaderboardSection.width + 16 + panel.recentAwardsSection.width)
     harness.assert_equal(dashboardWidth, panel.nominationButton.width + 16 + panel.awardButton.width)
+  end,
+
+  ["dashboard recent awards clip long reasons and open a detail popup"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      serverTime = 1717336800,
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    local longReason = "Failing to celebrate his peeps by updating the Guild Message of the Day. WE GOT AOTC DAMNIT!!!!"
+    addon.awards:CreateDirectAward("Zirleficent-Stormrage", longReason, "burnt")
+
+    addon.mainFrame:EnsureRendered()
+
+    local panel = addon.mainFrame.tabPanels.dashboard
+    local row = panel.recentAwardsSection.rows[1]
+
+    harness.assert_true(row ~= nil)
+    harness.assert_true(row.clickable)
+    harness.assert_true(row.mouseEnabled)
+    harness.assert_equal(3, row.label.maxLines)
+    harness.assert_false(row.label.wordWrap)
+    harness.assert_true(row.label.text:match(longReason) == nil)
+    harness.assert_true(row.label.text:match("%.%.%.") ~= nil)
+
+    row:Click()
+
+    harness.assert_true(panel.awardDetailDialog.visible)
+    harness.assert_equal("Award Details", panel.awardDetailDialog.titleLabel.text)
+    harness.assert_true(panel.awardDetailDialog.reasonLabel.text:match("WE GOT AOTC DAMNIT!!!!") ~= nil)
+    harness.assert_true(panel.awardDetailDialog.reasonLabel.text:match("%.%.%.") == nil)
   end,
 
   ["typography applies shared readable roles across pages"] = function()
