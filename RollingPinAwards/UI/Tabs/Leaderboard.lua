@@ -23,6 +23,22 @@ local function getDominantAwardIcon(row)
   return media.leaderboardIcon
 end
 
+local function estimateWrappedLines(text, charactersPerLine)
+  local value = type(text) == "string" and text or ""
+  local perLine = tonumber(charactersPerLine) or 58
+  if value == "" then
+    return 1
+  end
+
+  return math.max(1, math.ceil(#value / perLine))
+end
+
+local function getAwardDetailRowHeight(entry)
+  local reasonLines = estimateWrappedLines((entry or {}).reason, 58)
+
+  return math.max(56, 40 + (reasonLines * 16))
+end
+
 UITabs.leaderboard = {
   id = "leaderboard",
   label = "Leaderboard",
@@ -270,8 +286,9 @@ UITabs.leaderboard = {
                   iconPath = entry.awardIconPath,
                   iconWidth = 18,
                   iconHeight = 18,
-                  labelWidth = 540,
-                  rowHeight = 56,
+                  labelWidth = 500,
+                  rowHeight = getAwardDetailRowHeight(entry),
+                  justifyV = "MIDDLE",
                   backdropTone = "rowHighlight",
                   actions = {},
                 })

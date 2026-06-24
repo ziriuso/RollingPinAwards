@@ -137,6 +137,27 @@ local function createFontString(parent, font, x, y, width, justifyH, justifyV, t
     label.text = text or ""
   end
 
+  if options and options.maxLines ~= nil then
+    label.maxLines = options.maxLines
+    if label.SetMaxLines then
+      label:SetMaxLines(options.maxLines)
+    end
+  end
+
+  if options and options.wordWrap ~= nil then
+    label.wordWrap = options.wordWrap == true
+    if label.SetWordWrap then
+      label:SetWordWrap(options.wordWrap == true)
+    end
+  end
+
+  if options and options.nonSpaceWrap ~= nil then
+    label.nonSpaceWrap = options.nonSpaceWrap == true
+    if label.SetNonSpaceWrap then
+      label:SetNonSpaceWrap(options.nonSpaceWrap == true)
+    end
+  end
+
   applyTextTreatment(label, options)
 
   return label
@@ -948,6 +969,9 @@ function Components.CreateLabel(parent, config)
     {
       outline = config.outline,
       fontSizeDelta = config.fontSizeDelta,
+      maxLines = config.maxLines,
+      wordWrap = config.wordWrap,
+      nonSpaceWrap = config.nonSpaceWrap,
       textRole = config.textRole or "cardDescription",
     }
   )
@@ -1534,6 +1558,7 @@ function Components.ClearRows(section)
   end
 
   section.rows = {}
+  section.__rowConsumedHeight = 0
 end
 
 function Components.RenderScrollableSection(section)
@@ -1583,15 +1608,16 @@ function Components.AddListRow(section, config)
 
   local row = CreateFrame("Frame", nil, section, "BackdropTemplate")
   row.backdropTone = config.backdropTone
-  local index = #section.rows
-  local offsetY = (section.rowStartY or -34) - (index * (config.rowHeight or 44))
+  local consumedHeight = section.__rowConsumedHeight or 0
+  local offsetY = (section.rowStartY or -34) - consumedHeight
   local useRowHighlight = config.backdropTone == "rowHighlight"
   local rowLeft = config.x or section.rowInsetLeft or 14
   local defaultGutter = section.scrollBar and (section.rowScrollbarGutter or 48) or 24
   local rowWidth = config.width or ((section.width or 100) - rowLeft - (config.rowRightGutter or defaultGutter))
+  local rowHeight = config.rowHeight or 40
 
   if row.SetSize then
-    row:SetSize(rowWidth, config.rowHeight or 40)
+    row:SetSize(rowWidth, rowHeight)
   end
 
   if row.SetPoint then
@@ -1636,6 +1662,9 @@ function Components.AddListRow(section, config)
     width = config.labelWidth or ((rowWidth or section.width or 100) - labelX - (config.labelRightPadding or 18)),
     justifyH = "LEFT",
     justifyV = config.justifyV or "MIDDLE",
+    maxLines = config.labelMaxLines,
+    wordWrap = config.labelWordWrap,
+    nonSpaceWrap = config.labelNonSpaceWrap,
     textRole = config.textRole or "tableRow",
   })
   if label.SetPoint then
@@ -1650,6 +1679,16 @@ function Components.AddListRow(section, config)
   end
   row.label = label
   row.actions = {}
+
+  if type(config.onClick) == "function" then
+    row.clickable = true
+    if row.EnableMouse then
+      row:EnableMouse(true)
+    end
+    if row.SetScript then
+      row:SetScript("OnClick", config.onClick)
+    end
+  end
 
   local actionX = config.actionX or math.max(0, (rowWidth or section.width or 100) - 150)
   local actionColumns = config.actionColumns or #((config.actions or {}))
@@ -1699,6 +1738,7 @@ function Components.AddListRow(section, config)
   end
 
   section.rows[#section.rows + 1] = row
+  section.__rowConsumedHeight = consumedHeight + rowHeight
 
   return row
 end

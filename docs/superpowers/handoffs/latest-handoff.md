@@ -44,6 +44,7 @@
 
 - Full Lua suite passed locally before the `v1.2.1` release commit.
 - Full Lua suite passed in the `v1.2.1` GitHub Actions release workflow.
+- Full Lua suite passed locally after the unreleased recent-awards and leaderboard overflow fix.
 - Local build command succeeded:
 
 ```powershell
@@ -59,6 +60,11 @@ powershell -ExecutionPolicy Bypass -File .\tools\release\Build-CurseForgePackage
   - `+` button
 - The addon scale `+` button aligns with the toast duration `+` button.
 - Scale still defaults to `80%`, has a `50%` low end, and steps in `5%` increments.
+
+## Unreleased Local Changes
+
+- Dashboard Recent Awards rows now truncate long reasons in the row and open a full award-detail popup when clicked.
+- Leaderboard award detail rows now use dynamic row heights with narrower text bounds to avoid right-side overflow.
 
 ## Important Previous Product Changes In 1.2.0
 
