@@ -64,6 +64,10 @@ local function createFrameObject(frameType, name, parent, template)
   end
 
   function frame:SetScript(scriptName, handler)
+    if scriptName == "OnClick" and self.frameType ~= "Button" and self.frameType ~= "CheckButton" then
+      error((self.frameType or "Frame") .. ":SetScript(): Doesn't have a \"OnClick\" script", 2)
+    end
+
     self.scripts[scriptName] = handler
   end
 
@@ -163,6 +167,10 @@ local function createFrameObject(frameType, name, parent, template)
 
     function fontString:SetWidth(value)
       self.width = value
+    end
+
+    function fontString:SetHeight(value)
+      self.height = value
     end
 
     function fontString:SetText(value)
@@ -448,7 +456,7 @@ local function createFrameObject(frameType, name, parent, template)
   end
 
   function frame:Click(...)
-    local handler = self.scripts.OnClick
+    local handler = self.scripts.OnClick or self.scripts.OnMouseUp
     if type(handler) == "function" then
       return handler(self, ...)
     end

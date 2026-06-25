@@ -123,6 +123,10 @@ local function createFontString(parent, font, x, y, width, justifyH, justifyV, t
     label:SetWidth(width)
   end
 
+  if options and options.height and label.SetHeight then
+    label:SetHeight(options.height)
+  end
+
   if justifyH and label.SetJustifyH then
     label:SetJustifyH(justifyH)
   end
@@ -970,6 +974,7 @@ function Components.CreateLabel(parent, config)
       outline = config.outline,
       fontSizeDelta = config.fontSizeDelta,
       maxLines = config.maxLines,
+      height = config.height,
       wordWrap = config.wordWrap,
       nonSpaceWrap = config.nonSpaceWrap,
       textRole = config.textRole or "cardDescription",
@@ -1663,6 +1668,7 @@ function Components.AddListRow(section, config)
     justifyH = "LEFT",
     justifyV = config.justifyV or "MIDDLE",
     maxLines = config.labelMaxLines,
+    height = config.labelHeight,
     wordWrap = config.labelWordWrap,
     nonSpaceWrap = config.labelNonSpaceWrap,
     textRole = config.textRole or "tableRow",
@@ -1671,13 +1677,49 @@ function Components.AddListRow(section, config)
     if label.ClearAllPoints then
       label:ClearAllPoints()
     end
-    label:SetPoint("LEFT", row, "LEFT", labelX, 0)
+    label:SetPoint(
+      config.labelPoint or "LEFT",
+      row,
+      config.labelRelativePoint or "LEFT",
+      config.labelOffsetX or labelX,
+      config.labelOffsetY or 0
+    )
   end
   if useRowHighlight and label.SetTextColor and config.textColor then
     local textColor = config.textColor or colors.ink or { 0, 0, 0, 1 }
     label:SetTextColor(unpackColor(textColor))
   end
   row.label = label
+
+  if config.secondaryText then
+    local secondaryLabel = Components.CreateLabel(row, {
+      text = config.secondaryText or "",
+      x = labelX,
+      y = 0,
+      width = config.secondaryLabelWidth or config.labelWidth or ((rowWidth or section.width or 100) - labelX - (config.labelRightPadding or 18)),
+      height = config.secondaryLabelHeight or 18,
+      justifyH = "LEFT",
+      justifyV = config.secondaryLabelJustifyV or "MIDDLE",
+      maxLines = config.secondaryLabelMaxLines or 1,
+      wordWrap = config.secondaryLabelWordWrap == true,
+      nonSpaceWrap = config.secondaryLabelNonSpaceWrap,
+      textRole = config.secondaryTextRole or config.textRole or "tableRow",
+    })
+    if secondaryLabel.SetPoint then
+      if secondaryLabel.ClearAllPoints then
+        secondaryLabel:ClearAllPoints()
+      end
+      secondaryLabel:SetPoint(
+        config.secondaryLabelPoint or "TOPLEFT",
+        label,
+        config.secondaryLabelRelativePoint or "BOTTOMLEFT",
+        config.secondaryLabelOffsetX or 0,
+        config.secondaryLabelOffsetY or -2
+      )
+    end
+    row.secondaryLabel = secondaryLabel
+  end
+
   row.actions = {}
 
   if type(config.onClick) == "function" then
@@ -1686,7 +1728,7 @@ function Components.AddListRow(section, config)
       row:EnableMouse(true)
     end
     if row.SetScript then
-      row:SetScript("OnClick", config.onClick)
+      row:SetScript("OnMouseUp", config.onClick)
     end
   end
 
