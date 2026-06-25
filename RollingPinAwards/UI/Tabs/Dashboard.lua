@@ -28,16 +28,20 @@ local function truncateText(value, maxLength)
   return string.sub(text, 1, limit - 3) .. "..."
 end
 
-local function buildRecentAwardText(award)
+local function buildRecentAwardName(award)
   if not award then
     return "No awards yet."
   end
 
-  return ("%s\n%s\nAwarded by %s"):format(
-    stripRealm(award.recipient),
-    truncateText(award.reason, 44),
-    stripRealm(award.awardedBy)
-  )
+  return stripRealm(award.recipient)
+end
+
+local function buildRecentAwardReason(award)
+  if not award then
+    return ""
+  end
+
+  return truncateText(award.reason, 44)
 end
 
 local function showAwardDetail(panel, award)
@@ -221,7 +225,7 @@ UITabs.dashboard = {
         or "You can nominate and vote, but guild permission is required for awards and moderation."
     )
 
-    Components.SetText(panel.statCards[1].label, "Total Rolling Pins")
+    Components.SetText(panel.statCards[1].label, "Rolling Pins")
     Components.SetText(panel.statCards[1].value, tostring(viewModel.awardCount or 0))
     Components.SetText(panel.statCards[1].detail, "Total Guildwide")
 
@@ -285,12 +289,21 @@ UITabs.dashboard = {
       end
 
       Components.AddListRow(section, {
-        text = buildRecentAwardText(row),
+        text = buildRecentAwardName(row),
+        secondaryText = buildRecentAwardReason(row),
         iconPath = row.awardIconPath,
         iconWidth = 18,
         iconHeight = 18,
-        labelMaxLines = 3,
+        labelMaxLines = 1,
+        labelHeight = 18,
+        labelPoint = "TOPLEFT",
+        labelRelativePoint = "TOPLEFT",
+        labelOffsetY = -10,
         labelWordWrap = false,
+        secondaryLabelHeight = 18,
+        secondaryLabelMaxLines = 1,
+        secondaryLabelWordWrap = false,
+        secondaryLabelOffsetY = -2,
         rowHeight = 56,
         backdropTone = "rowHighlight",
         actions = {},

@@ -4,10 +4,10 @@
 
 - Path: `C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards`
 - Remote: `https://github.com/ziriuso/RollingPinAwards.git`
-- Current working branch: `master`
-- Latest product release commit: `d3e2d5d fix: simplify addon scale controls`
-- Latest release tag: `v1.2.1`
-- Previous release tag: `v1.2.0`
+- Current working branch: `codex/release-1.3.0`
+- Latest product release commit: pending `v1.3.0` release
+- Latest release tag: pending `v1.3.0`
+- Previous release tag: `v1.2.1`
 - Source feature branch retained on remote: `codex/rolling-pin-awards-mvp`
 - `codex/rolling-pin-awards-mvp` is an ancestor of `master`; no committed codex work was lost in the merge.
 - Do not stage local-only folders unless explicitly requested:
@@ -20,9 +20,9 @@
 
 ## Release And Deploy
 
-- Version `1.2.1` was published successfully.
-- GitHub release: `https://github.com/ziriuso/RollingPinAwards/releases/tag/v1.2.1`
-- Release asset: `RollingPinAwards-1.2.1.zip`
+- Version `1.3.0` is being prepared for release.
+- GitHub release: pending `https://github.com/ziriuso/RollingPinAwards/releases/tag/v1.3.0`
+- Release asset: `RollingPinAwards-1.3.0.zip`
 - Asset digest from GitHub release metadata:
   - `sha256:741150816bfacf12c6c2fa7d00468a1ca57aa6059600c8d799d2fe120ee780b0`
 - GitHub Actions release run: `27390526161`
@@ -30,7 +30,7 @@
 - Workflow job: `80946838612`
 - CurseForge upload step result: success.
 - Local package build also succeeded before tagging:
-  - `artifacts/release/RollingPinAwards-1.2.1.zip`
+  - `artifacts/release/RollingPinAwards-1.3.0.zip`
 - Latest local deploy copied the current addon payload to:
   - `C:\Gaming\World of Warcraft\_retail_\Interface\AddOns\RollingPinAwards`
   - `C:\Gaming\World of Warcraft\_xptr_\Interface\AddOns\RollingPinAwards`
@@ -42,16 +42,22 @@
 
 ## Latest Verified State
 
-- Full Lua suite passed locally before the `v1.2.1` release commit.
-- Full Lua suite passed in the `v1.2.1` GitHub Actions release workflow.
-- Full Lua suite passed locally after the unreleased recent-awards and leaderboard overflow fix.
+- Full Lua suite passed locally before the pending `v1.3.0` release commit.
+- Full Lua suite for the `v1.3.0` GitHub Actions release workflow is pending.
 - Local build command succeeded:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\release\Build-CurseForgePackage.ps1 -TagName v1.2.1 -OutputDirectory .\artifacts\release
+powershell -ExecutionPolicy Bypass -File .\tools\release\Build-CurseForgePackage.ps1 -TagName v1.3.0 -OutputDirectory .\artifacts\release
 ```
 
-## Most Recent Product Changes In 1.2.1
+## Most Recent Product Changes In 1.3.0
+
+- Dashboard Recent Awards rows now use separate recipient and truncated-reason labels, and open a full award-detail popup when clicked.
+- Dashboard `Total Rolling Pins` summary card is now labeled `Rolling Pins`.
+- Leaderboard award detail rows now use dynamic row heights with narrower text bounds to avoid right-side overflow.
+- Clickable award rows now use a frame-safe mouse script instead of `OnClick`, avoiding a Retail Lua error on plain frames.
+
+## Important Previous Product Changes In 1.2.1
 
 - Removed the addon scale slider from Settings.
 - Addon scale now matches the toast duration control pattern:
@@ -60,11 +66,6 @@ powershell -ExecutionPolicy Bypass -File .\tools\release\Build-CurseForgePackage
   - `+` button
 - The addon scale `+` button aligns with the toast duration `+` button.
 - Scale still defaults to `80%`, has a `50%` low end, and steps in `5%` increments.
-
-## Unreleased Local Changes
-
-- Dashboard Recent Awards rows now truncate long reasons in the row and open a full award-detail popup when clicked.
-- Leaderboard award detail rows now use dynamic row heights with narrower text bounds to avoid right-side overflow.
 
 ## Important Previous Product Changes In 1.2.0
 
@@ -91,7 +92,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\release\Build-CurseForgePackage
 
 ## Current Release Surfaces
 
-- `RollingPinAwards/RollingPinAwards.toc` is at `## Version: 1.2.1`.
+- `RollingPinAwards/RollingPinAwards.toc` is at `## Version: 1.3.0`.
 - Supported interface line remains `## Interface: 120007, 120005`.
 - CurseForge project id is `1563031`.
 - Secret `CF_API_TOKEN` is configured in GitHub Actions, not in repo.
