@@ -1,5 +1,14 @@
 # RollingPinAwards — Sync Hardening Plan
 
+> **Validated against `master` @ `3eae94f`.** All five fixes below were
+> re-verified against the current code — each is still live and unaddressed.
+> Recent upstream merge work (`closeNominationForAward`, the
+> "nomination already awarded" guard, and the `shouldApplyNomination`
+> stale-replay tie-break) is *adjacent* to this plan but does not cover any of
+> the five items. Note that `closeNominationForAward` (`Sync/Merge.lua`) passes
+> the spoofable `actor` as `lastModifiedBy`, so it inherits Fix 1's trust
+> problem and is covered once Fix 1 lands.
+
 Five prioritized fixes to make the sync layer trustworthy and quiet. Ordered by
 dependency: name normalization (Fix 2) underpins the authorization fix (Fix 1),
 so land it first.
