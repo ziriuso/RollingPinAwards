@@ -55,7 +55,7 @@ git rev-parse --short HEAD
 2. Update release version surfaces before tagging:
 
 - `RollingPinAwards/RollingPinAwards.toc`: update `## Version:` to the semantic version without `v`.
-- `RollingPinAwards/RollingPinAwards.toc`: keep `## Interface:` aligned with supported WoW clients. For the 1.3.0 release this is `120007, 120005`.
+- `RollingPinAwards/RollingPinAwards.toc`: keep `## Interface:` aligned with supported WoW clients. For the 1.4.0 release this is `120007, 120005`.
 - `tests/release_workflow_spec.lua`: update the expected version when the release version changes.
 - User-facing docs that mention release behavior, usually `README.md`, `docs/testing.md`, and `docs/superpowers/handoffs/latest-handoff.md` when the current checkpoint changes.
 
@@ -69,22 +69,22 @@ powershell -ExecutionPolicy Bypass -File .\tests\run.ps1
 4. Build the package locally if you want to inspect the zip before tagging:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\release\Build-CurseForgePackage.ps1 -TagName v1.3.0 -OutputDirectory .\artifacts\release
+powershell -ExecutionPolicy Bypass -File .\tools\release\Build-CurseForgePackage.ps1 -TagName v1.4.0 -OutputDirectory .\artifacts\release
 ```
 
 5. Commit and push the release-prep checkpoint:
 
 ```powershell
 git add RollingPinAwards README.md docs tests .github/workflows/release-curseforge.yml tools/release
-git commit -m "chore: prepare 1.3.0 curseforge release"
+git commit -m "chore: prepare 1.4.0 curseforge release"
 git push origin codex/rolling-pin-awards-mvp
 ```
 
 6. Create and push the release tag when ready to publish:
 
 ```powershell
-git tag v1.3.0
-git push origin v1.3.0
+git tag v1.4.0
+git push origin v1.4.0
 ```
 
 7. Watch the tag-triggered workflow:
@@ -97,10 +97,10 @@ gh run watch <run-id>
 8. Confirm the release and artifact:
 
 ```powershell
-gh release view v1.3.0 --json name,tagName,isPrerelease,assets,url
+gh release view v1.4.0 --json name,tagName,isPrerelease,assets,url
 ```
 
-The stable release should have `isPrerelease: false`, a `RollingPinAwards-1.3.0.zip` asset, and a successful CurseForge upload step in the workflow log.
+The stable release should have `isPrerelease: false`, a `RollingPinAwards-1.4.0.zip` asset, and a successful CurseForge upload step in the workflow log.
 
 ## Required GitHub Repository Settings
 

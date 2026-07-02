@@ -31,7 +31,7 @@ function Nominations:New(addon)
   return setmetatable(obj, self)
 end
 
-function Nominations:RefreshVoteSummary(nomination)
+function Nominations:RecountVotes(nomination)
   local votes = self.addon.db:GetVotesForNomination(
     nomination.guildKey,
     nomination.nominationId
@@ -51,8 +51,17 @@ function Nominations:RefreshVoteSummary(nomination)
   nomination.downvoteCount = downvoteCount
   nomination.moderationFlagged =
     downvoteCount >= Constants.MODERATION_DOWNVOTE_THRESHOLD
-  nomination.lastModifiedAt = currentTimestamp(self.addon)
-  nomination.lastModifiedBy = self.addon:GetCurrentPlayerFullName()
+
+  return nomination
+end
+
+function Nominations:RefreshVoteSummary(nomination, options)
+  self:RecountVotes(nomination)
+
+  if not options or options.touchModified ~= false then
+    nomination.lastModifiedAt = currentTimestamp(self.addon)
+    nomination.lastModifiedBy = self.addon:GetCurrentPlayerFullName()
+  end
 
   self.addon.db:UpsertNomination(nomination.guildKey, nomination)
 

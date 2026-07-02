@@ -3,21 +3,14 @@ _G.RollingPinAwards = RPA
 
 local Permissions = RPA.Permissions or {}
 RPA.Permissions = Permissions
+local Utils = RPA.Utils or {}
 
 local function isMissingString(value)
   return type(value) ~= "string" or value == ""
 end
 
 local function normalizeFullName(name)
-  if isMissingString(name) then
-    return nil
-  end
-
-  if name:find("-", 1, true) then
-    return name
-  end
-
-  return ("%s-%s"):format(name, GetRealmName())
+  return Utils.NormalizeUnitName(name)
 end
 
 local function copyRow(row)
@@ -183,11 +176,18 @@ function Permissions:GetPermissionsForPlayer(playerFullName)
   return {
     rankIndex = rankIndex,
     rankName = rankName,
+    rankUnresolved = rankName == nil and rankIndex == nil,
     canManageNominations = false,
     canCreateDirectAwards = false,
     canDeleteAwards = false,
     canManageAddonPermissions = false,
   }
+end
+
+function Permissions:IsRankUnresolved(playerFullName)
+  local rankName, rankIndex = self:GetGuildRankInfo(playerFullName)
+
+  return rankName == nil and rankIndex == nil
 end
 
 function Permissions:SetRankPermissions(rankIndex, rankName, permissions)

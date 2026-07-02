@@ -3,6 +3,7 @@ _G.RollingPinAwards = RPA
 
 local Sync = RPA.Sync or {}
 RPA.Sync = Sync
+local Utils = RPA.Utils or {}
 
 local function isMissingString(value)
   return type(value) ~= "string" or value == ""
@@ -106,6 +107,47 @@ local function findAwardByNominationId(dataset, nominationId)
   return nil
 end
 
+local function normalizeName(value)
+  if Utils and type(Utils.NormalizeUnitName) == "function" then
+    return Utils.NormalizeUnitName(value)
+  end
+
+  return value
+end
+
+local function actorFrom(payload, ...)
+  if type(payload) == "table" and not isMissingString(payload._sender) then
+    return payload._sender
+  end
+
+  for index = 1, select("#", ...) do
+    local value = select(index, ...)
+    if not isMissingString(value) then
+      return normalizeName(value)
+    end
+  end
+
+  return nil
+end
+
+local function unauthorizedError(sync, actor)
+  if sync and type(sync.IsActorRankUnresolved) == "function" and sync:IsActorRankUnresolved(actor) then
+    return "roster pending"
+  end
+
+  return "unauthorized"
+end
+
+local function clearTransportFields(record)
+  if type(record) ~= "table" then
+    return
+  end
+
+  record._sender = nil
+  record._distribution = nil
+  record.sender = nil
+end
+
 local function closeNominationForAward(addon, award, actor)
   if type(addon) ~= "table" or type(award) ~= "table" then
     return true
@@ -154,7 +196,7 @@ function Sync:AcceptAward(award)
     return false, "wrong guild"
   end
 
-  local actor = award.lastModifiedBy or award.awardedBy
+  local actor = actorFrom(award, award.lastModifiedBy, award.awardedBy)
   local isAuthorized = false
 
   if self.addon.permissions then
@@ -170,8 +212,10 @@ function Sync:AcceptAward(award)
   end
 
   if not isAuthorized then
-    return false, "unauthorized"
+    return false, unauthorizedError(self, actor)
   end
+
+  clearTransportFields(award)
 
   local existingAward = self.addon.db:GetAward(award.guildKey, award.awardId, true)
   if award.deleted ~= true or award.lastModifiedAt ~= nil then
@@ -230,18 +274,20 @@ function Sync:AcceptNomination(nomination)
 
   if nomination.deleted == true then
     nomination.status = "deleted"
-    local actor = nomination.lastModifiedBy or nomination.resolvedBy
+    local actor = actorFrom(nomination, nomination.lastModifiedBy, nomination.resolvedBy)
     local canDeleteAwards = self.addon.permissions and self.addon.permissions:CanDeleteAwards(actor)
     local canManageNominations = self.addon.permissions and self.addon.permissions:CanManageNominations(actor)
     if not canDeleteAwards and not canManageNominations then
-      return false, "unauthorized"
+      return false, unauthorizedError(self, actor)
     end
   elseif nomination.status ~= "pending" then
-    local actor = nomination.lastModifiedBy or nomination.resolvedBy
+    local actor = actorFrom(nomination, nomination.lastModifiedBy, nomination.resolvedBy)
     if not self.addon.permissions or not self.addon.permissions:CanManageNominations(actor) then
-      return false, "unauthorized"
+      return false, unauthorizedError(self, actor)
     end
   end
+
+  clearTransportFields(nomination)
 
   local existingNomination = self.addon.db:GetNomination(nomination.guildKey, nomination.nominationId, true)
   local shouldApply, staleErr = shouldApplyNomination(existingNomination, nomination)
@@ -275,6 +321,18 @@ function Sync:AcceptNominationVote(vote)
     return false, "wrong guild"
   end
 
+  local voter = normalizeName(vote.voter)
+  local sender = normalizeName(vote._sender)
+  local isSnapshotVote = vote.syncSnapshot == true and vote._distribution == "WHISPER"
+  if not isSnapshotVote and not isMissingString(sender) and voter ~= sender then
+    return false, "unauthorized"
+  end
+
+  vote.voter = voter
+  vote.syncSnapshot = nil
+  vote._sender = nil
+  vote._distribution = nil
+
   local nomination = self.addon.db:GetNomination(vote.guildKey, vote.nominationId)
   if not nomination or nomination.status ~= "pending" then
     return false, "nomination closed"
@@ -285,7 +343,9 @@ function Sync:AcceptNominationVote(vote)
   end
 
   self.addon.db:StoreVote(vote.guildKey, vote.nominationId, vote)
-  self.addon.nominations:RefreshVoteSummary(nomination)
+  self.addon.nominations:RefreshVoteSummary(nomination, {
+    touchModified = false,
+  })
 
   return true
 end
@@ -299,9 +359,9 @@ function Sync:AcceptRankPermission(update)
     return false, "wrong guild"
   end
 
-  local actor = update.lastModifiedBy or update.sender
+  local actor = actorFrom(update, update.lastModifiedBy, update.sender)
   if not self.addon.permissions or not self.addon.permissions:CanManageAddonPermissions(actor) then
-    return false, "unauthorized"
+    return false, unauthorizedError(self, actor)
   end
 
   self.addon.db:UpsertRankPermission(update.guildKey, update.rankIndex, {
@@ -327,9 +387,9 @@ function Sync:AcceptAliasMapping(update)
     return false, "wrong guild"
   end
 
-  local actor = update.lastModifiedBy or update.sender
+  local actor = actorFrom(update, update.lastModifiedBy, update.sender)
   if not self.addon.permissions or not self.addon.permissions:CanManageAddonPermissions(actor) then
-    return false, "unauthorized"
+    return false, unauthorizedError(self, actor)
   end
 
   if update.deleted == true then

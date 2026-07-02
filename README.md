@@ -65,7 +65,7 @@ The current MVP ships a functional in-game window with:
 
 ## Sync Diagnostics
 
-Use `/rpa syncdebug` or `/rpa sync debug` in game to print copy-friendly sync state to chat, including the active guild key, comm prefix registration, Ace3 transport availability, native addon-message fallback state, last inbound/outbound sync result, hello status, and snapshot status. Use `/rpa sync now` or `/rpa sync all` to force a sync hello plus a full guild snapshot stream.
+Use `/rpa syncdebug` or `/rpa sync debug` in game to print copy-friendly sync state to chat, including the active guild key, comm prefix registration, Ace3 transport availability, native addon-message fallback state, last inbound/outbound sync result, hello status, and snapshot status. Use `/rpa sync now` or `/rpa sync all` to force a sync hello plus a targeted snapshot reply from online addon users.
 
 ## Runtime Notes
 
@@ -74,7 +74,7 @@ Use `/rpa syncdebug` or `/rpa sync debug` in game to print copy-friendly sync st
 - When `AceDB-3.0` is available, the domain database is backed by the active Ace profile instead of the plain SavedVariables fallback table.
 - When AceComm/AceSerializer are unavailable in-game, sync falls back to native `C_ChatInfo` addon messages with a flat guild-scoped payload serializer.
 - Awards, nominations, alias mappings, and rank permissions broadcast guild-scoped sync payloads when local user actions mutate them.
-- On startup the addon sends a `sync_hello` message, and receiving a hello answers with a full guild snapshot stream for rank permissions, aliases, nominations, votes, and awards.
+- On startup the addon requests the guild roster, sends a `sync_hello` message, and receiving a hello answers the requester with a debounced `WHISPER` snapshot stream for rank permissions, aliases, nominations, votes, and awards.
 - New award and nomination ids include the local character and timestamp, and inbound award/nomination rows reject stale same-id snapshots so a less-complete client cannot overwrite newer local history or resolved nominations.
 - The TOC continues to advertise `Ace3` as an optional dependency and groups the addon under the `Guild` addon-list category.
 
