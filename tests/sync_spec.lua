@@ -124,6 +124,155 @@ return {
     harness.assert_true(accepted == false)
   end,
 
+  ["sync hardening normalizes display realm actors before permission checks"] = function()
+    wow.reset({
+      guildName = "Raid Bakery",
+      realmName = "Area 52",
+      normalizedRealmName = "Area52",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      guildMembers = {
+        {
+          name = "Guildmaster-Area52",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Officerone-Area52",
+          rankName = "Officer",
+          rankIndex = 1,
+        },
+      },
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    addon.db:UpsertRankPermission(guildKey, 1, {
+      rankIndex = 1,
+      rankName = "Officer",
+      canCreateDirectAwards = true,
+    })
+
+    local accepted = addon.sync:AcceptAward({
+      guildKey = guildKey,
+      awardId = "award:area52",
+      recipient = "Burny-Area52",
+      reason = "Used the display realm",
+      source = "direct",
+      awardedBy = "Officerone-Area 52",
+      lastModifiedBy = "Officerone-Area 52",
+      lastModifiedAt = 100,
+    })
+
+    harness.assert_true(accepted)
+  end,
+
+  ["sync hardening rejects forged payload actor from low-rank transport sender"] = function()
+    local addon = setupAceGuild()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    addon.db:UpsertRankPermission(guildKey, 1, {
+      rankIndex = 1,
+      rankName = "Officer",
+      canCreateDirectAwards = true,
+    })
+
+    local serialized = addon:Serialize({
+      payloadType = "award",
+      payload = {
+        guildKey = guildKey,
+        awardId = "award:forged",
+        recipient = "Burny-Stormrage",
+        reason = "Forged officer row",
+        source = "direct",
+        awardedBy = "Guildmaster-Stormrage",
+        lastModifiedBy = "Guildmaster-Stormrage",
+        lastModifiedAt = 100,
+      },
+    })
+
+    local accepted, err = addon:OnCommReceived(
+      addon.Constants.COMM_PREFIX,
+      serialized,
+      "GUILD",
+      "Bakerone-Stormrage"
+    )
+
+    harness.assert_false(accepted)
+    harness.assert_equal("unauthorized", err)
+    harness.assert_nil(addon.db:GetAward(guildKey, "award:forged", true))
+  end,
+
+  ["sync hardening accepts officer snapshot relay without rewriting historical author"] = function()
+    local addon = setupAceGuild()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    addon.db:UpsertRankPermission(guildKey, 1, {
+      rankIndex = 1,
+      rankName = "Officer",
+      canCreateDirectAwards = true,
+    })
+
+    local serialized = addon:Serialize({
+      payloadType = "award",
+      payload = {
+        guildKey = guildKey,
+        awardId = "award:relay",
+        recipient = "Burny-Stormrage",
+        reason = "Relayed historical award",
+        source = "direct",
+        awardedBy = "Guildmaster-Stormrage",
+        lastModifiedBy = "Guildmaster-Stormrage",
+        lastModifiedAt = 100,
+      },
+    })
+
+    local accepted = addon:OnCommReceived(
+      addon.Constants.COMM_PREFIX,
+      serialized,
+      "GUILD",
+      "Officerone-Stormrage"
+    )
+    local stored = addon.db:GetAward(guildKey, "award:relay", true)
+
+    harness.assert_true(accepted)
+    harness.assert_equal("Guildmaster-Stormrage", stored.lastModifiedBy)
+    harness.assert_equal("Guildmaster-Stormrage", stored.awardedBy)
+    harness.assert_nil(stored._sender)
+    harness.assert_nil(stored._distribution)
+    harness.assert_nil(stored.sender)
+  end,
+
+  ["sync hardening drops whisper payloads from non-roster senders"] = function()
+    local addon = setupAceGuild()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+
+    local serialized = addon:Serialize({
+      payloadType = "award",
+      payload = {
+        guildKey = guildKey,
+        awardId = "award:whisper",
+        recipient = "Burny-Stormrage",
+        reason = "Whisper injection",
+        source = "direct",
+        awardedBy = "Guildmaster-Stormrage",
+        lastModifiedBy = "Guildmaster-Stormrage",
+        lastModifiedAt = 100,
+      },
+    })
+
+    local accepted, err = addon:OnCommReceived(
+      addon.Constants.COMM_PREFIX,
+      serialized,
+      "WHISPER",
+      "Outsider-Stormrage"
+    )
+
+    harness.assert_false(accepted)
+    harness.assert_equal("unauthorized distribution", err)
+    harness.assert_nil(addon.db:GetAward(guildKey, "award:whisper", true))
+  end,
+
   ["sync accepts a same-guild privileged award update from a gm-authorized officer"] = function()
     wow.reset({
       guildName = "Raid Bakery",
@@ -642,6 +791,111 @@ return {
     harness.assert_equal(0, #addon.awards:GetPublicHistory())
   end,
 
+  ["sync hardening rejects live vote payloads for a different voter"] = function()
+    local addon = setupAceGuild()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    addon.db:UpsertNomination(guildKey, {
+      nominationId = "nom:vote-forgery",
+      guildKey = guildKey,
+      nominee = "Burny-Stormrage",
+      reason = "Needs a vote",
+      status = "pending",
+      nominatedBy = "Bakerone-Stormrage",
+      lastModifiedBy = "Bakerone-Stormrage",
+      lastModifiedAt = 100,
+    })
+
+    local serialized = addon:Serialize({
+      payloadType = "vote",
+      payload = {
+        nominationId = "nom:vote-forgery",
+        guildKey = guildKey,
+        voter = "Otherone-Stormrage",
+        voteType = "upvote",
+        createdAt = 110,
+      },
+    })
+
+    local accepted, err = addon:OnCommReceived(
+      addon.Constants.COMM_PREFIX,
+      serialized,
+      "GUILD",
+      "Bakerone-Stormrage"
+    )
+
+    harness.assert_false(accepted)
+    harness.assert_equal("unauthorized", err)
+    harness.assert_nil(addon.db:GetVote(guildKey, "nom:vote-forgery", "Otherone-Stormrage"))
+  end,
+
+  ["sync hardening remote vote recount does not make older approvals stale"] = function()
+    local addon = setupAceGuild({
+      serverTime = 300,
+    })
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    addon.db:UpsertRankPermission(guildKey, 1, {
+      rankIndex = 1,
+      rankName = "Officer",
+      canManageNominations = true,
+    })
+    addon.db:UpsertNomination(guildKey, {
+      nominationId = "nom:approval-after-vote",
+      guildKey = guildKey,
+      nominee = "Burny-Stormrage",
+      reason = "Needs moderation",
+      status = "pending",
+      nominatedBy = "Bakerone-Stormrage",
+      lastModifiedBy = "Bakerone-Stormrage",
+      lastModifiedAt = 100,
+    })
+
+    local voteEnvelope = addon:Serialize({
+      payloadType = "vote",
+      payload = {
+        nominationId = "nom:approval-after-vote",
+        guildKey = guildKey,
+        voter = "Bakerone-Stormrage",
+        voteType = "upvote",
+        createdAt = 150,
+      },
+    })
+    local voteAccepted = addon:OnCommReceived(
+      addon.Constants.COMM_PREFIX,
+      voteEnvelope,
+      "GUILD",
+      "Bakerone-Stormrage"
+    )
+
+    local approvalEnvelope = addon:Serialize({
+      payloadType = "nomination",
+      payload = {
+        nominationId = "nom:approval-after-vote",
+        guildKey = guildKey,
+        nominee = "Burny-Stormrage",
+        reason = "Needs moderation",
+        status = "approved",
+        nominatedBy = "Bakerone-Stormrage",
+        resolvedBy = "Officerone-Stormrage",
+        resolvedAt = 200,
+        lastModifiedBy = "Officerone-Stormrage",
+        lastModifiedAt = 200,
+      },
+    })
+    local approvalAccepted, approvalErr = addon:OnCommReceived(
+      addon.Constants.COMM_PREFIX,
+      approvalEnvelope,
+      "GUILD",
+      "Officerone-Stormrage"
+    )
+    local stored = addon.db:GetNomination(guildKey, "nom:approval-after-vote", true)
+
+    harness.assert_true(voteAccepted)
+    harness.assert_true(approvalAccepted)
+    harness.assert_nil(approvalErr)
+    harness.assert_equal("approved", stored.status)
+    harness.assert_equal(200, stored.lastModifiedAt)
+  end,
+
   ["sync keeps offline award snapshots from resurrecting deleted awards"] = function()
     local addon = setupAceGuild()
     local guildKey = addon:GetActiveGuildContext().guildKey
@@ -993,5 +1247,97 @@ return {
     harness.assert_true(firstPayloadIndex.award < firstPayloadIndex.nomination)
     harness.assert_false(leakedReportingFilter)
     harness.assert_false(leakedLauncherSetting)
+  end,
+
+  ["sync hardening replies to hello with debounced whisper snapshot"] = function()
+    local addon = setupNativeGuild()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+
+    _G.__RPA_TEST_STATE.nativeCommMessages = {}
+    local hello = addon.sync:SerializeEnvelope({
+      payloadType = "sync_hello",
+      payload = {
+        guildKey = guildKey,
+        sender = "Officerone-Stormrage",
+        sentAt = 1717336803,
+      },
+    })
+
+    local first = addon:OnCommReceived(addon.Constants.COMM_PREFIX, hello, "GUILD", "Officerone-Stormrage")
+    local afterFirst = #(_G.__RPA_TEST_STATE.nativeCommMessages or {})
+    local second = addon:OnCommReceived(addon.Constants.COMM_PREFIX, hello, "GUILD", "Officerone-Stormrage")
+    local afterSecond = #(_G.__RPA_TEST_STATE.nativeCommMessages or {})
+    local firstReply = _G.__RPA_TEST_STATE.nativeCommMessages[1]
+
+    harness.assert_true(first)
+    harness.assert_false(second)
+    harness.assert_true(afterFirst > 0)
+    harness.assert_equal(afterFirst, afterSecond)
+    harness.assert_equal("WHISPER", firstReply.distribution)
+    harness.assert_equal("Officerone-Stormrage", firstReply.target)
+  end,
+
+  ["sync hardening requests roster and replays deferred privileged records"] = function()
+    wow.reset({
+      nativeComm = true,
+      guildName = "Raid Bakery",
+      playerName = "Guildmaster",
+      guildRankName = "Guild Master",
+      guildRankIndex = 0,
+      guildMembers = {},
+    })
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    addon.db:UpsertRankPermission(guildKey, 1, {
+      rankIndex = 1,
+      rankName = "Officer",
+      canCreateDirectAwards = true,
+    })
+    addon:OnEnable()
+
+    local serialized = addon.sync:SerializeEnvelope({
+      payloadType = "award",
+      payload = {
+        guildKey = guildKey,
+        awardId = "award:deferred",
+        recipient = "Burny-Stormrage",
+        reason = "Arrived before roster",
+        source = "direct",
+        awardedBy = "Officerone-Stormrage",
+        lastModifiedBy = "Officerone-Stormrage",
+        lastModifiedAt = 100,
+      },
+    })
+
+    local accepted, err = addon:OnCommReceived(
+      addon.Constants.COMM_PREFIX,
+      serialized,
+      "GUILD",
+      "Officerone-Stormrage"
+    )
+    local beforeRoster = addon.db:GetAward(guildKey, "award:deferred", true)
+
+    wow.setGuildMembers({
+      {
+        name = "Guildmaster-Stormrage",
+        rankName = "Guild Master",
+        rankIndex = 0,
+      },
+      {
+        name = "Officerone-Stormrage",
+        rankName = "Officer",
+        rankIndex = 1,
+      },
+    })
+    wow.fireEvent("GUILD_ROSTER_UPDATE")
+    local afterRoster = addon.db:GetAward(guildKey, "award:deferred", true)
+
+    harness.assert_false(accepted)
+    harness.assert_equal("roster pending", err)
+    harness.assert_true((wow.getState().guildRosterRequestCount or 0) > 0)
+    harness.assert_nil(beforeRoster)
+    harness.assert_true(afterRoster ~= nil)
   end,
 }

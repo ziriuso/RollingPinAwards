@@ -50,6 +50,48 @@ function Utils.NormalizeAliasKey(value)
   return normalized
 end
 
+function Utils.NormalizeRealm(realm)
+  local source = realm
+
+  if (type(source) ~= "string" or source == "") and type(GetNormalizedRealmName) == "function" then
+    source = GetNormalizedRealmName()
+  end
+
+  if (type(source) ~= "string" or source == "") and type(GetRealmName) == "function" then
+    source = GetRealmName()
+  end
+
+  if type(source) ~= "string" or source == "" then
+    return nil
+  end
+
+  local normalized = source:gsub("[%s%p]", "")
+  if normalized == "" then
+    return nil
+  end
+
+  return normalized
+end
+
+function Utils.NormalizeUnitName(name, realm)
+  if type(name) ~= "string" or name == "" then
+    return nil
+  end
+
+  local character, suppliedRealm = name:match("^([^-]+)%-(.+)$")
+  if not character then
+    character = name
+    suppliedRealm = realm
+  end
+
+  local normalizedRealm = Utils.NormalizeRealm(suppliedRealm)
+  if not normalizedRealm then
+    return character
+  end
+
+  return ("%s-%s"):format(character, normalizedRealm)
+end
+
 function Utils.NormalizeAwardType(value)
   local Constants = RPA.Constants or {}
 

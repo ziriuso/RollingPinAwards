@@ -7,13 +7,18 @@ Runtime sync files live under the installable addon folder, `RollingPinAwards/`.
 ## Validation Rules
 
 - Incoming payloads must match the active `guildKey`.
-- Privileged payloads are accepted only when the sender satisfies the exact rank permission required for that payload type.
+- Character names are normalized to roster realm format before permission checks, so display realms such as `Area 52` compare as `Area52`.
+- Privileged payloads are accepted only when the authenticated transport sender satisfies the exact rank permission required for that payload type. Payload author fields such as `lastModifiedBy`, `awardedBy`, and `resolvedBy` are preserved as record provenance, not trusted as the authorization subject.
+- Messages are accepted from `GUILD`; `WHISPER` messages are accepted only when the sender is present in the current guild roster.
 - Award and nomination snapshot rows are monotonic: stale same-ID records cannot replace newer local history or downgrade resolved nominations back to pending.
 - Pending nomination payloads are rejected when local award history already contains a non-deleted nomination award for the same `nominationId`.
 - Accepted nomination-sourced award payloads close any local pending copy of the linked nomination with a hidden tombstone.
 - Award and linked nomination deletions are stored as hidden tombstones, so stale offline snapshots cannot resurrect deleted rows.
 - Duplicate votes from the same voter on the same nomination are ignored.
 - Votes are accepted only while the nomination remains `pending`.
+- Live vote payloads are accepted only when `vote.voter` matches the authenticated sender. Snapshot vote relays are allowed only on targeted snapshot `WHISPER` traffic.
+- Inbound vote recounts update vote totals without advancing nomination `lastModifiedAt`/`lastModifiedBy`; only nomination status transitions own that clock.
+- Privileged records that arrive before the roster can resolve the sender rank are deferred as `roster pending` and replayed after `GUILD_ROSTER_UPDATE`; known low-rank senders are rejected immediately.
 
 Privileged payload mapping:
 
@@ -31,7 +36,7 @@ Privileged payload mapping:
 - When Ace3 comm/serializer APIs are unavailable, sync falls back to native `C_ChatInfo.RegisterAddonMessagePrefix` and `C_ChatInfo.SendAddonMessage` with a small flat-field serializer for the existing payload shapes.
 - Native fallback messages larger than the addon-message limit are split into `RPA2C` chunks and reassembled before dispatch. Partial chunks do not mutate the database.
 - `Bootstrap.lua` owns service initialization and comm registration.
-- `Core/Events.lua` owns `ADDON_LOADED`, `PLAYER_LOGIN`, and `PLAYER_GUILD_UPDATE` lifecycle wiring.
+- `Core/Events.lua` owns `ADDON_LOADED`, `PLAYER_LOGIN`, `PLAYER_GUILD_UPDATE`, `GUILD_ROSTER_UPDATE`, and combat-toast lifecycle wiring.
 - `Bootstrap.lua` routes inbound addon messages through `RPA:OnCommReceived`.
 - `Sync/Codec.lua` owns native envelope serialization and `RPA2C` chunk reassembly.
 - `Sync/Transport.lua` owns outbound Ace/native sends and hello broadcasts.
@@ -40,9 +45,9 @@ Privileged payload mapping:
 - `Sync/Diagnostics.lua` owns `/rpa syncdebug` output and receive summaries.
 - `Sync/Coordinator.lua` owns envelope construction and payload-type routing.
 - Local mutations broadcast immediately for awards, nominations, nomination votes, rank permission changes, and alias mapping changes.
-- `Bootstrap.lua` sends a `sync_hello` once per active guild when sync enables, and `Core/Events.lua` sends again after guild context appears later through `PLAYER_GUILD_UPDATE`.
+- `Bootstrap.lua` requests the guild roster on enable, sends a `sync_hello` once per active guild when sync enables, and `Core/Events.lua` sends again after guild context appears later through `PLAYER_GUILD_UPDATE`.
 - If the client first sees only a provisional name-based guild key and later resolves the stable guild club id, `Bootstrap.lua` migrates the guild dataset key and sends a fresh `sync_hello` for the stable key so online peers can answer with the missed snapshot.
-- Receiving `sync_hello` answers with a full flat record stream for rank permissions, aliases, awards, nominations, votes, and hidden delete tombstones, followed by `sync_snapshot_complete`. Awards are sent before nominations so clients can reject old pending nomination replays that were already approved.
+- Receiving `sync_hello` answers with a targeted `WHISPER` full flat record stream for rank permissions, aliases, awards, nominations, votes, and hidden delete tombstones, followed by `sync_snapshot_complete`. Snapshot traffic uses `BULK` priority and is debounced per requester for 30 seconds. Awards are sent before nominations so clients can reject old pending nomination replays that were already approved.
 - `/rpa sync now` and `/rpa sync all` force the same hello plus full snapshot stream for live two-client testing.
 - `/rpa peers` and `/rpa sync peers` open a draggable local table of same-guild sync senders and the last date this client saw them. The peers table is parented to `UIParent`, so it can be opened without showing the main addon window. Run `/rpa sync now` first when you want to actively ping online addon users.
 - Inbound accepted payloads rerender the active tab when the main window has already been rendered.

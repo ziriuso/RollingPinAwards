@@ -229,6 +229,10 @@ function RPA:OnEnable()
     self:RegisterNativeComm()
   end
 
+  if type(self.RequestGuildRoster) == "function" then
+    self:RequestGuildRoster()
+  end
+
   if self.sync and type(self.sync.SendHello) == "function" then
     self.sync:SendHello()
   end
@@ -241,6 +245,73 @@ function RPA:OnEnable()
   end
 
   return true
+end
+
+function RPA:RequestGuildRoster()
+  local now = type(GetTime) == "function" and GetTime() or 0
+  if self.__rpaLastGuildRosterRequestAt and now - self.__rpaLastGuildRosterRequestAt < 10 then
+    return false, "throttled"
+  end
+
+  local requested = false
+  if _G.C_GuildInfo and type(_G.C_GuildInfo.GuildRoster) == "function" then
+    requested = _G.C_GuildInfo.GuildRoster() ~= false
+  elseif type(_G.GuildRoster) == "function" then
+    requested = _G.GuildRoster() ~= false
+  end
+
+  if requested then
+    self.__rpaLastGuildRosterRequestAt = now
+  end
+
+  return requested
+end
+
+function RPA:OnGuildRosterUpdate()
+  self:RefreshActiveGuildContext()
+
+  if self.sync and type(self.sync.ReplayDeferredInbound) == "function" then
+    self.sync:ReplayDeferredInbound()
+  end
+end
+
+function RPA:IsGuildRosterMember(playerFullName)
+  local normalizedTarget = Utils and type(Utils.NormalizeUnitName) == "function"
+    and Utils.NormalizeUnitName(playerFullName)
+    or playerFullName
+
+  if type(normalizedTarget) ~= "string" or normalizedTarget == "" then
+    return false
+  end
+
+  if type(GetNumGuildMembers) ~= "function" or type(GetGuildRosterInfo) ~= "function" then
+    return false
+  end
+
+  local memberCount = GetNumGuildMembers() or 0
+  for index = 1, memberCount do
+    local rosterName = GetGuildRosterInfo(index)
+    local normalizedRosterName = Utils and type(Utils.NormalizeUnitName) == "function"
+      and Utils.NormalizeUnitName(rosterName)
+      or rosterName
+    if normalizedRosterName == normalizedTarget then
+      return true
+    end
+  end
+
+  return false
+end
+
+function RPA:IsTrustedSyncDistribution(distribution, sender)
+  if distribution == "GUILD" then
+    return true
+  end
+
+  if distribution == "WHISPER" then
+    return self:IsGuildRosterMember(sender)
+  end
+
+  return false
 end
 
 function RPA:RegisterNativeComm()
@@ -310,6 +381,24 @@ function RPA:OnCommReceived(prefix, message, distribution, sender)
     envelope = decoded
   end
 
+  if type(self.IsTrustedSyncDistribution) == "function"
+    and not self:IsTrustedSyncDistribution(distribution, sender)
+  then
+    if type(self.sync.RecordInbound) == "function" then
+      local payload = type(envelope) == "table" and type(envelope.payload) == "table" and envelope.payload or {}
+      self.sync:RecordInbound({
+        payloadType = type(envelope) == "table" and envelope.payloadType or nil,
+        guildKey = payload.guildKey,
+        sender = sender,
+        distribution = distribution,
+        ok = false,
+        error = "unauthorized distribution",
+      })
+    end
+
+    return false, "unauthorized distribution"
+  end
+
   return self.sync:DispatchEnvelope(envelope, distribution, sender)
 end
 
@@ -319,9 +408,8 @@ end
 
 function RPA:GetCurrentPlayerFullName()
   local playerName = UnitName("player")
-  local realmName = GetRealmName()
 
-  return ("%s-%s"):format(playerName, realmName)
+  return Utils.NormalizeUnitName(playerName)
 end
 
 function RPA:HandleChatCommand(message)

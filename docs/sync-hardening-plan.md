@@ -1,13 +1,9 @@
 # RollingPinAwards — Sync Hardening Plan
 
-> **Validated against `master` @ `3eae94f`.** All five fixes below were
-> re-verified against the current code — each is still live and unaddressed.
-> Recent upstream merge work (`closeNominationForAward`, the
-> "nomination already awarded" guard, and the `shouldApplyNomination`
-> stale-replay tie-break) is *adjacent* to this plan but does not cover any of
-> the five items. Note that `closeNominationForAward` (`Sync/Merge.lua`) passes
-> the spoofable `actor` as `lastModifiedBy`, so it inherits Fix 1's trust
-> problem and is covered once Fix 1 lands.
+> **Implemented against `master` after validation @ `3eae94f`.** All five fixes
+> below are covered by `tests/sync_spec.lua` cases prefixed `sync hardening`.
+> `closeNominationForAward` now receives the transport-authorized actor from
+> `Sync/Merge.lua`, while historical record author fields remain provenance.
 
 Five prioritized fixes to make the sync layer trustworthy and quiet. Ordered by
 dependency: name normalization (Fix 2) underpins the authorization fix (Fix 1),
@@ -26,7 +22,7 @@ apostrophe the two never compare equal, so every permission lookup fails.
 **Files.**
 - `Bootstrap.lua:320` — `GetCurrentPlayerFullName`
 - `Domain/Permissions.lua:11` — `normalizeFullName`
-- New shared helper (suggest `Domain/Utils.lua`) — `NormalizeRealm(realm)` and `NormalizeUnitName(name, realm)`
+- Existing shared helper `Domain/Utils.lua` — `NormalizeRealm(realm)` and `NormalizeUnitName(name, realm)`
 
 **Changes.**
 1. Add one canonical normalizer that strips spaces, apostrophes, and other
@@ -71,20 +67,21 @@ payload with `lastModifiedBy = "<GM>"` and escalate or delete anything.
 2. In each `Accept*` handler, resolve `actor` from the authoritative sender, not
    from `lastModifiedBy`. Then run the existing permission checks
    (`CanDeleteAwards`, `CanManageNominations`, etc.) against that.
-3. Reject `lastModifiedBy`/`voter` values that don't match the authenticated
-   sender (a sender may only write records attributed to themselves), OR — if
-   relaying others' records is a real requirement — require the *sender* to hold
-   the relevant permission regardless of the claimed author.
+3. For privileged record relays, require the *sender* to hold the relevant
+   permission regardless of the claimed historical author. Preserve
+   `lastModifiedBy`, `awardedBy`, and related wire metadata as provenance/display
+   fields. For live votes, require `vote.voter == sender`; snapshot vote relays
+   are allowed only on targeted snapshot WHISPER traffic.
 4. **Distribution gate:** in `OnCommReceived`, drop any message whose
    `distribution` is not `GUILD` (or `WHISPER` only from a confirmed
    guild-roster member). This closes the non-member whisper-injection path.
 5. **Votes** (`Merge.lua:205`): require `vote.voter == sender`; a client may only
    cast its own vote.
 
-**Edge cases.** Roster not yet loaded → `actor` rank is nil → currently
-"unauthorized" (see Fix 5). Self-echo of GUILD messages (already guarded only for
-hello). Legit officer relaying a snapshot of *other* people's older records —
-decide policy in step 3 and document it.
+**Edge cases.** Roster not yet loaded → `actor` rank is nil → defer as
+"roster pending" (see Fix 5). Self-echo of GUILD messages (already guarded only
+for hello). Legit officer relaying a snapshot of *other* people's older records
+is allowed when the transport sender has the required permission.
 
 **Tests.** Add adversarial cases to `tests/sync_spec.lua`: forged
 `lastModifiedBy` from a low-rank sender is rejected; `WHISPER` from a non-member
@@ -205,5 +202,6 @@ apply. Guard against replaying records that were legitimately unauthorized.
 4. **Fix 4** (vote timestamp) — removes a divergence source before wider testing.
 5. **Fix 3** (whisper snapshots + debounce) — quiets the network.
 
-Each fix ships with the tests noted above; run the existing suite
-(`tests/run.lua`) after each to catch regressions in the mocked WoW API.
+Each fix ships with the tests noted above; run the existing suite through the
+PowerShell wrapper (`powershell -ExecutionPolicy Bypass -File .\tests\run.ps1`)
+so `RPA_TEST_SPECS` is populated for `tests/run.lua`.

@@ -17,10 +17,10 @@ local function assertContains(contents, needle)
 end
 
 return {
-  ["toc declares the 1.3.0 release version"] = function()
+  ["toc declares the 1.4.0 release version"] = function()
     local toc = readFile(harness.addon_path("RollingPinAwards.toc"))
 
-    assertContains(toc, "## Version: 1.3.0")
+    assertContains(toc, "## Version: 1.4.0")
   end,
 
   ["curseforge release workflow packages and publishes rolling pin awards"] = function()

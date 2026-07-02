@@ -673,9 +673,12 @@ function wow.reset(seed)
     guildRankName = seed.guildRankName or "Member",
     guildRankIndex = seed.guildRankIndex or 9,
     guildMembers = seed.guildMembers or {},
+    guildRosterRequestCount = 0,
     isGuildOfficer = seed.isGuildOfficer,
     realmName = seed.realmName or "Stormrage",
+    normalizedRealmName = seed.normalizedRealmName,
     playerName = seed.playerName or "Ziri",
+    now = seed.now or seed.serverTime or 1717336800,
     savedVariables = seed.savedVariables,
     ace3 = seed.ace3,
     noAceAddon = seed.noAceAddon,
@@ -700,8 +703,20 @@ function wow.reset(seed)
     return state.realmName
   end
 
+  _G.GetNormalizedRealmName = seed.disableNormalizedRealmName and nil or function()
+    if state.normalizedRealmName then
+      return state.normalizedRealmName
+    end
+
+    return (state.realmName or ""):gsub("[%s%p]", "")
+  end
+
   _G.GetServerTime = function()
-    return seed.serverTime or 1717336800
+    return state.now
+  end
+
+  _G.GetTime = function()
+    return state.now
   end
 
   _G.UnitName = function()
@@ -722,7 +737,16 @@ function wow.reset(seed)
 
       return state.guildRankIndex ~= nil and state.guildRankIndex <= 1
     end,
+    GuildRoster = function()
+      state.guildRosterRequestCount = state.guildRosterRequestCount + 1
+      return true
+    end,
   }
+
+  _G.GuildRoster = function()
+    state.guildRosterRequestCount = state.guildRosterRequestCount + 1
+    return true
+  end
 
   _G.C_ChatInfo = state.nativeComm and {
     RegisterAddonMessagePrefix = function(prefix)
@@ -793,6 +817,18 @@ end
 function wow.setGuild(guildName, guildClubId)
   state.guildName = guildName
   state.guildClubId = guildClubId
+end
+
+function wow.setGuildMembers(guildMembers)
+  state.guildMembers = guildMembers or {}
+end
+
+function wow.setTime(now)
+  state.now = now
+end
+
+function wow.getState()
+  return state
 end
 
 

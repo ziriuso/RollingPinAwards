@@ -60,7 +60,7 @@ function Sync:SendFullSnapshot(distribution, target)
     payload.guildKey = guild.guildKey
     payload.rankIndex = tonumber(payload.rankIndex or rankIndex)
     if payload.rankIndex ~= nil then
-      self:Broadcast("rank_permissions", payload, distribution or "GUILD", target)
+      self:Broadcast("rank_permissions", payload, distribution or "GUILD", target, "BULK")
       counts.rankPermissions = counts.rankPermissions + 1
     end
   end
@@ -69,7 +69,7 @@ function Sync:SendFullSnapshot(distribution, target)
     local payload = copyFlatRecord(dataset.aliasMappingsByKey[aliasKey])
     payload.guildKey = guild.guildKey
     payload.aliasKey = payload.aliasKey or aliasKey
-    self:Broadcast("alias_mapping", payload, distribution or "GUILD", target)
+    self:Broadcast("alias_mapping", payload, distribution or "GUILD", target, "BULK")
     counts.aliasMappings = counts.aliasMappings + 1
   end
 
@@ -77,7 +77,7 @@ function Sync:SendFullSnapshot(distribution, target)
     local payload = copyFlatRecord(dataset.awardsById[awardId])
     payload.guildKey = guild.guildKey
     payload.awardId = payload.awardId or awardId
-    self:Broadcast("award", payload, distribution or "GUILD", target)
+    self:Broadcast("award", payload, distribution or "GUILD", target, "BULK")
     counts.awards = counts.awards + 1
   end
 
@@ -85,7 +85,7 @@ function Sync:SendFullSnapshot(distribution, target)
     local payload = copyFlatRecord(dataset.nominationsById[nominationId])
     payload.guildKey = guild.guildKey
     payload.nominationId = payload.nominationId or nominationId
-    self:Broadcast("nomination", payload, distribution or "GUILD", target)
+    self:Broadcast("nomination", payload, distribution or "GUILD", target, "BULK")
     counts.nominations = counts.nominations + 1
   end
 
@@ -95,7 +95,8 @@ function Sync:SendFullSnapshot(distribution, target)
       payload.guildKey = guild.guildKey
       payload.nominationId = payload.nominationId or nominationId
       payload.voter = payload.voter or voter
-      self:Broadcast("vote", payload, distribution or "GUILD", target)
+      payload.syncSnapshot = true
+      self:Broadcast("vote", payload, distribution or "GUILD", target, "BULK")
       counts.votes = counts.votes + 1
     end
   end
@@ -108,7 +109,7 @@ function Sync:SendFullSnapshot(distribution, target)
     votes = counts.votes,
     rankPermissions = counts.rankPermissions,
     aliasMappings = counts.aliasMappings,
-  }, distribution or "GUILD", target)
+  }, distribution or "GUILD", target, "BULK")
 
   self.lastSnapshot = {
     guildKey = guild.guildKey,
