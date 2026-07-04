@@ -1277,6 +1277,73 @@ return {
     harness.assert_equal("Officerone-Stormrage", firstReply.target)
   end,
 
+  ["sync hardening does not whisper snapshots to offline hello senders"] = function()
+    local addon = setupNativeGuild({
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+          online = true,
+        },
+        {
+          name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+          online = false,
+        },
+      },
+    })
+    local guildKey = addon:GetActiveGuildContext().guildKey
+
+    _G.__RPA_TEST_STATE.nativeCommMessages = {}
+    local hello = addon.sync:SerializeEnvelope({
+      payloadType = "sync_hello",
+      payload = {
+        guildKey = guildKey,
+        sender = "Officerone-Stormrage",
+        sentAt = 1717336803,
+      },
+    })
+
+    local ok, err = addon:OnCommReceived(addon.Constants.COMM_PREFIX, hello, "GUILD", "Officerone-Stormrage")
+
+    harness.assert_false(ok)
+    harness.assert_equal("sender offline", err)
+    harness.assert_equal(0, #(_G.__RPA_TEST_STATE.nativeCommMessages or {}))
+  end,
+
+  ["sync hardening stops whisper snapshot after target offline send result"] = function()
+    local addon = setupNativeGuild()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    addon.db:UpsertRankPermission(guildKey, 1, {
+      rankIndex = 1,
+      rankName = "Officer",
+      canCreateDirectAwards = true,
+    })
+    addon.db:UpsertAliasMapping(guildKey, {
+      alias = "Burny-Stormrage",
+      canonical = "Bakerone-Stormrage",
+    })
+
+    _G.__RPA_TEST_STATE.nativeCommMessages = {}
+    _G.__RPA_TEST_STATE.nativeCommSendResults = { 12 }
+    local hello = addon.sync:SerializeEnvelope({
+      payloadType = "sync_hello",
+      payload = {
+        guildKey = guildKey,
+        sender = "Officerone-Stormrage",
+        sentAt = 1717336803,
+      },
+    })
+
+    local ok, err = addon:OnCommReceived(addon.Constants.COMM_PREFIX, hello, "GUILD", "Officerone-Stormrage")
+
+    harness.assert_false(ok)
+    harness.assert_equal("target offline", err)
+    harness.assert_equal(1, #(_G.__RPA_TEST_STATE.nativeCommMessages or {}))
+  end,
+
   ["sync hardening requests roster and replays deferred privileged records"] = function()
     wow.reset({
       nativeComm = true,

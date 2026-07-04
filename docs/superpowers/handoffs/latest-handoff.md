@@ -4,10 +4,10 @@
 
 - Path: `C:\GitHub\RollingPinAwards`
 - Remote: `https://github.com/ziriuso/RollingPinAwards.git`
-- Current working branch: `master`
-- Latest product release commit: `6b06d65`
-- Latest release tag: `v1.4.0`
-- Previous release tag: `v1.3.0`
+- Current working branch: `codex/sync-whisper-hotfix-1.4.1`
+- Latest product release commit: pending `v1.4.1` release
+- Latest release tag: pending `v1.4.1`
+- Previous release tag: `v1.4.0`
 - Source feature branch retained on remote: `codex/rolling-pin-awards-mvp`
 - `codex/rolling-pin-awards-mvp` is an ancestor of `master`; no committed codex work was lost in the merge.
 - Do not stage local-only folders unless explicitly requested:
@@ -20,17 +20,17 @@
 
 ## Release And Deploy
 
-- Version `1.4.0` has been released.
-- GitHub release: `https://github.com/ziriuso/RollingPinAwards/releases/tag/v1.4.0`
-- Release asset: `RollingPinAwards-1.4.0.zip`
+- Version `1.4.1` is being prepared for release.
+- GitHub release: pending `https://github.com/ziriuso/RollingPinAwards/releases/tag/v1.4.1`
+- Release asset: `RollingPinAwards-1.4.1.zip`
 - Asset digest from GitHub release metadata:
-  - `sha256:a129dc107542ad114407a7f82e5225a04858d1ca67f416334ec7aa379c33067f`
-- GitHub Actions release run: `28601797566`
+  - pending
+- GitHub Actions release run: pending
 - Workflow result: success.
-- Workflow job: `84811659059`
-- CurseForge upload step result: success.
-- Local package build succeeded before tagging and was cleaned after deploy:
-  - `artifacts/release/RollingPinAwards-1.4.0.zip`
+- Workflow job: pending
+- CurseForge upload step result: pending.
+- Local package build is pending:
+  - `artifacts/release/RollingPinAwards-1.4.1.zip`
 - Latest local deploy copied the current addon payload to:
   - `C:\Gaming\World of Warcraft\_retail_\Interface\AddOns\RollingPinAwards`
   - `C:\Gaming\World of Warcraft\_xptr_\Interface\AddOns\RollingPinAwards`
@@ -42,15 +42,20 @@
 
 ## Latest Verified State
 
-- Full Lua suite passed locally before the `v1.4.0` release commit.
-- Full Lua suite for the `v1.4.0` GitHub Actions release workflow passed.
+- Full Lua suite passed locally before the pending `v1.4.1` release commit.
+- Full Lua suite for the `v1.4.1` GitHub Actions release workflow is pending.
 - Local build command succeeded:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\release\Build-CurseForgePackage.ps1 -TagName v1.4.0 -OutputDirectory .\artifacts\release
+powershell -ExecutionPolicy Bypass -File .\tools\release\Build-CurseForgePackage.ps1 -TagName v1.4.1 -OutputDirectory .\artifacts\release
 ```
 
-## Most Recent Product Changes In 1.4.0
+## Most Recent Product Changes In 1.4.1
+
+- Sync hello snapshot replies no longer whisper offline guild members.
+- Snapshot whisper streams abort on the first transport send failure, preventing repeated WoW `No player named` system messages.
+
+## Important Previous Product Changes In 1.4.0
 
 - Sync now gates inbound guild traffic to normalized, roster-confirmed guild members.
 - Hello replies are sent by debounced whispers instead of broadcast echoing.
@@ -99,7 +104,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\release\Build-CurseForgePackage
 
 ## Current Release Surfaces
 
-- `RollingPinAwards/RollingPinAwards.toc` is at `## Version: 1.4.0`.
+- `RollingPinAwards/RollingPinAwards.toc` is at `## Version: 1.4.1`.
 - Supported interface line remains `## Interface: 120007, 120005`.
 - CurseForge project id is `1563031`.
 - Secret `CF_API_TOKEN` is configured in GitHub Actions, not in repo.

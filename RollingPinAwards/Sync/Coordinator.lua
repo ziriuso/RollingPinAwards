@@ -76,6 +76,16 @@ function Sync:SendSnapshotToHelloSender(sender)
     return false, "missing sender"
   end
 
+  if self.addon and type(self.addon.GetGuildRosterMemberStatus) == "function" then
+    local found, online = self.addon:GetGuildRosterMemberStatus(normalizedSender)
+    if not found then
+      return false, "sender not in roster"
+    end
+    if not online then
+      return false, "sender offline"
+    end
+  end
+
   local now = currentTime()
   local previous = self.lastSnapshotSentTo and self.lastSnapshotSentTo[normalizedSender]
   if previous and now - previous < 30 then
