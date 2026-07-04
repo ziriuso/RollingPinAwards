@@ -4,9 +4,9 @@
 
 - Path: `C:\GitHub\RollingPinAwards`
 - Remote: `https://github.com/ziriuso/RollingPinAwards.git`
-- Current working branch: `codex/sync-whisper-target-resolution`
-- Latest product release commit: pending `v1.4.2` release
-- Latest release tag: pending `v1.4.2`
+- Current working branch: `master`
+- Latest product release commit: `63cdfc0` (`v1.4.2`)
+- Latest release tag: `v1.4.2`
 - Previous release tag: `v1.4.1`
 - Source feature branch retained on remote: `codex/rolling-pin-awards-mvp`
 - `codex/rolling-pin-awards-mvp` is an ancestor of `master`; no committed codex work was lost in the merge.
@@ -20,16 +20,16 @@
 
 ## Release And Deploy
 
-- Version `1.4.2` is being prepared for release.
-- GitHub release: pending `https://github.com/ziriuso/RollingPinAwards/releases/tag/v1.4.2`
+- Version `1.4.2` has been released.
+- GitHub release: `https://github.com/ziriuso/RollingPinAwards/releases/tag/v1.4.2`
 - Release asset: `RollingPinAwards-1.4.2.zip`
 - Asset digest from GitHub release metadata:
-  - pending
-- GitHub Actions release run: pending
+  - `sha256:1fa65e125d197f5bdba0e38660307910b2e415f89ff800c9f32a8c8a4574adf1`
+- GitHub Actions release run: `28694021330`
 - Workflow result: success.
-- Workflow job: pending
-- CurseForge upload step result: pending.
-- Local package build is pending:
+- Workflow job: `85100442161`
+- CurseForge upload step result: success.
+- Local package build succeeded before tagging:
   - `artifacts/release/RollingPinAwards-1.4.2.zip`
 - Latest local deploy copied the current addon payload to:
   - `C:\Gaming\World of Warcraft\_retail_\Interface\AddOns\RollingPinAwards`
@@ -37,13 +37,14 @@
 - Deploy verification:
   - `75` source files and `75` target files in each target.
   - `0` SHA-256 hash mismatches in each target.
+  - Both targets report `## Version: 1.4.2`.
 - Release workflow notice only:
   - `windows-latest requests are being redirected to windows-2025-vs2026 by June 15, 2026`
 
 ## Latest Verified State
 
-- Full Lua suite passed locally before the pending `v1.4.2` release commit.
-- Full Lua suite for the `v1.4.2` GitHub Actions release workflow is pending.
+- Full Lua suite passed locally before the `v1.4.2` release commit.
+- Full Lua suite for the `v1.4.2` GitHub Actions release workflow passed.
 - Local build command succeeded:
 
 ```powershell
