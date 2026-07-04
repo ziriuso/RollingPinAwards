@@ -35,6 +35,27 @@ local function sortedKeys(records)
   return keys
 end
 
+local function recordSnapshotFailure(sync, guildKey, counts, err)
+  sync.lastSnapshot = {
+    guildKey = guildKey,
+    ok = false,
+    counts = counts,
+    error = err,
+  }
+
+  return false, err
+end
+
+local function sendSnapshotRecord(sync, guildKey, counts, countKey, payloadType, payload, distribution, target)
+  local ok, err = sync:Broadcast(payloadType, payload, distribution or "GUILD", target, "BULK")
+  if not ok then
+    return recordSnapshotFailure(sync, guildKey, counts, err)
+  end
+
+  counts[countKey] = counts[countKey] + 1
+  return true
+end
+
 function Sync:SendFullSnapshot(distribution, target)
   local guild = self.addon:GetActiveGuildContext()
   if not guild then
@@ -60,8 +81,19 @@ function Sync:SendFullSnapshot(distribution, target)
     payload.guildKey = guild.guildKey
     payload.rankIndex = tonumber(payload.rankIndex or rankIndex)
     if payload.rankIndex ~= nil then
-      self:Broadcast("rank_permissions", payload, distribution or "GUILD", target, "BULK")
-      counts.rankPermissions = counts.rankPermissions + 1
+      local ok, err = sendSnapshotRecord(
+        self,
+        guild.guildKey,
+        counts,
+        "rankPermissions",
+        "rank_permissions",
+        payload,
+        distribution,
+        target
+      )
+      if not ok then
+        return false, err
+      end
     end
   end
 
@@ -69,24 +101,48 @@ function Sync:SendFullSnapshot(distribution, target)
     local payload = copyFlatRecord(dataset.aliasMappingsByKey[aliasKey])
     payload.guildKey = guild.guildKey
     payload.aliasKey = payload.aliasKey or aliasKey
-    self:Broadcast("alias_mapping", payload, distribution or "GUILD", target, "BULK")
-    counts.aliasMappings = counts.aliasMappings + 1
+    local ok, err = sendSnapshotRecord(
+      self,
+      guild.guildKey,
+      counts,
+      "aliasMappings",
+      "alias_mapping",
+      payload,
+      distribution,
+      target
+    )
+    if not ok then
+      return false, err
+    end
   end
 
   for _, awardId in ipairs(sortedKeys(dataset.awardsById)) do
     local payload = copyFlatRecord(dataset.awardsById[awardId])
     payload.guildKey = guild.guildKey
     payload.awardId = payload.awardId or awardId
-    self:Broadcast("award", payload, distribution or "GUILD", target, "BULK")
-    counts.awards = counts.awards + 1
+    local ok, err = sendSnapshotRecord(self, guild.guildKey, counts, "awards", "award", payload, distribution, target)
+    if not ok then
+      return false, err
+    end
   end
 
   for _, nominationId in ipairs(sortedKeys(dataset.nominationsById)) do
     local payload = copyFlatRecord(dataset.nominationsById[nominationId])
     payload.guildKey = guild.guildKey
     payload.nominationId = payload.nominationId or nominationId
-    self:Broadcast("nomination", payload, distribution or "GUILD", target, "BULK")
-    counts.nominations = counts.nominations + 1
+    local ok, err = sendSnapshotRecord(
+      self,
+      guild.guildKey,
+      counts,
+      "nominations",
+      "nomination",
+      payload,
+      distribution,
+      target
+    )
+    if not ok then
+      return false, err
+    end
   end
 
   for _, nominationId in ipairs(sortedKeys(dataset.votesByNomination)) do
@@ -96,12 +152,14 @@ function Sync:SendFullSnapshot(distribution, target)
       payload.nominationId = payload.nominationId or nominationId
       payload.voter = payload.voter or voter
       payload.syncSnapshot = true
-      self:Broadcast("vote", payload, distribution or "GUILD", target, "BULK")
-      counts.votes = counts.votes + 1
+      local ok, err = sendSnapshotRecord(self, guild.guildKey, counts, "votes", "vote", payload, distribution, target)
+      if not ok then
+        return false, err
+      end
     end
   end
 
-  self:Broadcast("sync_snapshot_complete", {
+  local ok, err = self:Broadcast("sync_snapshot_complete", {
     guildKey = guild.guildKey,
     sender = self.addon:GetCurrentPlayerFullName(),
     awards = counts.awards,
@@ -110,6 +168,9 @@ function Sync:SendFullSnapshot(distribution, target)
     rankPermissions = counts.rankPermissions,
     aliasMappings = counts.aliasMappings,
   }, distribution or "GUILD", target, "BULK")
+  if not ok then
+    return recordSnapshotFailure(self, guild.guildKey, counts, err)
+  end
 
   self.lastSnapshot = {
     guildKey = guild.guildKey,

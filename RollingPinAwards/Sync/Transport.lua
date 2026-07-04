@@ -16,6 +16,32 @@ local function sendNativeAddonMessage(prefix, message, distribution, target)
   return false
 end
 
+local function nativeSendSucceeded(result)
+  if result == nil or result == true then
+    return true
+  end
+
+  local enum = _G.Enum and _G.Enum.SendAddonMessageResult
+  return enum and result == enum.Success
+end
+
+local function nativeSendError(result)
+  if result == false then
+    return "native send failed"
+  end
+
+  local enum = _G.Enum and _G.Enum.SendAddonMessageResult
+  if type(enum) == "table" then
+    for name, value in pairs(enum) do
+      if value == result then
+        return tostring(name):gsub("(%l)(%u)", "%1 %2"):lower()
+      end
+    end
+  end
+
+  return "native send failed"
+end
+
 function Sync:Broadcast(payloadType, payload, distribution, target, priority)
   local hasAceComm = type(self.addon.SendCommMessage) == "function" and type(self.addon.Serialize) == "function"
   local hasNativeComm = (_G.C_ChatInfo and type(_G.C_ChatInfo.SendAddonMessage) == "function")
@@ -104,7 +130,7 @@ function Sync:Broadcast(payloadType, payload, distribution, target, priority)
         distribution or "GUILD",
         target
       )
-      if not ok or result == false then
+      if not ok or not nativeSendSucceeded(result) then
         self.lastBroadcast = {
           payloadType = payloadType,
           distribution = distribution or "GUILD",
@@ -113,7 +139,7 @@ function Sync:Broadcast(payloadType, payload, distribution, target, priority)
           ok = false,
           transport = "native",
           chunkCount = nativeChunkCount,
-          error = ok and "native send failed" or result,
+          error = ok and nativeSendError(result) or result,
         }
 
         return false, self.lastBroadcast.error

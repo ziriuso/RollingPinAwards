@@ -46,6 +46,33 @@ local Toast = RPA.Toast or {}
 local Bridge = RPA.UIBridge or {}
 local Utils = RPA.Utils
 
+local function currentNormalizedRealm()
+  if not Utils or type(Utils.NormalizeRealm) ~= "function" then
+    return nil
+  end
+
+  if type(GetNormalizedRealmName) == "function" then
+    local normalized = Utils.NormalizeRealm(GetNormalizedRealmName())
+    if normalized then
+      return normalized
+    end
+  end
+
+  if type(GetRealmName) == "function" then
+    return Utils.NormalizeRealm(GetRealmName())
+  end
+
+  return nil
+end
+
+local function normalizeRosterLookupName(playerFullName)
+  if Utils and type(Utils.NormalizeUnitName) == "function" then
+    return Utils.NormalizeUnitName(playerFullName, currentNormalizedRealm())
+  end
+
+  return playerFullName
+end
+
 RPA.Constants = Constants
 RPA.Defaults = Defaults
 RPA.GuildContext = GuildContext
@@ -275,31 +302,37 @@ function RPA:OnGuildRosterUpdate()
   end
 end
 
-function RPA:IsGuildRosterMember(playerFullName)
-  local normalizedTarget = Utils and type(Utils.NormalizeUnitName) == "function"
-    and Utils.NormalizeUnitName(playerFullName)
-    or playerFullName
+function RPA:GetGuildRosterMemberStatus(playerFullName)
+  local normalizedTarget = normalizeRosterLookupName(playerFullName)
 
   if type(normalizedTarget) ~= "string" or normalizedTarget == "" then
-    return false
+    return false, false
   end
 
   if type(GetNumGuildMembers) ~= "function" or type(GetGuildRosterInfo) ~= "function" then
-    return false
+    return false, false
   end
 
   local memberCount = GetNumGuildMembers() or 0
   for index = 1, memberCount do
-    local rosterName = GetGuildRosterInfo(index)
-    local normalizedRosterName = Utils and type(Utils.NormalizeUnitName) == "function"
-      and Utils.NormalizeUnitName(rosterName)
-      or rosterName
+    local rosterName, _, _, _, _, _, _, _, online = GetGuildRosterInfo(index)
+    local normalizedRosterName = normalizeRosterLookupName(rosterName)
     if normalizedRosterName == normalizedTarget then
-      return true
+      return true, online ~= false
     end
   end
 
-  return false
+  return false, false
+end
+
+function RPA:IsGuildRosterMember(playerFullName)
+  local found = self:GetGuildRosterMemberStatus(playerFullName)
+  return found == true
+end
+
+function RPA:IsGuildRosterMemberOnline(playerFullName)
+  local found, online = self:GetGuildRosterMemberStatus(playerFullName)
+  return found == true and online == true
 end
 
 function RPA:IsTrustedSyncDistribution(distribution, sender)

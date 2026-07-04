@@ -643,6 +643,10 @@ local function storeNativeComm(prefix, message, distribution, target)
   }
   state.nativeCommMessages[#state.nativeCommMessages + 1] = state.lastNativeCommMessage
 
+  if type(state.nativeCommSendResults) == "table" and #state.nativeCommSendResults > 0 then
+    return table.remove(state.nativeCommSendResults, 1)
+  end
+
   return true
 end
 
@@ -684,6 +688,7 @@ function wow.reset(seed)
     noAceAddon = seed.noAceAddon,
     nativeComm = seed.nativeComm,
     nativeCommMaxBytes = seed.nativeCommMaxBytes,
+    nativeCommSendResults = seed.nativeCommSendResults,
     loggedIn = seed.loggedIn == true,
     serializedPayloads = {},
     chatMessages = {},
@@ -756,6 +761,23 @@ function wow.reset(seed)
       return storeNativeComm(prefix, message, distribution, target)
     end,
   } or nil
+  _G.Enum = {
+    SendAddonMessageResult = {
+      Success = 0,
+      InvalidPrefix = 1,
+      InvalidMessage = 2,
+      AddonMessageThrottle = 3,
+      InvalidChatType = 4,
+      NotInGroup = 5,
+      TargetRequired = 6,
+      InvalidChannel = 7,
+      ChannelThrottle = 8,
+      GeneralError = 9,
+      NotInGuild = 10,
+      AddOnMessageLockdown = 11,
+      TargetOffline = 12,
+    },
+  }
 
   _G.GetNumGuildMembers = function()
     return #state.guildMembers
@@ -767,7 +789,15 @@ function wow.reset(seed)
       return nil
     end
 
-    return member.name, member.rankName or "Member", member.rankIndex or 9
+    return member.name,
+      member.rankName or "Member",
+      member.rankIndex or 9,
+      nil,
+      nil,
+      nil,
+      nil,
+      nil,
+      member.online ~= false
   end
 
   _G.GuildControlGetNumRanks = function()
