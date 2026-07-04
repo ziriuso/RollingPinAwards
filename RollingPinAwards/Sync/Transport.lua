@@ -46,11 +46,13 @@ function Sync:Broadcast(payloadType, payload, distribution, target, priority)
   local hasAceComm = type(self.addon.SendCommMessage) == "function" and type(self.addon.Serialize) == "function"
   local hasNativeComm = (_G.C_ChatInfo and type(_G.C_ChatInfo.SendAddonMessage) == "function")
     or type(_G.SendAddonMessage) == "function"
+  local channel = distribution or "GUILD"
+  local useAceComm = hasAceComm and not (channel == "WHISPER" and hasNativeComm)
 
   if not hasAceComm and not hasNativeComm then
     self.lastBroadcast = {
       payloadType = payloadType,
-      distribution = distribution or "GUILD",
+      distribution = channel,
       ok = false,
       error = "comm unavailable",
     }
@@ -72,19 +74,19 @@ function Sync:Broadcast(payloadType, payload, distribution, target, priority)
 
   local nativeChunkCount
 
-  if hasAceComm then
+  if useAceComm then
     local serialized = self.addon:Serialize(envelope)
     local ok, sendErr = pcall(self.addon.SendCommMessage, self.addon,
       self.addon.Constants.COMM_PREFIX,
       serialized,
-      distribution or "GUILD",
+      channel,
       target,
       priority or "NORMAL"
     )
     if not ok then
       self.lastBroadcast = {
         payloadType = payloadType,
-        distribution = distribution or "GUILD",
+        distribution = channel,
         target = target,
         priority = priority or "NORMAL",
         ok = false,
@@ -127,13 +129,13 @@ function Sync:Broadcast(payloadType, payload, distribution, target, priority)
         sendNativeAddonMessage,
         self.addon.Constants.COMM_PREFIX,
         chunk,
-        distribution or "GUILD",
+        channel,
         target
       )
       if not ok or not nativeSendSucceeded(result) then
         self.lastBroadcast = {
           payloadType = payloadType,
-          distribution = distribution or "GUILD",
+          distribution = channel,
           target = target,
           priority = priority or "NORMAL",
           ok = false,
@@ -149,11 +151,11 @@ function Sync:Broadcast(payloadType, payload, distribution, target, priority)
 
   self.lastBroadcast = {
     payloadType = payloadType,
-    distribution = distribution or "GUILD",
+    distribution = channel,
     target = target,
     priority = priority or "NORMAL",
     ok = true,
-    transport = hasAceComm and "ace" or "native",
+    transport = useAceComm and "ace" or "native",
     chunkCount = nativeChunkCount,
   }
 

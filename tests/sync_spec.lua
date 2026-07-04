@@ -1277,6 +1277,42 @@ return {
     harness.assert_equal("Officerone-Stormrage", firstReply.target)
   end,
 
+  ["sync hardening resolves bare hello sender to full roster whisper target"] = function()
+    local addon = setupNativeGuild({
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Maragosa-Area52",
+          rankName = "Officer",
+          rankIndex = 1,
+          online = true,
+        },
+      },
+    })
+    local guildKey = addon:GetActiveGuildContext().guildKey
+
+    _G.__RPA_TEST_STATE.nativeCommMessages = {}
+    local hello = addon.sync:SerializeEnvelope({
+      payloadType = "sync_hello",
+      payload = {
+        guildKey = guildKey,
+        sender = "Maragosa",
+        sentAt = 1717336803,
+      },
+    })
+
+    local ok = addon:OnCommReceived(addon.Constants.COMM_PREFIX, hello, "GUILD", "Maragosa")
+    local firstReply = _G.__RPA_TEST_STATE.nativeCommMessages[1]
+
+    harness.assert_true(ok)
+    harness.assert_equal("WHISPER", firstReply.distribution)
+    harness.assert_equal("Maragosa-Area52", firstReply.target)
+  end,
+
   ["sync hardening does not whisper snapshots to offline hello senders"] = function()
     local addon = setupNativeGuild({
       guildMembers = {
@@ -1342,6 +1378,42 @@ return {
     harness.assert_false(ok)
     harness.assert_equal("target offline", err)
     harness.assert_equal(1, #(_G.__RPA_TEST_STATE.nativeCommMessages or {}))
+  end,
+
+  ["sync hardening uses native whisper send results when ace is loaded"] = function()
+    local addon = setupAceGuild({
+      nativeComm = true,
+    })
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    addon.db:UpsertRankPermission(guildKey, 1, {
+      rankIndex = 1,
+      rankName = "Officer",
+      canCreateDirectAwards = true,
+    })
+    addon.db:UpsertAliasMapping(guildKey, {
+      alias = "Burny-Stormrage",
+      canonical = "Bakerone-Stormrage",
+    })
+
+    addon.__commMessages = {}
+    _G.__RPA_TEST_STATE.nativeCommMessages = {}
+    _G.__RPA_TEST_STATE.nativeCommSendResults = { 12 }
+    local hello = addon:Serialize({
+      protocolVersion = addon.Constants.PROTOCOL_VERSION,
+      payloadType = "sync_hello",
+      payload = {
+        guildKey = guildKey,
+        sender = "Officerone-Stormrage",
+        sentAt = 1717336803,
+      },
+    })
+
+    local ok, err = addon:OnCommReceived(addon.Constants.COMM_PREFIX, hello, "GUILD", "Officerone-Stormrage")
+
+    harness.assert_false(ok)
+    harness.assert_equal("target offline", err)
+    harness.assert_equal(1, #(_G.__RPA_TEST_STATE.nativeCommMessages or {}))
+    harness.assert_equal(0, #(addon.__commMessages or {}))
   end,
 
   ["sync hardening requests roster and replays deferred privileged records"] = function()
