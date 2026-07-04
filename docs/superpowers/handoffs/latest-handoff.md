@@ -4,9 +4,9 @@
 
 - Path: `C:\GitHub\RollingPinAwards`
 - Remote: `https://github.com/ziriuso/RollingPinAwards.git`
-- Current working branch: `codex/sync-whisper-hotfix-1.4.1`
-- Latest product release commit: pending `v1.4.1` release
-- Latest release tag: pending `v1.4.1`
+- Current working branch: `master`
+- Latest product release commit: `9cc84f2`
+- Latest release tag: `v1.4.1`
 - Previous release tag: `v1.4.0`
 - Source feature branch retained on remote: `codex/rolling-pin-awards-mvp`
 - `codex/rolling-pin-awards-mvp` is an ancestor of `master`; no committed codex work was lost in the merge.
@@ -20,16 +20,16 @@
 
 ## Release And Deploy
 
-- Version `1.4.1` is being prepared for release.
-- GitHub release: pending `https://github.com/ziriuso/RollingPinAwards/releases/tag/v1.4.1`
+- Version `1.4.1` has been released.
+- GitHub release: `https://github.com/ziriuso/RollingPinAwards/releases/tag/v1.4.1`
 - Release asset: `RollingPinAwards-1.4.1.zip`
 - Asset digest from GitHub release metadata:
-  - pending
-- GitHub Actions release run: pending
+  - `sha256:b5ace88c19047cae77f4be1a539502b1fc793afa0cc66af8c762a5b1ba7a1a7d`
+- GitHub Actions release run: `28690509933`
 - Workflow result: success.
-- Workflow job: pending
-- CurseForge upload step result: pending.
-- Local package build is pending:
+- Workflow job: `85090855551`
+- CurseForge upload step result: success.
+- Local package build succeeded before tagging and was cleaned after deploy:
   - `artifacts/release/RollingPinAwards-1.4.1.zip`
 - Latest local deploy copied the current addon payload to:
   - `C:\Gaming\World of Warcraft\_retail_\Interface\AddOns\RollingPinAwards`
@@ -42,8 +42,8 @@
 
 ## Latest Verified State
 
-- Full Lua suite passed locally before the pending `v1.4.1` release commit.
-- Full Lua suite for the `v1.4.1` GitHub Actions release workflow is pending.
+- Full Lua suite passed locally before the `v1.4.1` release commit.
+- Full Lua suite for the `v1.4.1` GitHub Actions release workflow passed.
 - Local build command succeeded:
 
 ```powershell
