@@ -21,10 +21,10 @@ local function indexOf(lines, exactValue)
 end
 
 return {
-  ["toc declares support for retail 12.0.7"] = function()
+  ["toc declares support for retail 12.1.0"] = function()
     local lines = readLines(harness.addon_path("RollingPinAwards.toc"))
 
-    harness.assert_equal("## Interface: 120007, 120005", lines[1])
+    harness.assert_equal("## Interface: 120100, 120007, 120005", lines[1])
   end,
 
   ["toc groups the addon under the guild category"] = function()

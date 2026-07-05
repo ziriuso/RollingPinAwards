@@ -4,7 +4,7 @@
 
 - Path: `C:\GitHub\RollingPinAwards`
 - Remote: `https://github.com/ziriuso/RollingPinAwards.git`
-- Current working branch: `master`
+- Current working branch: `codex/12.1-toc-support`
 - Latest product release commit: `63cdfc0` (`v1.4.2`)
 - Latest release tag: `v1.4.2`
 - Previous release tag: `v1.4.1`
@@ -34,6 +34,8 @@
 - Latest local deploy copied the current addon payload to:
   - `C:\Gaming\World of Warcraft\_retail_\Interface\AddOns\RollingPinAwards`
   - `C:\Gaming\World of Warcraft\_xptr_\Interface\AddOns\RollingPinAwards`
+- Latest PTR compatibility deploy copies the current branch payload to:
+  - `C:\Gaming\World of Warcraft\_ptr_\Interface\AddOns\RollingPinAwards`
 - Deploy verification:
   - `75` source files and `75` target files in each target.
   - `0` SHA-256 hash mismatches in each target.
@@ -111,7 +113,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\release\Build-CurseForgePackage
 ## Current Release Surfaces
 
 - `RollingPinAwards/RollingPinAwards.toc` is at `## Version: 1.4.2`.
-- Supported interface line remains `## Interface: 120007, 120005`.
+- Supported interface line on the PTR compatibility branch is `## Interface: 120100, 120007, 120005`.
 - CurseForge project id is `1563031`.
 - Secret `CF_API_TOKEN` is configured in GitHub Actions, not in repo.
 

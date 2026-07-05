@@ -55,7 +55,7 @@ git rev-parse --short HEAD
 2. Update release version surfaces before tagging:
 
 - `RollingPinAwards/RollingPinAwards.toc`: update `## Version:` to the semantic version without `v`.
-- `RollingPinAwards/RollingPinAwards.toc`: keep `## Interface:` aligned with supported WoW clients. For the 1.4.2 release this is `120007, 120005`.
+- `RollingPinAwards/RollingPinAwards.toc`: keep `## Interface:` aligned with supported WoW clients. Current PTR compatibility includes `120100` for 12.1.0 alongside the recent 12.0 values.
 - `tests/release_workflow_spec.lua`: update the expected version when the release version changes.
 - User-facing docs that mention release behavior, usually `README.md`, `docs/testing.md`, and `docs/superpowers/handoffs/latest-handoff.md` when the current checkpoint changes.
 
