@@ -4,9 +4,9 @@
 
 - Path: `C:\GitHub\RollingPinAwards`
 - Remote: `https://github.com/ziriuso/RollingPinAwards.git`
-- Current working branch: `codex/sync-login-snapshot-guard`
-- Latest product release commit: pending `v1.4.3` release
-- Latest release tag: pending `v1.4.3`
+- Current working branch after release docs merge: `master`
+- Latest product release commit: `6cc9280` (`v1.4.3`)
+- Latest release tag: `v1.4.3`
 - Previous release tag: `v1.4.2`
 - Source feature branch retained on remote: `codex/rolling-pin-awards-mvp`
 - `codex/rolling-pin-awards-mvp` is an ancestor of `master`; no committed codex work was lost in the merge.
@@ -20,33 +20,33 @@
 
 ## Release And Deploy
 
-- Version `1.4.3` is being prepared for release.
-- GitHub release: pending `https://github.com/ziriuso/RollingPinAwards/releases/tag/v1.4.3`
-- Release asset: pending `RollingPinAwards-1.4.3.zip`
-- Asset digest from GitHub release metadata: pending.
-- GitHub Actions release run: pending.
-- Workflow result: pending.
-- Workflow job: pending.
-- CurseForge upload step result: pending.
-- Local package build target before tagging:
+- Version `1.4.3` has been released.
+- GitHub release: `https://github.com/ziriuso/RollingPinAwards/releases/tag/v1.4.3`
+- Release asset: `RollingPinAwards-1.4.3.zip`
+- Asset digest from GitHub release metadata:
+  - `sha256:c1a60cf7d9f46e1aa88b9fc83a38f73862acf32d4d54e978e780b6320155a463`
+- GitHub Actions release run: `28912643951`
+- Workflow result: success.
+- Workflow job: `85773053201`
+- CurseForge upload step result: success.
+- Local package build succeeded before tagging:
   - `artifacts/release/RollingPinAwards-1.4.3.zip`
 - Latest local deploy copied the current addon payload to:
   - `C:\Gaming\World of Warcraft\_retail_\Interface\AddOns\RollingPinAwards`
-  - `C:\Gaming\World of Warcraft\_xptr_\Interface\AddOns\RollingPinAwards`
-- Latest PTR compatibility deploy copies the current branch payload to:
   - `C:\Gaming\World of Warcraft\_ptr_\Interface\AddOns\RollingPinAwards`
 - Deploy verification:
   - `75` source files and `75` target files in each target.
   - `0` SHA-256 hash mismatches in each target.
-  - Both targets report `## Version: 1.4.3` after the pending deploy.
+  - Both targets report `## Interface: 120100, 120007, 120005`.
+  - Both targets report `## Version: 1.4.3`.
 - Release workflow notice only:
   - `windows-latest requests are being redirected to windows-2025-vs2026 by June 15, 2026`
 
 ## Latest Verified State
 
-- Full Lua suite must pass locally before the pending `v1.4.3` release commit.
-- Full Lua suite for the `v1.4.3` GitHub Actions release workflow is pending.
-- Local build command for the pending release:
+- Focused version test, focused sync suite, full Lua suite, and `git diff --check` passed locally before the `v1.4.3` release commit.
+- Full Lua suite for the `v1.4.3` GitHub Actions release workflow passed.
+- Local build command succeeded:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\release\Build-CurseForgePackage.ps1 -TagName v1.4.3 -OutputDirectory .\artifacts\release
