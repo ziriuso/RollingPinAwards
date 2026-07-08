@@ -4,10 +4,10 @@
 
 - Path: `C:\GitHub\RollingPinAwards`
 - Remote: `https://github.com/ziriuso/RollingPinAwards.git`
-- Current working branch: `master`
-- Latest product release commit: `63cdfc0` (`v1.4.2`)
-- Latest release tag: `v1.4.2`
-- Previous release tag: `v1.4.1`
+- Current working branch: `codex/sync-login-snapshot-guard`
+- Latest product release commit: pending `v1.4.3` release
+- Latest release tag: pending `v1.4.3`
+- Previous release tag: `v1.4.2`
 - Source feature branch retained on remote: `codex/rolling-pin-awards-mvp`
 - `codex/rolling-pin-awards-mvp` is an ancestor of `master`; no committed codex work was lost in the merge.
 - Do not stage local-only folders unless explicitly requested:
@@ -20,38 +20,46 @@
 
 ## Release And Deploy
 
-- Version `1.4.2` has been released.
-- GitHub release: `https://github.com/ziriuso/RollingPinAwards/releases/tag/v1.4.2`
-- Release asset: `RollingPinAwards-1.4.2.zip`
-- Asset digest from GitHub release metadata:
-  - `sha256:1fa65e125d197f5bdba0e38660307910b2e415f89ff800c9f32a8c8a4574adf1`
-- GitHub Actions release run: `28694021330`
-- Workflow result: success.
-- Workflow job: `85100442161`
-- CurseForge upload step result: success.
-- Local package build succeeded before tagging:
-  - `artifacts/release/RollingPinAwards-1.4.2.zip`
+- Version `1.4.3` is being prepared for release.
+- GitHub release: pending `https://github.com/ziriuso/RollingPinAwards/releases/tag/v1.4.3`
+- Release asset: pending `RollingPinAwards-1.4.3.zip`
+- Asset digest from GitHub release metadata: pending.
+- GitHub Actions release run: pending.
+- Workflow result: pending.
+- Workflow job: pending.
+- CurseForge upload step result: pending.
+- Local package build target before tagging:
+  - `artifacts/release/RollingPinAwards-1.4.3.zip`
 - Latest local deploy copied the current addon payload to:
   - `C:\Gaming\World of Warcraft\_retail_\Interface\AddOns\RollingPinAwards`
   - `C:\Gaming\World of Warcraft\_xptr_\Interface\AddOns\RollingPinAwards`
+- Latest PTR compatibility deploy copies the current branch payload to:
+  - `C:\Gaming\World of Warcraft\_ptr_\Interface\AddOns\RollingPinAwards`
 - Deploy verification:
   - `75` source files and `75` target files in each target.
   - `0` SHA-256 hash mismatches in each target.
-  - Both targets report `## Version: 1.4.2`.
+  - Both targets report `## Version: 1.4.3` after the pending deploy.
 - Release workflow notice only:
   - `windows-latest requests are being redirected to windows-2025-vs2026 by June 15, 2026`
 
 ## Latest Verified State
 
-- Full Lua suite passed locally before the `v1.4.2` release commit.
-- Full Lua suite for the `v1.4.2` GitHub Actions release workflow passed.
-- Local build command succeeded:
+- Full Lua suite must pass locally before the pending `v1.4.3` release commit.
+- Full Lua suite for the `v1.4.3` GitHub Actions release workflow is pending.
+- Local build command for the pending release:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\release\Build-CurseForgePackage.ps1 -TagName v1.4.2 -OutputDirectory .\artifacts\release
+powershell -ExecutionPolicy Bypass -File .\tools\release\Build-CurseForgePackage.ps1 -TagName v1.4.3 -OutputDirectory .\artifacts\release
 ```
 
-## Most Recent Product Changes In 1.4.2
+## Most Recent Product Changes In 1.4.3
+
+- Passive startup `sync_hello` messages are now peer discovery only and no longer fan out full snapshot WHISPER streams from every online addon user when someone logs in.
+- Peers answer passive hellos with tiny `sync_hello_ack` summaries; the requester waits briefly when timers are available, selects the best responder, and sends only that peer a targeted `sync_snapshot_request`.
+- Manual `/rpa sync now` and `/rpa sync all` use the same negotiated catch-up path instead of broadcasting a full guild snapshot.
+- Snapshot whisper targeting now preserves an explicit sender realm when the guild roster only provides a short fallback match, avoiding wrong local-realm whisper targets.
+
+## Important Previous Product Changes In 1.4.2
 
 - Sync hello snapshot replies resolve bare sender names through the guild roster before whispering, so online cross-realm players are targeted as `Character-Realm`.
 - Targeted snapshot whispers use result-aware native addon-message sends even when AceComm is loaded, so failed whisper targets abort immediately instead of queuing a full stream.
@@ -110,8 +118,8 @@ powershell -ExecutionPolicy Bypass -File .\tools\release\Build-CurseForgePackage
 
 ## Current Release Surfaces
 
-- `RollingPinAwards/RollingPinAwards.toc` is at `## Version: 1.4.2`.
-- Supported interface line remains `## Interface: 120007, 120005`.
+- `RollingPinAwards/RollingPinAwards.toc` is at `## Version: 1.4.3`.
+- Supported interface line on the PTR compatibility branch is `## Interface: 120100, 120007, 120005`.
 - CurseForge project id is `1563031`.
 - Secret `CF_API_TOKEN` is configured in GitHub Actions, not in repo.
 

@@ -162,7 +162,7 @@ function Sync:Broadcast(payloadType, payload, distribution, target, priority)
   return true
 end
 
-function Sync:SendHello(distribution, target, force)
+function Sync:SendHello(distribution, target, force, requestSnapshot)
   local guild = self.addon:GetActiveGuildContext()
   if not guild then
     self.lastHello = {
@@ -180,6 +180,7 @@ function Sync:SendHello(distribution, target, force)
   local ok, err = self:Broadcast("sync_hello", {
     guildKey = guild.guildKey,
     sender = self.addon:GetCurrentPlayerFullName(),
+    requestSnapshot = requestSnapshot == true,
     sentAt = self.addon.Time and type(self.addon.Time.Now) == "function" and self.addon.Time:Now() or 0,
   }, distribution or "GUILD", target, "NORMAL")
 

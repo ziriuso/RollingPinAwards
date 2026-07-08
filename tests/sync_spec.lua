@@ -1087,6 +1087,7 @@ return {
 
     harness.assert_equal("sync_hello", startupEnvelope.payloadType)
     harness.assert_equal(addon:GetActiveGuildContext().guildKey, startupEnvelope.payload.guildKey)
+    harness.assert_false(startupEnvelope.payload.requestSnapshot)
 
     local beforeManual = #startupMessages
     local ok = addon:HandleChatCommand("sync now")
@@ -1096,6 +1097,17 @@ return {
     harness.assert_true(#manualMessages > beforeManual)
     local manualEnvelope = addon.sync:DeserializeEnvelope(manualMessages[beforeManual + 1].message)
     harness.assert_equal("sync_hello", manualEnvelope.payloadType)
+    harness.assert_false(manualEnvelope.payload.requestSnapshot)
+    for index = beforeManual + 2, #manualMessages do
+      local envelope, err = addon.sync:DecodeNativeMessage(
+        manualMessages[index].message,
+        manualMessages[index].distribution,
+        "Guildmaster-Stormrage"
+      )
+      if err ~= "partial" then
+        harness.assert_true(envelope == nil or envelope.payloadType == "sync_hello")
+      end
+    end
   end,
 
   ["sync records same-guild inbound senders as local peers"] = function()
@@ -1209,6 +1221,7 @@ return {
       payload = {
         guildKey = guildKey,
         sender = "Officerone-Stormrage",
+        requestSnapshot = true,
         sentAt = 1717336803,
       },
     })
@@ -1249,6 +1262,160 @@ return {
     harness.assert_false(leakedLauncherSetting)
   end,
 
+  ["sync answers passive login hello with tiny ack instead of snapshot fanout"] = function()
+    local addon = setupNativeGuild()
+    local guildKey = addon:GetActiveGuildContext().guildKey
+
+    _G.__RPA_TEST_STATE.nativeCommMessages = {}
+    local hello = addon.sync:SerializeEnvelope({
+      payloadType = "sync_hello",
+      payload = {
+        guildKey = guildKey,
+        sender = "Officerone-Stormrage",
+        sentAt = 1717336803,
+      },
+    })
+
+    local ok, err = addon:OnCommReceived(addon.Constants.COMM_PREFIX, hello, "GUILD", "Officerone-Stormrage")
+
+    harness.assert_true(ok)
+    harness.assert_equal(nil, err)
+    harness.assert_equal(1, #(_G.__RPA_TEST_STATE.nativeCommMessages or {}))
+    local ack = _G.__RPA_TEST_STATE.nativeCommMessages[1]
+    local ackEnvelope = addon.sync:DeserializeEnvelope(ack.message)
+    harness.assert_equal("WHISPER", ack.distribution)
+    harness.assert_equal("Officerone-Stormrage", ack.target)
+    harness.assert_equal("sync_hello_ack", ackEnvelope.payloadType)
+    harness.assert_equal(guildKey, ackEnvelope.payload.guildKey)
+    harness.assert_equal("Guildmaster-Stormrage", ackEnvelope.payload.sender)
+    harness.assert_equal("sync_hello", addon.sync.lastInbound.payloadType)
+    harness.assert_true(addon.sync.lastInbound.ok)
+  end,
+
+  ["sync requests one snapshot from first hello ack responder"] = function()
+    local addon = setupNativeGuild({
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+          online = true,
+        },
+        {
+          name = "Bakerone-Stormrage",
+          rankName = "Member",
+          rankIndex = 5,
+          online = true,
+        },
+      },
+    })
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    local firstAck = addon.sync:SerializeEnvelope({
+      payloadType = "sync_hello_ack",
+      payload = {
+        guildKey = guildKey,
+        sender = "Officerone-Stormrage",
+        sentAt = 1717336803,
+      },
+    })
+    local secondAck = addon.sync:SerializeEnvelope({
+      payloadType = "sync_hello_ack",
+      payload = {
+        guildKey = guildKey,
+        sender = "Bakerone-Stormrage",
+        sentAt = 1717336804,
+      },
+    })
+
+    _G.__RPA_TEST_STATE.nativeCommMessages = {}
+    local firstOk = addon:OnCommReceived(addon.Constants.COMM_PREFIX, firstAck, "WHISPER", "Officerone-Stormrage")
+    local secondOk = addon:OnCommReceived(addon.Constants.COMM_PREFIX, secondAck, "WHISPER", "Bakerone-Stormrage")
+
+    harness.assert_true(firstOk)
+    harness.assert_true(secondOk)
+    harness.assert_equal(1, #(_G.__RPA_TEST_STATE.nativeCommMessages or {}))
+    local request = _G.__RPA_TEST_STATE.nativeCommMessages[1]
+    local requestEnvelope = addon.sync:DeserializeEnvelope(request.message)
+    harness.assert_equal("WHISPER", request.distribution)
+    harness.assert_equal("Officerone-Stormrage", request.target)
+    harness.assert_equal("sync_snapshot_request", requestEnvelope.payloadType)
+    harness.assert_equal(guildKey, requestEnvelope.payload.guildKey)
+    harness.assert_equal("Guildmaster-Stormrage", requestEnvelope.payload.sender)
+  end,
+
+  ["sync waits briefly and requests snapshot from best hello ack responder"] = function()
+    local addon = setupNativeGuild({
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Officerone-Stormrage",
+          rankName = "Officer",
+          rankIndex = 1,
+          online = true,
+        },
+        {
+          name = "Bakerone-Stormrage",
+          rankName = "Member",
+          rankIndex = 5,
+          online = true,
+        },
+      },
+    })
+    local guildKey = addon:GetActiveGuildContext().guildKey
+    local scheduledDelay
+    local scheduledCallback
+    _G.C_Timer = {
+      After = function(delay, callback)
+        scheduledDelay = delay
+        scheduledCallback = callback
+      end,
+    }
+    local firstAck = addon.sync:SerializeEnvelope({
+      payloadType = "sync_hello_ack",
+      payload = {
+        guildKey = guildKey,
+        sender = "Officerone-Stormrage",
+        totalRecords = 1,
+        latestModifiedAt = 1717336803,
+      },
+    })
+    local richerAck = addon.sync:SerializeEnvelope({
+      payloadType = "sync_hello_ack",
+      payload = {
+        guildKey = guildKey,
+        sender = "Bakerone-Stormrage",
+        totalRecords = 5,
+        latestModifiedAt = 1717336804,
+      },
+    })
+
+    _G.__RPA_TEST_STATE.nativeCommMessages = {}
+    addon:OnCommReceived(addon.Constants.COMM_PREFIX, firstAck, "WHISPER", "Officerone-Stormrage")
+    addon:OnCommReceived(addon.Constants.COMM_PREFIX, richerAck, "WHISPER", "Bakerone-Stormrage")
+
+    harness.assert_equal(0, #(_G.__RPA_TEST_STATE.nativeCommMessages or {}))
+    harness.assert_equal(2, scheduledDelay)
+    harness.assert_true(type(scheduledCallback) == "function")
+
+    scheduledCallback()
+
+    harness.assert_equal(1, #(_G.__RPA_TEST_STATE.nativeCommMessages or {}))
+    local request = _G.__RPA_TEST_STATE.nativeCommMessages[1]
+    local requestEnvelope = addon.sync:DeserializeEnvelope(request.message)
+    harness.assert_equal("WHISPER", request.distribution)
+    harness.assert_equal("Bakerone-Stormrage", request.target)
+    harness.assert_equal("sync_snapshot_request", requestEnvelope.payloadType)
+  end,
+
   ["sync hardening replies to hello with debounced whisper snapshot"] = function()
     local addon = setupNativeGuild()
     local guildKey = addon:GetActiveGuildContext().guildKey
@@ -1259,6 +1426,7 @@ return {
       payload = {
         guildKey = guildKey,
         sender = "Officerone-Stormrage",
+        requestSnapshot = true,
         sentAt = 1717336803,
       },
     })
@@ -1301,11 +1469,49 @@ return {
       payload = {
         guildKey = guildKey,
         sender = "Maragosa",
+        requestSnapshot = true,
         sentAt = 1717336803,
       },
     })
 
     local ok = addon:OnCommReceived(addon.Constants.COMM_PREFIX, hello, "GUILD", "Maragosa")
+    local firstReply = _G.__RPA_TEST_STATE.nativeCommMessages[1]
+
+    harness.assert_true(ok)
+    harness.assert_equal("WHISPER", firstReply.distribution)
+    harness.assert_equal("Maragosa-Area52", firstReply.target)
+  end,
+
+  ["sync hardening keeps explicit sender realm when roster fallback is short"] = function()
+    local addon = setupNativeGuild({
+      guildMembers = {
+        {
+          name = "Guildmaster-Stormrage",
+          rankName = "Guild Master",
+          rankIndex = 0,
+        },
+        {
+          name = "Maragosa",
+          rankName = "Officer",
+          rankIndex = 1,
+          online = true,
+        },
+      },
+    })
+    local guildKey = addon:GetActiveGuildContext().guildKey
+
+    _G.__RPA_TEST_STATE.nativeCommMessages = {}
+    local hello = addon.sync:SerializeEnvelope({
+      payloadType = "sync_hello",
+      payload = {
+        guildKey = guildKey,
+        sender = "Maragosa-Area52",
+        requestSnapshot = true,
+        sentAt = 1717336803,
+      },
+    })
+
+    local ok = addon:OnCommReceived(addon.Constants.COMM_PREFIX, hello, "GUILD", "Maragosa-Area52")
     local firstReply = _G.__RPA_TEST_STATE.nativeCommMessages[1]
 
     harness.assert_true(ok)
@@ -1338,6 +1544,7 @@ return {
       payload = {
         guildKey = guildKey,
         sender = "Officerone-Stormrage",
+        requestSnapshot = true,
         sentAt = 1717336803,
       },
     })
@@ -1369,6 +1576,7 @@ return {
       payload = {
         guildKey = guildKey,
         sender = "Officerone-Stormrage",
+        requestSnapshot = true,
         sentAt = 1717336803,
       },
     })
@@ -1404,6 +1612,7 @@ return {
       payload = {
         guildKey = guildKey,
         sender = "Officerone-Stormrage",
+        requestSnapshot = true,
         sentAt = 1717336803,
       },
     })

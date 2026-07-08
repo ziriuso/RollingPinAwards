@@ -323,7 +323,7 @@ function RPA:GetGuildRosterMemberStatus(playerFullName)
     local rosterName, _, _, _, _, _, _, _, online = GetGuildRosterInfo(index)
     local normalizedRosterName = normalizeRosterLookupName(rosterName)
     if normalizedRosterName == normalizedTarget then
-      return true, online ~= false, normalizedRosterName
+      return true, online ~= false, normalizedRosterName, "exact"
     end
 
     local rosterShortName = type(normalizedRosterName) == "string" and normalizedRosterName:match("^[^-]+") or nil
@@ -338,7 +338,7 @@ function RPA:GetGuildRosterMemberStatus(playerFullName)
   end
 
   if fallbackName and not fallbackAmbiguous then
-    return true, fallbackOnline, fallbackName
+    return true, fallbackOnline, fallbackName, "short"
   end
 
   return false, false
