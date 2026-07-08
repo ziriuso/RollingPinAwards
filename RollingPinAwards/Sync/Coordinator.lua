@@ -5,8 +5,47 @@ local Sync = RPA.Sync or {}
 RPA.Sync = Sync
 local Utils = RPA.Utils or {}
 
+local SNAPSHOT_ACK_WAIT_SECONDS = 2
+local SNAPSHOT_REQUEST_COOLDOWN_SECONDS = 120
+
 local function isMissingString(value)
   return type(value) ~= "string" or value == ""
+end
+
+local function hasExplicitRealm(value)
+  return type(value) == "string" and value:match("^[^-]+%-.+$") ~= nil
+end
+
+local function numericValue(value)
+  return tonumber(value) or 0
+end
+
+local function countRecords(records)
+  local count = 0
+
+  for _ in pairs(records or {}) do
+    count = count + 1
+  end
+
+  return count
+end
+
+local function latestFlatRecordTimestamp(records)
+  local latest = 0
+
+  for _, record in pairs(records or {}) do
+    if type(record) == "table" then
+      latest = math.max(
+        latest,
+        numericValue(record.lastModifiedAt),
+        numericValue(record.createdAt),
+        numericValue(record.awardedAt),
+        numericValue(record.resolvedAt)
+      )
+    end
+  end
+
+  return latest
 end
 
 function Sync:New(addon)
@@ -14,6 +53,9 @@ function Sync:New(addon)
     addon = addon,
     deferredInbound = {},
     lastSnapshotSentTo = {},
+    lastSnapshotRequestedForGuild = {},
+    snapshotAckCandidatesByGuild = {},
+    snapshotAckSelectionScheduled = {},
   }
 
   self.__index = self
@@ -35,6 +77,29 @@ function Sync:NormalizeSender(sender)
   end
 
   return sender
+end
+
+function Sync:ResolveOnlineGuildTarget(sender)
+  local normalizedSender = self:NormalizeSender(sender)
+  if isMissingString(normalizedSender) then
+    return nil, "missing sender"
+  end
+
+  local target = normalizedSender
+  if self.addon and type(self.addon.GetGuildRosterMemberStatus) == "function" then
+    local found, online, rosterName, matchKind = self.addon:GetGuildRosterMemberStatus(normalizedSender)
+    if not found then
+      return nil, "sender not in roster"
+    end
+    if not online then
+      return nil, "sender offline"
+    end
+    if rosterName and not (hasExplicitRealm(sender) and matchKind == "short") then
+      target = rosterName
+    end
+  end
+
+  return target, nil
 end
 
 function Sync:IsActorRankUnresolved(actor)
@@ -70,22 +135,36 @@ function Sync:ReplayDeferredInbound()
   end
 end
 
-function Sync:SendSnapshotToHelloSender(sender)
-  local normalizedSender = self:NormalizeSender(sender)
-  if isMissingString(normalizedSender) then
-    return false, "missing sender"
+function Sync:BuildSnapshotSummary()
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild then
+    return 0, 0
   end
 
-  local snapshotTarget = normalizedSender
-  if self.addon and type(self.addon.GetGuildRosterMemberStatus) == "function" then
-    local found, online, rosterName = self.addon:GetGuildRosterMemberStatus(normalizedSender)
-    if not found then
-      return false, "sender not in roster"
-    end
-    if not online then
-      return false, "sender offline"
-    end
-    snapshotTarget = rosterName or snapshotTarget
+  local dataset = self.addon.db:GetGuildDataset(guild.guildKey)
+  local totalRecords = countRecords(dataset.rankPermissions)
+    + countRecords(dataset.aliasMappingsByKey)
+    + countRecords(dataset.awardsById)
+    + countRecords(dataset.nominationsById)
+  local latest = math.max(
+    latestFlatRecordTimestamp(dataset.rankPermissions),
+    latestFlatRecordTimestamp(dataset.aliasMappingsByKey),
+    latestFlatRecordTimestamp(dataset.awardsById),
+    latestFlatRecordTimestamp(dataset.nominationsById)
+  )
+
+  for _, votesByVoter in pairs(dataset.votesByNomination or {}) do
+    totalRecords = totalRecords + countRecords(votesByVoter)
+    latest = math.max(latest, latestFlatRecordTimestamp(votesByVoter))
+  end
+
+  return totalRecords, latest
+end
+
+function Sync:SendSnapshotToHelloSender(sender)
+  local snapshotTarget, targetErr = self:ResolveOnlineGuildTarget(sender)
+  if not snapshotTarget then
+    return false, targetErr
   end
 
   local now = currentTime()
@@ -98,6 +177,143 @@ function Sync:SendSnapshotToHelloSender(sender)
   self.lastSnapshotSentTo[snapshotTarget] = now
 
   return self:SendFullSnapshot("WHISPER", snapshotTarget)
+end
+
+function Sync:SendHelloAck(sender)
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild then
+    return false, "missing guild"
+  end
+
+  local target, targetErr = self:ResolveOnlineGuildTarget(sender)
+  if not target then
+    return false, targetErr
+  end
+
+  local totalRecords, latestModifiedAt = self:BuildSnapshotSummary()
+
+  return self:Broadcast("sync_hello_ack", {
+    guildKey = guild.guildKey,
+    sender = self.addon:GetCurrentPlayerFullName(),
+    totalRecords = totalRecords,
+    latestModifiedAt = latestModifiedAt,
+    sentAt = self.addon.Time and type(self.addon.Time.Now) == "function" and self.addon.Time:Now() or 0,
+  }, "WHISPER", target, "NORMAL")
+end
+
+function Sync:IsBetterSnapshotCandidate(candidate, existing)
+  if not existing then
+    return true
+  end
+
+  if candidate.totalRecords ~= existing.totalRecords then
+    return candidate.totalRecords > existing.totalRecords
+  end
+
+  if candidate.latestModifiedAt ~= existing.latestModifiedAt then
+    return candidate.latestModifiedAt > existing.latestModifiedAt
+  end
+
+  return candidate.receivedAt < existing.receivedAt
+end
+
+function Sync:RememberSnapshotAckCandidate(guildKey, sender, payload)
+  local target, targetErr = self:ResolveOnlineGuildTarget(sender)
+  if not target then
+    return false, targetErr
+  end
+
+  self.snapshotAckCandidatesByGuild = self.snapshotAckCandidatesByGuild or {}
+  local candidate = {
+    sender = sender,
+    target = target,
+    totalRecords = numericValue(payload.totalRecords),
+    latestModifiedAt = numericValue(payload.latestModifiedAt),
+    receivedAt = currentTime(),
+  }
+  local existing = self.snapshotAckCandidatesByGuild[guildKey]
+  if self:IsBetterSnapshotCandidate(candidate, existing) then
+    self.snapshotAckCandidatesByGuild[guildKey] = candidate
+  end
+
+  return true
+end
+
+function Sync:RequestBestSnapshotCandidate(guildKey)
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild then
+    return false, "missing guild"
+  end
+  if guild.guildKey ~= guildKey then
+    return false, "wrong guild"
+  end
+
+  local candidate = self.snapshotAckCandidatesByGuild and self.snapshotAckCandidatesByGuild[guildKey]
+  if not candidate then
+    return false, "missing snapshot candidate"
+  end
+
+  local now = currentTime()
+  local previous = self.lastSnapshotRequestedForGuild and self.lastSnapshotRequestedForGuild[guild.guildKey]
+  if previous and now - previous < SNAPSHOT_REQUEST_COOLDOWN_SECONDS then
+    return true, nil
+  end
+
+  self.lastSnapshotRequestedForGuild = self.lastSnapshotRequestedForGuild or {}
+  self.lastSnapshotRequestedForGuild[guild.guildKey] = now
+  self.snapshotAckCandidatesByGuild[guild.guildKey] = nil
+
+  local ok, err = self:Broadcast("sync_snapshot_request", {
+    guildKey = guild.guildKey,
+    sender = self.addon:GetCurrentPlayerFullName(),
+    sentAt = self.addon.Time and type(self.addon.Time.Now) == "function" and self.addon.Time:Now() or 0,
+  }, "WHISPER", candidate.target, "NORMAL")
+  if not ok then
+    self.lastSnapshotRequestedForGuild[guild.guildKey] = nil
+  end
+
+  return ok, err
+end
+
+function Sync:ScheduleSnapshotCandidateSelection(guildKey)
+  self.snapshotAckSelectionScheduled = self.snapshotAckSelectionScheduled or {}
+  if self.snapshotAckSelectionScheduled[guildKey] then
+    return true
+  end
+
+  self.snapshotAckSelectionScheduled[guildKey] = true
+  local function requestBestCandidate()
+    self.snapshotAckSelectionScheduled[guildKey] = nil
+    self:RequestBestSnapshotCandidate(guildKey)
+  end
+
+  if _G.C_Timer and type(_G.C_Timer.After) == "function" then
+    _G.C_Timer.After(SNAPSHOT_ACK_WAIT_SECONDS, requestBestCandidate)
+  else
+    requestBestCandidate()
+  end
+
+  return true
+end
+
+function Sync:RequestSnapshotFromAckSender(sender, payload)
+  local guild = self.addon:GetActiveGuildContext()
+  if not guild then
+    return false, "missing guild"
+  end
+
+  local previous = self.lastSnapshotRequestedForGuild and self.lastSnapshotRequestedForGuild[guild.guildKey]
+  local now = currentTime()
+  if previous and now - previous < SNAPSHOT_REQUEST_COOLDOWN_SECONDS then
+    return true, nil
+  end
+
+  local remembered, rememberErr = self:RememberSnapshotAckCandidate(guild.guildKey, sender, payload or {})
+  if not remembered then
+    return false, rememberErr
+  end
+
+  return self:ScheduleSnapshotCandidateSelection(guild.guildKey)
 end
 
 function Sync:IsActiveGuildPayload(guildKey)
@@ -144,8 +360,30 @@ function Sync:DispatchEnvelope(envelope, distribution, sender, replayingDeferred
       or normalizedSender == self.addon:GetCurrentPlayerFullName()
     then
       ok, err = false, "self origin"
+    elseif payload.requestSnapshot == true then
+      ok, err = self:SendSnapshotToHelloSender(sender or normalizedSender)
     else
-      ok, err = self:SendSnapshotToHelloSender(normalizedSender)
+      ok, err = self:SendHelloAck(sender or normalizedSender)
+    end
+  elseif envelope.payloadType == "sync_hello_ack" then
+    if not self:IsActiveGuildPayload(payload.guildKey) then
+      ok, err = false, "wrong guild"
+    elseif self:NormalizeSender(payload.sender) == self.addon:GetCurrentPlayerFullName()
+      or normalizedSender == self.addon:GetCurrentPlayerFullName()
+    then
+      ok, err = false, "self origin"
+    else
+      ok, err = self:RequestSnapshotFromAckSender(sender or normalizedSender, payload)
+    end
+  elseif envelope.payloadType == "sync_snapshot_request" then
+    if not self:IsActiveGuildPayload(payload.guildKey) then
+      ok, err = false, "wrong guild"
+    elseif self:NormalizeSender(payload.sender) == self.addon:GetCurrentPlayerFullName()
+      or normalizedSender == self.addon:GetCurrentPlayerFullName()
+    then
+      ok, err = false, "self origin"
+    else
+      ok, err = self:SendSnapshotToHelloSender(sender or normalizedSender)
     end
   elseif envelope.payloadType == "sync_snapshot_complete" then
     ok, err = self:IsActiveGuildPayload(payload.guildKey), nil

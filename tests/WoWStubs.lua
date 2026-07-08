@@ -827,6 +827,7 @@ function wow.reset(seed)
   _G.IsLoggedIn = function()
     return state.loggedIn == true
   end
+  _G.C_Timer = seed.C_Timer
   _G.ChatThrottleLib = state.ace3 and {} or nil
   _G.LibStub = state.ace3 and buildAceLibStub() or nil
   _G.RollingPinAwards = nil
