@@ -713,7 +713,8 @@ function wow.reset(seed)
       return state.normalizedRealmName
     end
 
-    return (state.realmName or ""):gsub("[%s%p]", "")
+    -- Mirror Blizzard: strip only spaces, hyphens, and periods (keep apostrophes).
+    return ((state.realmName or ""):gsub("[%s%-%.]", ""))
   end
 
   _G.GetServerTime = function()

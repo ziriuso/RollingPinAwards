@@ -65,7 +65,12 @@ function Utils.NormalizeRealm(realm)
     return nil
   end
 
-  local normalized = source:gsub("[%s%p]", "")
+  -- Blizzard's GetNormalizedRealmName strips only spaces, hyphens, and periods.
+  -- Apostrophes and parentheses are kept ("Mal'Ganis" -> "Mal'Ganis",
+  -- "Aggra (Português)" -> "Aggra(Português)"), and the realm portion of a
+  -- whisper/addon-message target must match that form or delivery fails with
+  -- "no player named ...". Do NOT strip all punctuation (%p) here.
+  local normalized = source:gsub("[%s%-%.]", "")
   if normalized == "" then
     return nil
   end
