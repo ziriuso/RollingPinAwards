@@ -5,9 +5,9 @@
 - Path: `C:\GitHub\RollingPinAwards`
 - Remote: `https://github.com/ziriuso/RollingPinAwards.git`
 - Current working branch after release docs merge: `master`
-- Latest product release commit: `6cc9280` (`v1.4.3`)
-- Latest release tag: `v1.4.3`
-- Previous release tag: `v1.4.2`
+- Latest product release commit: `4ba9cc7` (`v1.4.4`)
+- Latest release tag: `v1.4.4`
+- Previous release tag: `v1.4.3`
 - Source feature branch retained on remote: `codex/rolling-pin-awards-mvp`
 - `codex/rolling-pin-awards-mvp` is an ancestor of `master`; no committed codex work was lost in the merge.
 - Do not stage local-only folders unless explicitly requested:
@@ -20,39 +20,35 @@
 
 ## Release And Deploy
 
-- Version `1.4.3` has been released.
-- GitHub release: `https://github.com/ziriuso/RollingPinAwards/releases/tag/v1.4.3`
-- Release asset: `RollingPinAwards-1.4.3.zip`
+- Version `1.4.4` has been released.
+- GitHub release: `https://github.com/ziriuso/RollingPinAwards/releases/tag/v1.4.4`
+- Release asset: `RollingPinAwards-1.4.4.zip`
 - Asset digest from GitHub release metadata:
-  - `sha256:c1a60cf7d9f46e1aa88b9fc83a38f73862acf32d4d54e978e780b6320155a463`
-- GitHub Actions release run: `28912643951`
+  - `sha256:f06bf74d8786a1e2b193c12988f515ec3e7b89c6e9ced5e112aa9cbbb3290950`
+- GitHub Actions release run: `29027002896`
 - Workflow result: success.
-- Workflow job: `85773053201`
+- Workflow job: `86149276982`
 - CurseForge upload step result: success.
-- Local package build succeeded before tagging:
-  - `artifacts/release/RollingPinAwards-1.4.3.zip`
 - Latest local deploy copied the current addon payload to:
   - `C:\Gaming\World of Warcraft\_retail_\Interface\AddOns\RollingPinAwards`
   - `C:\Gaming\World of Warcraft\_ptr_\Interface\AddOns\RollingPinAwards`
 - Deploy verification:
   - `75` source files and `75` target files in each target.
-  - `0` SHA-256 hash mismatches in each target.
-  - Both targets report `## Interface: 120100, 120007, 120005`.
-  - Both targets report `## Version: 1.4.3`.
-- Release workflow notice only:
-  - `windows-latest requests are being redirected to windows-2025-vs2026 by June 15, 2026`
+  - Both targets report `## Version: 1.4.4`.
 
 ## Latest Verified State
 
-- Focused version test, focused sync suite, full Lua suite, and `git diff --check` passed locally before the `v1.4.3` release commit.
-- Full Lua suite for the `v1.4.3` GitHub Actions release workflow passed.
-- Local build command succeeded:
+- Full Lua suite (incl. new `tests/utils_spec.lua`) passed locally before the `v1.4.4` release commit, and again in the `v1.4.4` GitHub Actions release workflow.
+- Not yet done: in-game confirmation with two apostrophe-realm characters (e.g. `Mal'Ganis`) that sync completes with no `No player named` spam. This is the one check that could not be performed from the dev environment.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\release\Build-CurseForgePackage.ps1 -TagName v1.4.3 -OutputDirectory .\artifacts\release
-```
+## Most Recent Product Changes In 1.4.4
 
-## Most Recent Product Changes In 1.4.3
+- `Utils.NormalizeRealm` stripped all punctuation (`%p`), turning `Mal'Ganis` into `MalGanis`. Blizzard's `GetNormalizedRealmName` removes only spaces, hyphens, and periods, so the whisper/addon-message target no longer matched the routable name and sync whispers failed with `No player named ...`, producing communication spam on apostrophe realms.
+- Fixed `NormalizeRealm` to strip only `[%s%-%.]`, preserving apostrophes and parentheses (`Aggra (Português)` -> `Aggra(Português)`).
+- The test stub `GetNormalizedRealmName` in `tests/WoWStubs.lua` mirrored the same bug, which is why it was never caught; corrected to match real Blizzard behavior.
+- Added `tests/utils_spec.lua` covering apostrophe-realm normalization and whisper-target preservation.
+
+## Important Previous Product Changes In 1.4.3
 
 - Passive startup `sync_hello` messages are now peer discovery only and no longer fan out full snapshot WHISPER streams from every online addon user when someone logs in.
 - Peers answer passive hellos with tiny `sync_hello_ack` summaries; the requester waits briefly when timers are available, selects the best responder, and sends only that peer a targeted `sync_snapshot_request`.
@@ -118,7 +114,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\release\Build-CurseForgePackage
 
 ## Current Release Surfaces
 
-- `RollingPinAwards/RollingPinAwards.toc` is at `## Version: 1.4.3`.
+- `RollingPinAwards/RollingPinAwards.toc` is at `## Version: 1.4.4`.
 - Supported interface line on the PTR compatibility branch is `## Interface: 120100, 120007, 120005`.
 - CurseForge project id is `1563031`.
 - Secret `CF_API_TOKEN` is configured in GitHub Actions, not in repo.
