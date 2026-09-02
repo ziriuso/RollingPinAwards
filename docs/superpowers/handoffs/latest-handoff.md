@@ -2,10 +2,11 @@
 
 ## Repo Truth
 
-- Path: `C:\GitHub\RollingPinAwards`
+- Path: `C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards`
 - Remote: `https://github.com/ziriuso/RollingPinAwards.git`
 - Current working branch after release docs merge: `master`
 - Latest product release commit: `4ba9cc7` (`v1.4.4`)
+- Latest unreleased fix commit: `7eb18ab` (prepared `v1.4.5`)
 - Latest release tag: `v1.4.4`
 - Previous release tag: `v1.4.3`
 - Source feature branch retained on remote: `codex/rolling-pin-awards-mvp`
@@ -34,16 +35,17 @@
   - `C:\Gaming\World of Warcraft\_ptr_\Interface\AddOns\RollingPinAwards`
 - Deploy verification:
   - `75` source files and `75` target files in each target.
-  - Both targets report `## Version: 1.4.4`.
+  - Both targets report `## Version: 1.4.5`.
+  - Both targets have zero missing, extra, or SHA-256-mismatched files versus the source payload.
 
 ## Latest Verified State
 
-- The `1.4.5` source patch removes runtime `SetPropagateKeyboardInput` calls, retains Escape-to-close through `UISpecialFrames`, stops reassigning Blizzard's shared `SlashCmdList` binding, and passes the full local Lua suite as of 2026-09-02.
-- Version `1.4.5` has not yet been committed, tagged, published, or deployed.
+- The committed `1.4.5` source patch removes runtime `SetPropagateKeyboardInput` calls, retains Escape-to-close through `UISpecialFrames`, stops reassigning Blizzard's shared `SlashCmdList` binding, and passes the full local Lua suite as of 2026-09-02.
+- Version `1.4.5` is committed and locally deployed to Retail and PTR. It has not yet been pushed, tagged, or published.
 - Full Lua suite (incl. new `tests/utils_spec.lua`) passed locally before the `v1.4.4` release commit, and again in the `v1.4.4` GitHub Actions release workflow.
 - Not yet done: in-game confirmation with two apostrophe-realm characters (e.g. `Mal'Ganis`) that sync completes with no `No player named` spam. This is the one check that could not be performed from the dev environment.
 
-## Pending Product Changes In 1.4.5
+## Committed Product Changes In 1.4.5
 
 - Removed protected `SetPropagateKeyboardInput` calls from reusable visibility handling and main-window keyboard scripts.
 - Removed redundant main-window keyboard capture; Blizzard's existing `UISpecialFrames` registration remains responsible for Escape-to-close.
