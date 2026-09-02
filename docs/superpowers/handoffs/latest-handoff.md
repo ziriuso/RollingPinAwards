@@ -5,10 +5,9 @@
 - Path: `C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards`
 - Remote: `https://github.com/ziriuso/RollingPinAwards.git`
 - Current working branch after release docs merge: `master`
-- Latest product release commit: `4ba9cc7` (`v1.4.4`)
-- Latest unreleased fix commit: `7eb18ab` (prepared `v1.4.5`)
-- Latest release tag: `v1.4.4`
-- Previous release tag: `v1.4.3`
+- Latest product release commit: `915548b` (`v1.4.5`)
+- Latest release tag: `v1.4.5`
+- Previous release tag: `v1.4.4`
 - Source feature branch retained on remote: `codex/rolling-pin-awards-mvp`
 - `codex/rolling-pin-awards-mvp` is an ancestor of `master`; no committed codex work was lost in the merge.
 - Do not stage local-only folders unless explicitly requested:
@@ -21,15 +20,16 @@
 
 ## Release And Deploy
 
-- Version `1.4.4` has been released.
-- GitHub release: `https://github.com/ziriuso/RollingPinAwards/releases/tag/v1.4.4`
-- Release asset: `RollingPinAwards-1.4.4.zip`
+- Version `1.4.5` has been released.
+- GitHub release: `https://github.com/ziriuso/RollingPinAwards/releases/tag/v1.4.5`
+- Release asset: `RollingPinAwards-1.4.5.zip`
 - Asset digest from GitHub release metadata:
-  - `sha256:f06bf74d8786a1e2b193c12988f515ec3e7b89c6e9ced5e112aa9cbbb3290950`
-- GitHub Actions release run: `29027002896`
+  - `sha256:b4d938112a3d1bc5dce893587c8d2e79ac7809432fce62ef9ef7dd65e04a58aa`
+- Published asset verification: `75` addon files under the single `RollingPinAwards/` root and `## Version: 1.4.5`.
+- GitHub Actions release run: `33692753407`
 - Workflow result: success.
-- Workflow job: `86149276982`
-- CurseForge upload step result: success.
+- Workflow job: `100454939073`
+- CurseForge upload step result: success (`file id 8796004`).
 - Latest local deploy copied the current addon payload to:
   - `C:\Gaming\World of Warcraft\_retail_\Interface\AddOns\RollingPinAwards`
   - `C:\Gaming\World of Warcraft\_ptr_\Interface\AddOns\RollingPinAwards`
@@ -40,12 +40,12 @@
 
 ## Latest Verified State
 
-- The committed `1.4.5` source patch removes runtime `SetPropagateKeyboardInput` calls, retains Escape-to-close through `UISpecialFrames`, stops reassigning Blizzard's shared `SlashCmdList` binding, and passes the full local Lua suite as of 2026-09-02.
-- Version `1.4.5` is committed and locally deployed to Retail and PTR. It has not yet been pushed, tagged, or published.
-- Full Lua suite (incl. new `tests/utils_spec.lua`) passed locally before the `v1.4.4` release commit, and again in the `v1.4.4` GitHub Actions release workflow.
+- The released `1.4.5` patch removes runtime `SetPropagateKeyboardInput` calls, retains Escape-to-close through `UISpecialFrames`, and stops reassigning Blizzard's shared `SlashCmdList` binding.
+- Version `1.4.5` is committed, pushed, tagged, published to CurseForge and GitHub, and locally deployed to Retail and PTR.
+- The full Lua suite passed locally before release and again in the `v1.4.5` GitHub Actions release workflow.
 - Not yet done: in-game confirmation with two apostrophe-realm characters (e.g. `Mal'Ganis`) that sync completes with no `No player named` spam. This is the one check that could not be performed from the dev environment.
 
-## Committed Product Changes In 1.4.5
+## Released Product Changes In 1.4.5
 
 - Removed protected `SetPropagateKeyboardInput` calls from reusable visibility handling and main-window keyboard scripts.
 - Removed redundant main-window keyboard capture; Blizzard's existing `UISpecialFrames` registration remains responsible for Escape-to-close.
@@ -126,7 +126,7 @@
 
 ## Current Release Surfaces
 
-- `RollingPinAwards/RollingPinAwards.toc` is prepared at `## Version: 1.4.5`; the latest published release remains `v1.4.4`.
+- `RollingPinAwards/RollingPinAwards.toc` is at `## Version: 1.4.5`; the latest published release is `v1.4.5`.
 - Supported interface line on the PTR compatibility branch is `## Interface: 120100, 120007, 120005`.
 - CurseForge project id is `1563031`.
 - Secret `CF_API_TOKEN` is configured in GitHub Actions, not in repo.
