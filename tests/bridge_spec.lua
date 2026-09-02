@@ -597,8 +597,9 @@ return {
     harness.assert_equal("TOOLTIP", addon.mainFrame.frame.frameStrata)
     harness.assert_true((addon.mainFrame.frame.frameLevel or 0) >= 100)
     harness.assert_true(addon.mainFrame.frame.toplevel)
-    harness.assert_true(addon.mainFrame.frame.keyboardEnabled)
-    harness.assert_true(addon.mainFrame.frame.propagateKeyboardInput)
+    harness.assert_false(addon.mainFrame.frame.keyboardEnabled)
+    harness.assert_nil(addon.mainFrame.frame.propagateKeyboardInput)
+    harness.assert_nil(addon.mainFrame.frame.scripts.OnKeyDown)
     harness.assert_equal(-28, addon.mainFrame.frame.hitRectInsets.left)
     harness.assert_equal(-88, addon.mainFrame.frame.hitRectInsets.right)
     harness.assert_equal(-145, addon.mainFrame.frame.hitRectInsets.top)
@@ -1391,18 +1392,34 @@ return {
     harness.assert_true(addon.mainFrame.frame.backgroundArt.visible)
     harness.assert_true(addon.mainFrame.frame.closeButton ~= nil)
 
-    harness.assert_true(type(addon.mainFrame.frame.scripts.OnKeyDown) == "function")
-    addon.mainFrame.frame.scripts.OnKeyDown(addon.mainFrame.frame, "SPACE")
-    harness.assert_true(addon.mainFrame.frame.visible)
-    harness.assert_true(addon.mainFrame.frame.propagateKeyboardInput)
-
-    addon.mainFrame.frame.scripts.OnKeyDown(addon.mainFrame.frame, "ESCAPE")
+    harness.assert_equal("RollingPinAwardsMainFrame", _G.UISpecialFrames[1])
+    addon.mainFrame.frame:Hide()
     harness.assert_false(addon.mainFrame.frame.visible)
 
     addon.mainFrame.frame:Show()
     addon.mainFrame.frame.closeButton:Click()
 
     harness.assert_false(addon.mainFrame.frame.visible)
+  end,
+
+  ["main window opens without protected keyboard propagation calls"] = function()
+    wow.reset({ guildName = "Raid Bakery" })
+
+    local createFrame = _G.CreateFrame
+    _G.CreateFrame = function(...)
+      local frame = createFrame(...)
+      frame.SetPropagateKeyboardInput = function()
+        error("SetPropagateKeyboardInput is protected", 2)
+      end
+      return frame
+    end
+
+    local addon = wow.loadAddon()
+    addon:OnInitialize()
+    addon.mainFrame:Toggle()
+
+    harness.assert_true(addon.mainFrame.frame.visible)
+    harness.assert_true(addon.mainFrame.contentPanel.visible)
   end,
 
   ["sync peers window renders a simple table with a close x"] = function()

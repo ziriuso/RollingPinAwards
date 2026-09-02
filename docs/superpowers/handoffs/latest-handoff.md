@@ -38,8 +38,18 @@
 
 ## Latest Verified State
 
+- The `1.4.5` source patch removes runtime `SetPropagateKeyboardInput` calls, retains Escape-to-close through `UISpecialFrames`, stops reassigning Blizzard's shared `SlashCmdList` binding, and passes the full local Lua suite as of 2026-09-02.
+- Version `1.4.5` has not yet been committed, tagged, published, or deployed.
 - Full Lua suite (incl. new `tests/utils_spec.lua`) passed locally before the `v1.4.4` release commit, and again in the `v1.4.4` GitHub Actions release workflow.
 - Not yet done: in-game confirmation with two apostrophe-realm characters (e.g. `Mal'Ganis`) that sync completes with no `No player named` spam. This is the one check that could not be performed from the dev environment.
+
+## Pending Product Changes In 1.4.5
+
+- Removed protected `SetPropagateKeyboardInput` calls from reusable visibility handling and main-window keyboard scripts.
+- Removed redundant main-window keyboard capture; Blizzard's existing `UISpecialFrames` registration remains responsible for Escape-to-close.
+- Added a regression that replaces the propagation setter with a failing protected-call stub and verifies that addon initialization and `/rpa` window opening never reach it.
+- Removed the fallback slash command's `_G.SlashCmdList` reassignment; registration now writes only the addon-owned `ROLLINGPINAWARDS` entry in Blizzard's existing registry.
+- Added a regression that rejects writes to the `SlashCmdList` global binding while permitting entry registration.
 
 ## Most Recent Product Changes In 1.4.4
 
@@ -114,7 +124,7 @@
 
 ## Current Release Surfaces
 
-- `RollingPinAwards/RollingPinAwards.toc` is at `## Version: 1.4.4`.
+- `RollingPinAwards/RollingPinAwards.toc` is prepared at `## Version: 1.4.5`; the latest published release remains `v1.4.4`.
 - Supported interface line on the PTR compatibility branch is `## Interface: 120100, 120007, 120005`.
 - CurseForge project id is `1563031`.
 - Secret `CF_API_TOKEN` is configured in GitHub Actions, not in repo.
@@ -124,6 +134,8 @@
 - `AGENTS.md`
 - `docs/sync.md`
 - `docs/curseforge-release-workflow.md`
+- `docs/superpowers/specs/2026-09-02-protected-keyboard-input-fix-design.md`
+- `docs/superpowers/specs/2026-09-02-slash-command-registry-taint-fix-design.md`
 - `RollingPinAwards/RollingPinAwards.toc`
 - `RollingPinAwards/Data/Database.lua`
 - `RollingPinAwards/Domain/Awards.lua`

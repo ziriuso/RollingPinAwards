@@ -36,6 +36,46 @@ return {
     harness.assert_true(addon.mainFrame.frame.visible == true)
   end,
 
+  ["fallback slash registration does not reassign the blizzard registry binding"] = function()
+    wow.reset({ guildName = "Raid Bakery" })
+
+    local addon = wow.loadAddon()
+    local slashRegistry = _G.SlashCmdList
+    local originalGlobalMetatable = getmetatable(_G)
+    local reassigned = false
+
+    rawset(_G, "SlashCmdList", nil)
+    setmetatable(_G, {
+      __index = function(_, key)
+        if key == "SlashCmdList" then
+          return slashRegistry
+        end
+      end,
+      __newindex = function(globalTable, key, value)
+        if key == "SlashCmdList" then
+          reassigned = true
+          error("SlashCmdList binding must not be reassigned", 2)
+        end
+
+        rawset(globalTable, key, value)
+      end,
+    })
+
+    local ok, err = pcall(function()
+      addon:RegisterFallbackSlashCommand()
+    end)
+
+    setmetatable(_G, originalGlobalMetatable)
+    rawset(_G, "SlashCmdList", slashRegistry)
+
+    if not ok then
+      error(err, 0)
+    end
+
+    harness.assert_false(reassigned)
+    harness.assert_true(type(_G.SlashCmdList.ROLLINGPINAWARDS) == "function")
+  end,
+
   ["startup events initialize and enable the addon in ace mode"] = function()
     wow.reset({
       ace3 = true,

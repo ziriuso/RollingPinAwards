@@ -91,7 +91,6 @@ function Commands:Handle(message)
 end
 
 function RPA:RegisterFallbackSlashCommand()
-  _G.SlashCmdList = _G.SlashCmdList or {}
   _G.SLASH_ROLLINGPINAWARDS1 = self.SLASH_COMMAND or "/rpa"
   _G.SlashCmdList.ROLLINGPINAWARDS = function(message)
     if not self.__rpaInitialized then

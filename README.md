@@ -71,6 +71,8 @@ Use `/rpa syncdebug` or `/rpa sync debug` in game to print copy-friendly sync st
 
 - The addon now directly embeds AceComm/AceSerializer through `LibStub`, matching the proven GBankManager pattern, when the Ace3 libraries are available in-game.
 - The repo vendors the required Ace3 libraries under `RollingPinAwards/Libs/` for reproducible local and packaged installs.
+- The main window uses Blizzard's `UISpecialFrames` handling for Escape-to-close and does not change protected keyboard-input propagation while components are shown.
+- Slash-command registration writes only the addon-owned `ROLLINGPINAWARDS` entry and never reassigns Blizzard's shared `SlashCmdList` binding.
 - When `AceDB-3.0` is available, the domain database is backed by the active Ace profile instead of the plain SavedVariables fallback table.
 - When AceComm/AceSerializer are unavailable in-game, sync falls back to native `C_ChatInfo` addon messages with a flat guild-scoped payload serializer.
 - Awards, nominations, alias mappings, and rank permissions broadcast guild-scoped sync payloads when local user actions mutate them.

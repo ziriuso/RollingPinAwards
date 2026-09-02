@@ -253,14 +253,6 @@ function Components.CreateWindow(config)
       frame:SetToplevel(true)
     end
 
-    if frame.EnableKeyboard then
-      frame:EnableKeyboard(true)
-    end
-
-    if frame.SetPropagateKeyboardInput then
-      frame:SetPropagateKeyboardInput(true)
-    end
-
     local backgroundLayout = layout.backgroundArt or {}
     local backgroundWidth = backgroundLayout.width or 1000
     local backgroundHeight = backgroundLayout.height or 925
@@ -314,16 +306,6 @@ function Components.CreateWindow(config)
       frame:SetScript("OnDragStop", function(self)
         if self.StopMovingOrSizing then
           self:StopMovingOrSizing()
-        end
-      end)
-      frame:SetScript("OnKeyDown", function(self, key)
-        if key == "ESCAPE" then
-          if self.SetPropagateKeyboardInput then
-            self:SetPropagateKeyboardInput(false)
-          end
-          Components.SetVisible(self, false)
-        elseif self.SetPropagateKeyboardInput then
-          self:SetPropagateKeyboardInput(true)
         end
       end)
     end
@@ -2016,10 +1998,6 @@ function Components.RenderContent(panel, content)
 end
 
 function Components.SetVisible(frame, visible)
-  if visible and frame.SetPropagateKeyboardInput then
-    frame:SetPropagateKeyboardInput(true)
-  end
-
   if frame.Show and frame.Hide then
     if visible then
       frame:Show()
