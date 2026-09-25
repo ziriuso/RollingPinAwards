@@ -6,7 +6,7 @@ The installable addon lives under `RollingPinAwards/`. Root-level folders such a
 
 ## WoW Forever Beta Branch
 
-The `codex/wow-forever` branch targets the installed WoW Forever 1.60.1 beta (interface 16001). It keeps complete `First Last` character names for storage, sync, and display, because the full pair is region-unique and first names may repeat. Realm suffixes are not added in Forever. Guild roster and sync trust require an exact full-name match. This branch uses version `1.4.5-forever-beta.1` and has not been published as a Retail release.
+The `codex/wow-forever` branch targets the installed WoW Forever 1.60.1 beta (interface 16001). It keeps complete `First Last` character names for storage, sync, and display, because the full pair is region-unique and first names may repeat. Realm suffixes are not added in Forever. Guild roster and sync trust require an exact full-name match. This branch uses version `1.4.5-forever-beta.2` and has not been published as a Retail release.
 
 The [Forever compatibility design](docs/superpowers/specs/2026-09-25-wow-forever-compatibility-design.md) records the beta assumptions and in-game checks still needed.
 

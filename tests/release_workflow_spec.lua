@@ -20,7 +20,7 @@ return {
   ["toc declares the Forever beta version"] = function()
     local toc = readFile(harness.addon_path("RollingPinAwards.toc"))
 
-    assertContains(toc, "## Version: 1.4.5-forever-beta.1")
+    assertContains(toc, "## Version: 1.4.5-forever-beta.2")
   end,
 
   ["curseforge release workflow packages and publishes rolling pin awards"] = function()

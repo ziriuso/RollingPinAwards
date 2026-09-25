@@ -3,10 +3,11 @@
 ## WoW Forever Beta Checkpoint (2026-09-25)
 
 - Current working branch: `codex/wow-forever`, branched from `master` at `97245d7`.
-- Beta addon version: `1.4.5-forever-beta.1`; TOC interface: `16001`.
+- Beta addon version: `1.4.5-forever-beta.2`; TOC interface: `16001`.
 - The installed beta client is under `C:\Gaming\World of Warcraft\_classic_beta_`. This branch's 75 addon files were copied to its `Interface\AddOns\RollingPinAwards` folder with zero SHA-256 mismatches; the game was not running.
 - Forever uses complete `First Last` identities in this branch. The roster and sync trust path requires an exact full-name match, and ordinary UI preserves surnames so people with the same first name remain distinct.
 - The complete Lua suite passes with Forever-specific unit tests. Live confirmation of beta API name strings, UI load, and two-client guild sync remains open. See [the design](../specs/2026-09-25-wow-forever-compatibility-design.md).
+- The first live login exposed a Lua vararg error in `IsForeverClient`: an extra `GetBuildInfo()` return was passed to `tonumber` as its base. The detector now captures only the fourth return value, and the test stub reproduces the beta's extra return. Restart the beta client or use `/reload` after installing beta.2.
 - Do not tag or publish this branch through the existing Retail CurseForge workflow; its publisher assumes a six-digit interface value and the existing CurseForge project.
 
 ## Repo Truth
@@ -135,7 +136,7 @@
 
 ## Current Release Surfaces
 
-- The Forever branch TOC is at `## Version: 1.4.5-forever-beta.1` and `## Interface: 16001`. The latest published Retail release remains `v1.4.5`.
+- The Forever branch TOC is at `## Version: 1.4.5-forever-beta.2` and `## Interface: 16001`. The latest published Retail release remains `v1.4.5`.
 - The Retail/PTR interface line on `master` is `## Interface: 120100, 120007, 120005`.
 - CurseForge project id is `1563031`.
 - Secret `CF_API_TOKEN` is configured in GitHub Actions, not in repo.

@@ -710,7 +710,7 @@ function wow.reset(seed)
   end
 
   _G.GetBuildInfo = function()
-    return "test", "test", "test", state.interfaceVersion
+    return "test", "test", "test", state.interfaceVersion, "beta"
   end
 
   _G.GetNormalizedRealmName = seed.disableNormalizedRealmName and nil or function()

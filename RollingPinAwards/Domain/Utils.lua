@@ -83,7 +83,8 @@ function Utils.IsForeverClient()
     return false
   end
 
-  local interfaceVersion = tonumber(select(4, GetBuildInfo()))
+  local _, _, _, interfaceVersion = GetBuildInfo()
+  interfaceVersion = tonumber(interfaceVersion)
   return interfaceVersion ~= nil and interfaceVersion >= 16000 and interfaceVersion < 17000
 end
 

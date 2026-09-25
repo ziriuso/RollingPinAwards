@@ -18,6 +18,12 @@ local function resetForever(seed)
 end
 
 return {
+  ["Forever detects a client when GetBuildInfo returns extra values"] = function()
+    local addon = resetForever()
+
+    harness.assert_true(addon.Utils.IsForeverClient())
+  end,
+
   ["Forever retains complete two-part names without realm suffixes"] = function()
     local addon = resetForever()
 
