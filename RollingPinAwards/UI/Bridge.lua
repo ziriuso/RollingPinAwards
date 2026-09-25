@@ -529,7 +529,10 @@ function Bridge:SaveAliasMapping(aliasDisplay, canonicalName)
     return false, "missing canonical name"
   end
 
-  if not canonicalName:find("-", 1, true) then
+  if not Utils.IsCompleteCharacterName(canonicalName) then
+    if Utils.IsForeverClient() then
+      return false, "canonical name must include first and last name"
+    end
     return false, "canonical name must include realm"
   end
 

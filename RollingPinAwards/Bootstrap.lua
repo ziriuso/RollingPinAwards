@@ -314,6 +314,7 @@ function RPA:GetGuildRosterMemberStatus(playerFullName)
   end
 
   local targetShortName = normalizedTarget:match("^[^-]+")
+  local allowShortFallback = not Utils.IsForeverClient()
   local fallbackName
   local fallbackOnline
   local fallbackAmbiguous = false
@@ -327,7 +328,7 @@ function RPA:GetGuildRosterMemberStatus(playerFullName)
     end
 
     local rosterShortName = type(normalizedRosterName) == "string" and normalizedRosterName:match("^[^-]+") or nil
-    if targetShortName and rosterShortName == targetShortName then
+    if allowShortFallback and targetShortName and rosterShortName == targetShortName then
       if fallbackName and fallbackName ~= normalizedRosterName then
         fallbackAmbiguous = true
       else

@@ -78,9 +78,34 @@ function Utils.NormalizeRealm(realm)
   return normalized
 end
 
+function Utils.IsForeverClient()
+  if type(GetBuildInfo) ~= "function" then
+    return false
+  end
+
+  local interfaceVersion = tonumber(select(4, GetBuildInfo()))
+  return interfaceVersion ~= nil and interfaceVersion >= 16000 and interfaceVersion < 17000
+end
+
+function Utils.IsCompleteCharacterName(name)
+  if type(name) ~= "string" or name == "" then
+    return false
+  end
+
+  if Utils.IsForeverClient() then
+    return name:match("^%S+%s+%S+$") ~= nil
+  end
+
+  return name:find("-", 1, true) ~= nil
+end
+
 function Utils.NormalizeUnitName(name, realm)
   if type(name) ~= "string" or name == "" then
     return nil
+  end
+
+  if Utils.IsForeverClient() then
+    return name
   end
 
   local character, suppliedRealm = name:match("^([^-]+)%-(.+)$")
@@ -120,6 +145,10 @@ end
 
 function Utils.GetShortCharacterName(value)
   if type(value) ~= "string" or value == "" then
+    return value
+  end
+
+  if Utils.IsForeverClient() then
     return value
   end
 

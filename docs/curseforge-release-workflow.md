@@ -2,6 +2,8 @@
 
 Rolling Pin Awards supports tag-driven CurseForge publishing.
 
+The `codex/wow-forever` beta branch is not ready for this publishing workflow. The current publisher parses six-digit Retail interface values, while Forever uses five-digit `16001`, and the workflow points at the existing CurseForge project. Do not tag a Forever release until the game-version mapping and destination project are explicitly configured and tested.
+
 The published zip contains one addon folder:
 
 - `RollingPinAwards/`

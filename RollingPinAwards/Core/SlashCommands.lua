@@ -3,6 +3,7 @@ _G.RollingPinAwards = RPA
 
 local Commands = RPA.Commands or {}
 RPA.Commands = Commands
+local Utils = RPA.Utils or {}
 
 local function printChatLines(addon, lines)
   addon.__rpaLastChatOutput = {}
@@ -43,8 +44,14 @@ function Commands:Handle(message)
   end
 
   if command == "nominate" then
-    local nominee, reason = rest:match('^(%S+)%s+"(.+)"$')
+    local nominee, reason = rest:match('^(.-)%s+"(.+)"$')
+    if nominee then
+      nominee = nominee:match('^"(.-)"$') or nominee
+    end
     if nominee and reason then
+      if Utils.IsForeverClient() and not Utils.IsCompleteCharacterName(nominee) then
+        return nil, "full character name required"
+      end
       return self.addon.nominations:Create(nominee, reason)
     end
   elseif command == "show" or command == "toggle" then

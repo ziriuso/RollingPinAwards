@@ -7,7 +7,7 @@ Runtime sync files live under the installable addon folder, `RollingPinAwards/`.
 ## Validation Rules
 
 - Incoming payloads must match the active `guildKey`.
-- Character names are normalized to roster realm format before permission checks, so display realms such as `Area 52` compare as `Area52`.
+- On Retail, character names are normalized to roster realm format before permission checks, so display realms such as `Area 52` compare as `Area52`. On Forever, the complete `First Last` name is preserved and permission checks compare the full pair.
 - Privileged payloads are accepted only when the authenticated transport sender satisfies the exact rank permission required for that payload type. Payload author fields such as `lastModifiedBy`, `awardedBy`, and `resolvedBy` are preserved as record provenance, not trusted as the authorization subject.
 - Messages are accepted from `GUILD`; `WHISPER` messages are accepted only when the sender is present in the current guild roster.
 - Award and nomination snapshot rows are monotonic: stale same-ID records cannot replace newer local history or downgrade resolved nominations back to pending.
@@ -50,7 +50,7 @@ Privileged payload mapping:
 - Passive startup `sync_hello` payloads record same-guild peers and answer with tiny targeted `sync_hello_ack` summaries, but do not trigger full snapshot replies. This keeps one player logging in from causing every online addon user to stream a full snapshot at once.
 - The requesting client collects `sync_hello_ack` summaries for a short two-second window when `C_Timer.After` is available, selects the responder with the largest advertised record count and newest timestamp, and sends only that peer a targeted `sync_snapshot_request`. Without timer support, the first valid ack falls back to an immediate single-peer request.
 - `/rpa sync now` and `/rpa sync all` send the same negotiated catch-up hello for live two-client testing and catch-up instead of broadcasting a full guild snapshot.
-- Receiving `sync_snapshot_request` answers with a targeted `WHISPER` full flat record stream for rank permissions, aliases, awards, nominations, votes, and hidden delete tombstones, followed by `sync_snapshot_complete`. Snapshot replies resolve the requester through the guild roster so bare names become full `Character-Realm` whisper targets, preserve explicit sender realms when roster entries are short, are sent only when the requester is currently online, abort on the first transport send failure, use result-aware native addon-message sends for targeted whispers, use `BULK` priority, and are debounced per requester for 30 seconds. Awards are sent before nominations so clients can reject old pending nomination replays that were already approved.
+- Receiving `sync_snapshot_request` answers with a targeted `WHISPER` full flat record stream for rank permissions, aliases, awards, nominations, votes, and hidden delete tombstones, followed by `sync_snapshot_complete`. Snapshot replies resolve the requester through the guild roster before whispering, are sent only when the requester is currently online, abort on the first transport send failure, use result-aware native addon-message sends for targeted whispers, use `BULK` priority, and are debounced per requester for 30 seconds. Retail resolves short names to `Character-Realm` targets and preserves explicit sender realms. Forever requires an exact full `First Last` roster match, with no first-name fallback. Awards are sent before nominations so clients can reject old pending nomination replays that were already approved.
 - `/rpa peers` and `/rpa sync peers` open a draggable local table of same-guild sync senders and the last date this client saw them. The peers table is parented to `UIParent`, so it can be opened without showing the main addon window. Run `/rpa sync now` first when you want to actively ping online addon users.
 - Inbound accepted payloads rerender the active tab when the main window has already been rendered.
 - Accepted award payloads write one local chat announcement per award id, including the Burnt or Golden rolling pin type, short recipient name, and reason. Local direct awards and nomination approvals write the same announcement immediately on the issuing client.
@@ -63,8 +63,9 @@ Privileged payload mapping:
 
 ## Record Identity
 
-- New nomination ids use `nom:<Character-Realm>:<timestamp>:<sequence>`.
-- New award ids use `award:<Character-Realm>:<timestamp>:<sequence>`.
+- New nomination ids use `nom:<actor>:<timestamp>:<sequence>`.
+- New award ids use `award:<actor>:<timestamp>:<sequence>`.
+- `<actor>` is `Character-Realm` on Retail or the complete `First Last` name on Forever. The ID encoder replaces spaces with underscores in the ID text; the stored actor field keeps the complete name.
 - Legacy numeric ids such as `nom:1` and `award:1` remain readable, but new local records include the actor/timestamp to avoid cross-client id collisions.
 
 ## Diagnostics

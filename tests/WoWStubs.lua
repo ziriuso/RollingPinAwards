@@ -680,6 +680,7 @@ function wow.reset(seed)
     guildRosterRequestCount = 0,
     isGuildOfficer = seed.isGuildOfficer,
     realmName = seed.realmName or "Stormrage",
+    interfaceVersion = seed.interfaceVersion or 120100,
     normalizedRealmName = seed.normalizedRealmName,
     playerName = seed.playerName or "Ziri",
     now = seed.now or seed.serverTime or 1717336800,
@@ -706,6 +707,10 @@ function wow.reset(seed)
 
   _G.GetRealmName = function()
     return state.realmName
+  end
+
+  _G.GetBuildInfo = function()
+    return "test", "test", "test", state.interfaceVersion
   end
 
   _G.GetNormalizedRealmName = seed.disableNormalizedRealmName and nil or function()

@@ -26,6 +26,8 @@ powershell -ExecutionPolicy Bypass -File .\tests\run.ps1 "guild member can"
 
 The suite exercises addon bootstrap, guild context, SavedVariables behavior, permissions, nominations, voting, awards, commands, bridge view models, sync validation, mutation broadcasts, native comm fallback, sync diagnostics, and the local sync peers table opened by `/rpa peers`.
 
+On the Forever branch, `tests/forever_spec.lua` also checks two-part names, shared first names, exact roster/whisper trust, roster suggestions, mapping validation, and slash nominations. The local beta client uses interface 16001. After installing this branch in `_classic_beta_/Interface/AddOns`, an in-game check with two clients is still needed for the actual API name strings and addon-message delivery.
+
 It also includes Ace3-aware stubs so lifecycle, AceDB profile setup, chat-command registration, serialized comm transport, and comm registration can be verified without a live WoW client.
 
 The harness intentionally skips executing files under `RollingPinAwards/Libs/` during plain Lua tests. Embedded-library presence and TOC load order are verified separately so packaging stays covered without requiring the full WoW client runtime.

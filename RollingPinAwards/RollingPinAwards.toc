@@ -1,9 +1,9 @@
-## Interface: 120100, 120007, 120005
+## Interface: 16001
 ## Title: Rolling Pin Awards
 ## Notes: Guild awards and nominations for The Burnt Rolling Pin
 ## Category: Guild
 ## Author: Ziri
-## Version: 1.4.5
+## Version: 1.4.5-forever-beta.1
 ## SavedVariables: RollingPinAwardsDB
 ## OptionalDeps: Ace3
 ## IconTexture: Interface\AddOns\RollingPinAwards\Media\minimap-button.png

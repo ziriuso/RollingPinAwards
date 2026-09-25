@@ -1,10 +1,19 @@
 # Rolling Pin Awards Handoff
 
+## WoW Forever Beta Checkpoint (2026-09-25)
+
+- Current working branch: `codex/wow-forever`, branched from `master` at `97245d7`.
+- Beta addon version: `1.4.5-forever-beta.1`; TOC interface: `16001`.
+- The installed beta client is under `C:\Gaming\World of Warcraft\_classic_beta_`. This branch's 75 addon files were copied to its `Interface\AddOns\RollingPinAwards` folder with zero SHA-256 mismatches; the game was not running.
+- Forever uses complete `First Last` identities in this branch. The roster and sync trust path requires an exact full-name match, and ordinary UI preserves surnames so people with the same first name remain distinct.
+- The complete Lua suite passes with Forever-specific unit tests. Live confirmation of beta API name strings, UI load, and two-client guild sync remains open. See [the design](../specs/2026-09-25-wow-forever-compatibility-design.md).
+- Do not tag or publish this branch through the existing Retail CurseForge workflow; its publisher assumes a six-digit interface value and the existing CurseForge project.
+
 ## Repo Truth
 
 - Path: `C:\Users\Ziri\OneDrive - ShipWreckCove\Documents\RollingPinAwards`
 - Remote: `https://github.com/ziriuso/RollingPinAwards.git`
-- Current working branch after release docs merge: `master`
+- Retail release branch after the 1.4.5 docs merge: `master`. The current Forever work is on `codex/wow-forever`.
 - Latest product release commit: `915548b` (`v1.4.5`)
 - Latest release tag: `v1.4.5`
 - Previous release tag: `v1.4.4`
@@ -126,8 +135,8 @@
 
 ## Current Release Surfaces
 
-- `RollingPinAwards/RollingPinAwards.toc` is at `## Version: 1.4.5`; the latest published release is `v1.4.5`.
-- Supported interface line on the PTR compatibility branch is `## Interface: 120100, 120007, 120005`.
+- The Forever branch TOC is at `## Version: 1.4.5-forever-beta.1` and `## Interface: 16001`. The latest published Retail release remains `v1.4.5`.
+- The Retail/PTR interface line on `master` is `## Interface: 120100, 120007, 120005`.
 - CurseForge project id is `1563031`.
 - Secret `CF_API_TOKEN` is configured in GitHub Actions, not in repo.
 
